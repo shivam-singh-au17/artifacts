@@ -1,22 +1,35 @@
 # artifacts
 
-Static documents published with GitHub Pages.
-
-## Smooth × Tabby — Design Walkthrough
-
-`index.html` — a screen-by-screen walkthrough of how Tabby "Pay in 4" will work
-across Smooth's admin panel, merchant panel and customer app. Written for a
-product audience: design decisions, edge-case flows, and the open questions for
-both the client and the Tabby team.
-
-Self-contained: one HTML file, no build step, no external requests. Light and
-dark themes, with a toggle in the bottom-right corner.
+Design and engineering documents, published with GitHub Pages.
 
 **Live:** https://shivam-singh-au17.github.io/artifacts/
 
-### Publishing
+## Layout
 
-Settings → Pages → Build and deployment → Deploy from a branch → `main` / `/ (root)`.
+```
+index.html                      Introduction + list of every document
+smooth-tabby-bnpl/index.html    Smooth × Tabby — Design Walkthrough
+```
 
-The page carries `<meta name="robots" content="noindex, nofollow">` so search
-engines skip it. That is not access control — anyone with the URL can read it.
+One folder per document. The folder name becomes the URL, so
+`smooth-tabby-bnpl/` is served at
+`https://shivam-singh-au17.github.io/artifacts/smooth-tabby-bnpl/`.
+
+## Adding a document
+
+1. Create a folder named after the document, using lowercase words joined by
+   hyphens — that name is the URL a client will see.
+2. Put a single `index.html` inside it. Keep it self-contained: no build step,
+   no external fonts, scripts or images, so the page works offline and loads
+   instantly.
+3. Reuse the CSS custom properties defined at the top of any existing document
+   (`--paper`, `--ink`, `--accent`, `--line`, and the rest). Every page shares
+   the same palette and type scale, in both light and dark themes.
+4. Add a back-link to `../` as the first element inside `<body>`.
+5. Add an entry to the `.docs` list in the root `index.html`.
+
+## Notes
+
+Each document carries `<meta name="robots" content="noindex, nofollow">` so
+search engines skip it. That is not access control — this repository is public,
+and anyone with the URL can read the page.
