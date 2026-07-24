@@ -3,11 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="light">
 <meta name="robots" content="noindex, nofollow">
 <title>Smooth &times; Tabby &mdash; Design Walkthrough</title>
 <meta name="description" content="A screen-by-screen walkthrough of how Tabby Pay in 4 will work across Smooth's admin panel, merchant panel and customer app.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129534;</text></svg>">
+
+<!-- Theme, applied before first paint. Light unless this browser chose dark
+     on any page of the site; the key is shared by every document. -->
+<script>
+(function () {
+  var saved;
+  try { saved = localStorage.getItem('ss-docs-theme'); } catch (e) {}
+  document.documentElement.setAttribute('data-theme', saved === 'dark' ? 'dark' : 'light');
+})();
+</script>
+
 <style>
   *,*::before,*::after{box-sizing:border-box}
   html,body{margin:0;padding:0}
@@ -28,6 +39,7 @@
    TOKENS
    ──────────────────────────────────────────────── */
 :root{
+  color-scheme:light;
   --paper:#FCFCFB;
   --surface:#F3F6F4;
   --raise:#FFFFFF;
@@ -57,33 +69,8 @@
   --prose:69ch;
 }
 
-@media (prefers-color-scheme:dark){
-  :root{
-    --paper:#0A100D;
-    --surface:#101815;
-    --raise:#131D19;
-    --ink:#ECF2EF;
-    --ink-2:#BDCAC4;
-    --slate:#84968E;
-    --line:#1E2C26;
-    --line-2:#2C3D36;
-
-    --accent:#2ED68F;
-    --accent-strong:#3FE39C;
-    --accent-bg:#0D2A1F;
-
-    --tabby:#3EEDBF;
-    --tabby-bg:#082A22;
-
-    --flag:#E3AC5C;
-    --flag-bg:#2A2013;
-
-    --alert:#EC7A70;
-    --alert-bg:#2B1512;
-  }
-}
-
 :root[data-theme="dark"]{
+  color-scheme:dark;
   --paper:#0A100D;
   --surface:#101815;
   --raise:#131D19;
@@ -1417,31 +1404,39 @@ ul.plain.is-alert li::before{ background:var(--alert); }
 
 <script>
 (function () {
+  var KEY = 'ss-docs-theme';
   var root = document.documentElement;
   var btn = document.getElementById('themeToggle');
   var label = document.getElementById('themeLabel');
-  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
 
   function current() {
-    return root.getAttribute('data-theme') || (prefersDark.matches ? 'dark' : 'light');
+    return root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
   }
-  function paint() {
-    label.textContent = current() === 'dark' ? 'Light' : 'Dark';
+  function apply(theme) {
+    root.setAttribute('data-theme', theme);
+    label.textContent = theme === 'dark' ? 'Light' : 'Dark';
   }
-  try {
-    var saved = localStorage.getItem('sx-tabby-theme');
-    if (saved === 'dark' || saved === 'light') root.setAttribute('data-theme', saved);
-  } catch (e) {}
-  paint();
+  function stored() {
+    try { return localStorage.getItem(KEY) === 'dark' ? 'dark' : 'light'; }
+    catch (e) { return current(); }
+  }
+
+  apply(current());
 
   btn.addEventListener('click', function () {
     var next = current() === 'dark' ? 'light' : 'dark';
-    root.setAttribute('data-theme', next);
-    try { localStorage.setItem('sx-tabby-theme', next); } catch (e) {}
-    paint();
+    apply(next);
+    try { localStorage.setItem(KEY, next); } catch (e) {}
   });
 
-  prefersDark.addEventListener('change', paint);
+  /* Toggled on another document of this site, in another tab. */
+  window.addEventListener('storage', function (e) {
+    if (e.key === KEY) apply(stored());
+  });
+  /* Restored from the back/forward cache, where the head script never reruns. */
+  window.addEventListener('pageshow', function (e) {
+    if (e.persisted) apply(stored());
+  });
 })();
 </script>
 </body>
