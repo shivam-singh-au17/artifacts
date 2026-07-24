@@ -12,7 +12,7 @@ smooth-tabby-bnpl/index.html          Smooth × Tabby — Design Walkthrough
 foodics-integration-review/index.html Smooth × Foodics — Integration Review
 ```
 
-One folder per document. The folder name becomes the URL, so
+One folder per document. The folder name becomes the URL; so
 `smooth-tabby-bnpl/` is served at
 `https://shivam-singh-au17.github.io/artifacts/smooth-tabby-bnpl/`.
 
