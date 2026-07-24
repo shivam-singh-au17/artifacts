@@ -1,0 +1,1290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex, nofollow">
+<title>Smooth &times; Foodics &mdash; Integration Review</title>
+<meta name="description" content="A code and design review of the Foodics pay-at-table integration in Smooth: what works, what can lose money, and how each part would have been built differently.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#128269;</text></svg>">
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  img,svg{max-width:100%;height:auto}
+  body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+</style>
+</head>
+<body>
+
+<div style="border-bottom:1px solid var(--line);background:var(--surface);">
+  <div style="max-width:1120px;margin-inline:auto;padding:11px clamp(18px,4vw,48px);">
+    <a href="../" style="font-family:var(--mono);font-size:0.68rem;font-weight:600;letter-spacing:0.13em;text-transform:uppercase;color:var(--slate);text-decoration:none;">&#8592;&nbsp;&nbsp;Shivam Singh &middot; Documents</a>
+  </div>
+</div>
+
+<style>
+/* ────────────────────────────────────────────────
+   TOKENS — shared with every document on this site,
+   plus one addition (--watch) for the third severity
+   level this document needs.
+   ──────────────────────────────────────────────── */
+:root{
+  --paper:#FCFCFB;
+  --surface:#F3F6F4;
+  --raise:#FFFFFF;
+  --ink:#0D1512;
+  --ink-2:#39473F;
+  --slate:#61706A;
+  --line:#E1E7E3;
+  --line-2:#CBD5D0;
+
+  --accent:#088F58;
+  --accent-strong:#0AB971;
+  --accent-bg:#E8F7F0;
+
+  --flag:#9C5C0C;
+  --flag-bg:#FBF1E1;
+
+  --alert:#A93028;
+  --alert-bg:#FBEAE8;
+
+  --watch:#2C6B96;
+  --watch-bg:#E8F1F7;
+
+  --sans:ui-sans-serif,"Segoe UI Variable Text","SF Pro Text",-apple-system,"Segoe UI",system-ui,"Helvetica Neue",sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","Segoe UI Mono",Consolas,"Liberation Mono",monospace;
+
+  --shell:1120px;
+  --prose:69ch;
+}
+
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#0A100D; --surface:#101815; --raise:#131D19;
+    --ink:#ECF2EF; --ink-2:#BDCAC4; --slate:#84968E;
+    --line:#1E2C26; --line-2:#2C3D36;
+    --accent:#2ED68F; --accent-strong:#3FE39C; --accent-bg:#0D2A1F;
+    --flag:#E3AC5C; --flag-bg:#2A2013;
+    --alert:#EC7A70; --alert-bg:#2B1512;
+    --watch:#79B7DD; --watch-bg:#0C1F2B;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0A100D; --surface:#101815; --raise:#131D19;
+  --ink:#ECF2EF; --ink-2:#BDCAC4; --slate:#84968E;
+  --line:#1E2C26; --line-2:#2C3D36;
+  --accent:#2ED68F; --accent-strong:#3FE39C; --accent-bg:#0D2A1F;
+  --flag:#E3AC5C; --flag-bg:#2A2013;
+  --alert:#EC7A70; --alert-bg:#2B1512;
+  --watch:#79B7DD; --watch-bg:#0C1F2B;
+}
+:root[data-theme="light"]{
+  --paper:#FCFCFB; --surface:#F3F6F4; --raise:#FFFFFF;
+  --ink:#0D1512; --ink-2:#39473F; --slate:#61706A;
+  --line:#E1E7E3; --line-2:#CBD5D0;
+  --accent:#088F58; --accent-strong:#0AB971; --accent-bg:#E8F7F0;
+  --flag:#9C5C0C; --flag-bg:#FBF1E1;
+  --alert:#A93028; --alert-bg:#FBEAE8;
+  --watch:#2C6B96; --watch-bg:#E8F1F7;
+}
+
+/* ────────────────────────────────────────────────
+   BASE
+   ──────────────────────────────────────────────── */
+html{ -webkit-text-size-adjust:100%; }
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:16.5px;
+  line-height:1.62;
+  letter-spacing:-0.005em;
+  overflow-x:hidden;
+}
+
+.shell{ max-width:var(--shell); margin-inline:auto; padding-inline:clamp(18px,4vw,48px); }
+.prose{ max-width:var(--prose); }
+
+p{ margin:0 0 1.05em; color:var(--ink-2); }
+p:last-child{ margin-bottom:0; }
+strong{ color:var(--ink); font-weight:650; }
+a{ color:var(--accent); text-decoration-thickness:1px; text-underline-offset:2px; }
+a:focus-visible,button:focus-visible{ outline:2px solid var(--accent-strong); outline-offset:3px; border-radius:3px; }
+
+h1,h2,h3,h4{ color:var(--ink); text-wrap:balance; margin:0; }
+h1{ font-size:clamp(2.5rem,6vw,4.1rem); font-weight:760; letter-spacing:-0.038em; line-height:1.02; }
+h2{ font-size:clamp(1.6rem,3.2vw,2.3rem); font-weight:720; letter-spacing:-0.028em; line-height:1.12; }
+h3{ font-size:1.19rem; font-weight:680; letter-spacing:-0.018em; line-height:1.28; }
+h4{ font-size:1rem; font-weight:670; letter-spacing:-0.01em; }
+
+.eyebrow{
+  font-family:var(--mono); font-size:0.685rem; font-weight:600;
+  letter-spacing:0.16em; text-transform:uppercase; color:var(--slate);
+}
+.lede{ font-size:1.16rem; line-height:1.55; color:var(--ink-2); }
+
+code,.mono{ font-family:var(--mono); font-size:0.86em; letter-spacing:-0.01em; }
+code{
+  background:var(--surface); border:1px solid var(--line); border-radius:4px;
+  padding:0.08em 0.36em; color:var(--ink);
+  overflow-wrap:anywhere;
+}
+
+hr.rule{ border:0; border-top:1px solid var(--line); margin:0; }
+
+/* ────────────────────────────────────────────────
+   COVER
+   ──────────────────────────────────────────────── */
+.cover{ padding-block:clamp(56px,9vw,104px) clamp(40px,6vw,64px); border-bottom:1px solid var(--line); }
+.cover .kicker{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:26px; }
+.cover h1{ margin-bottom:22px; }
+.cover .sub{ font-size:clamp(1.1rem,2vw,1.32rem); line-height:1.5; color:var(--slate); max-width:60ch; }
+
+.meta-grid{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(178px,1fr));
+  gap:1px; background:var(--line); border:1px solid var(--line);
+  border-radius:10px; overflow:hidden; margin-top:44px;
+}
+.meta-grid > div{ background:var(--paper); padding:16px 18px; }
+.meta-grid dt{ font-family:var(--mono); font-size:0.66rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--slate); margin-bottom:6px; }
+.meta-grid dd{ margin:0; font-size:0.94rem; font-weight:600; color:var(--ink); }
+
+/* ────────────────────────────────────────────────
+   CHIPS
+   ──────────────────────────────────────────────── */
+.chip{
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:var(--mono); font-size:0.66rem; font-weight:600;
+  letter-spacing:0.09em; text-transform:uppercase;
+  padding:4px 9px; border-radius:5px;
+  border:1px solid var(--line-2); color:var(--slate); background:var(--surface);
+  white-space:nowrap;
+}
+.chip.is-accent{ color:var(--accent); border-color:color-mix(in srgb,var(--accent) 34%,transparent); background:var(--accent-bg); }
+.chip.is-flag{ color:var(--flag); border-color:color-mix(in srgb,var(--flag) 34%,transparent); background:var(--flag-bg); }
+.chip.is-alert{ color:var(--alert); border-color:color-mix(in srgb,var(--alert) 34%,transparent); background:var(--alert-bg); }
+.chip.is-watch{ color:var(--watch); border-color:color-mix(in srgb,var(--watch) 34%,transparent); background:var(--watch-bg); }
+
+/* ────────────────────────────────────────────────
+   SECTIONS
+   ──────────────────────────────────────────────── */
+section{ padding-block:clamp(48px,7vw,86px); border-bottom:1px solid var(--line); }
+section:last-of-type{ border-bottom:0; }
+.sec-head{ display:flex; flex-direction:column; gap:14px; margin-bottom:38px; max-width:var(--prose); }
+
+.stack{ display:flex; flex-direction:column; gap:clamp(20px,3vw,32px); }
+.stack-sm{ display:flex; flex-direction:column; gap:14px; }
+.cols{ display:grid; gap:clamp(16px,2.4vw,26px); grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); }
+
+.card{
+  background:var(--raise); border:1px solid var(--line); border-radius:12px;
+  padding:clamp(18px,2.6vw,26px); display:flex; flex-direction:column; gap:13px;
+}
+.card > .eyebrow{ margin-bottom:-4px; }
+.card p{ font-size:0.955rem; }
+
+.note{
+  border:1px solid var(--line); border-radius:10px; padding:16px 18px;
+  background:var(--surface); display:flex; flex-direction:column; gap:8px;
+}
+.note.is-flag{ background:var(--flag-bg); border-color:color-mix(in srgb,var(--flag) 26%,transparent); }
+.note.is-alert{ background:var(--alert-bg); border-color:color-mix(in srgb,var(--alert) 26%,transparent); }
+.note.is-accent{ background:var(--accent-bg); border-color:color-mix(in srgb,var(--accent) 26%,transparent); }
+.note p{ margin:0; font-size:0.93rem; }
+.note .eyebrow{ color:inherit; opacity:0.85; }
+.note.is-flag .eyebrow{ color:var(--flag); }
+.note.is-alert .eyebrow{ color:var(--alert); }
+.note.is-accent .eyebrow{ color:var(--accent); }
+
+ul.plain{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:9px; }
+ul.plain li{ position:relative; padding-left:19px; font-size:0.955rem; color:var(--ink-2); line-height:1.55; }
+ul.plain li::before{
+  content:""; position:absolute; left:2px; top:0.62em;
+  width:6px; height:6px; border-radius:1.5px; background:var(--line-2);
+}
+ul.plain.is-accent li::before{ background:var(--accent); }
+ul.plain.is-alert li::before{ background:var(--alert); }
+
+/* ────────────────────────────────────────────────
+   TRACK (how the feature works, step by step)
+   ──────────────────────────────────────────────── */
+.track{
+  display:grid; gap:1px; background:var(--line); border:1px solid var(--line);
+  border-radius:12px; overflow:hidden;
+  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+}
+.track .step{ background:var(--raise); padding:17px 18px 20px; display:flex; flex-direction:column; gap:7px; }
+.track .step .n{ font-family:var(--mono); font-size:0.68rem; letter-spacing:0.12em; color:var(--slate); }
+.track .step .h{ font-weight:660; font-size:0.97rem; letter-spacing:-0.012em; }
+.track .step .d{ font-size:0.87rem; color:var(--slate); line-height:1.5; }
+
+/* ────────────────────────────────────────────────
+   LEGEND
+   ──────────────────────────────────────────────── */
+.legend{
+  display:grid; gap:1px; background:var(--line); border:1px solid var(--line);
+  border-radius:11px; overflow:hidden;
+  grid-template-columns:repeat(auto-fit,minmax(216px,1fr));
+}
+.legend > div{ background:var(--raise); padding:15px 17px 18px; display:flex; flex-direction:column; gap:8px; }
+.legend p{ margin:0; font-size:0.875rem; color:var(--slate); line-height:1.5; }
+
+/* ────────────────────────────────────────────────
+   FINDINGS
+   ──────────────────────────────────────────────── */
+.findings{ display:flex; flex-direction:column; gap:clamp(18px,2.6vw,26px); }
+
+.finding{
+  border:1px solid var(--line);
+  border-left:4px solid var(--line-2);
+  border-radius:12px;
+  background:var(--raise);
+  overflow:hidden;
+}
+.finding.sev-critical{ border-left-color:var(--alert); }
+.finding.sev-high{ border-left-color:var(--flag); }
+.finding.sev-medium{ border-left-color:var(--watch); }
+.finding.sev-low{ border-left-color:var(--line-2); }
+
+.f-top{
+  padding:18px clamp(18px,2.4vw,26px) 17px;
+  border-bottom:1px solid var(--line);
+  display:flex; flex-direction:column; gap:11px;
+}
+.f-id{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.f-id .num{
+  font-family:var(--mono); font-size:0.72rem; font-weight:600;
+  letter-spacing:0.1em; color:var(--slate); font-variant-numeric:tabular-nums;
+}
+.f-top h3{ max-width:60ch; }
+.f-top .summary{ margin:0; font-size:0.97rem; max-width:var(--prose); }
+
+.f-body{ display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:1px; background:var(--line); }
+.f-cell{ background:var(--raise); padding:16px clamp(18px,2.4vw,26px) 21px; display:flex; flex-direction:column; gap:8px; }
+.f-cell p{ margin:0; font-size:0.925rem; }
+.f-cell .eyebrow{ font-size:0.63rem; }
+.f-cell.fix .eyebrow{ color:var(--accent); }
+
+.f-where{
+  background:var(--surface);
+  border-top:1px solid var(--line);
+  padding:12px clamp(18px,2.4vw,26px) 14px;
+  display:flex; flex-wrap:wrap; gap:6px 14px; align-items:baseline;
+}
+.f-where .eyebrow{ font-size:0.62rem; }
+.f-where .loc{
+  font-family:var(--mono); font-size:0.74rem; color:var(--ink-2);
+  overflow-wrap:anywhere;
+}
+
+/* ────────────────────────────────────────────────
+   TABLES
+   ──────────────────────────────────────────────── */
+.tw{ overflow-x:auto; border:1px solid var(--line); border-radius:11px; background:var(--raise); }
+table{ border-collapse:collapse; width:100%; min-width:620px; font-size:0.92rem; }
+th,td{ text-align:left; padding:12px 15px; border-bottom:1px solid var(--line); vertical-align:top; }
+thead th{
+  font-family:var(--mono); font-size:0.66rem; letter-spacing:0.12em; text-transform:uppercase;
+  color:var(--slate); font-weight:600; background:var(--surface); white-space:nowrap;
+}
+tbody tr:last-child td{ border-bottom:0; }
+td strong{ font-weight:640; }
+td code{ font-size:0.8em; }
+.num{ font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+/* ────────────────────────────────────────────────
+   FOOT
+   ──────────────────────────────────────────────── */
+.foot{ padding-block:44px 66px; color:var(--slate); font-size:0.88rem; }
+.foot .r{ display:flex; flex-wrap:wrap; gap:10px 22px; align-items:center; }
+
+/* ────────────────────────────────────────────────
+   THEME TOGGLE
+   ──────────────────────────────────────────────── */
+.theme-toggle{
+  position:fixed; right:16px; bottom:16px; z-index:50;
+  padding:9px 13px; border-radius:9px; cursor:pointer;
+  background:var(--raise); color:var(--ink); border:1px solid var(--line-2);
+  font-family:var(--mono); font-size:0.68rem; font-weight:600;
+  letter-spacing:0.11em; text-transform:uppercase;
+  box-shadow:0 2px 14px rgba(0,0,0,0.10);
+}
+.theme-toggle:hover{ border-color:var(--accent); color:var(--accent); }
+@media print{ .theme-toggle{ display:none; } }
+
+@media (prefers-reduced-motion:reduce){
+  *{ animation:none !important; transition:none !important; }
+}
+</style>
+
+
+<header class="cover">
+  <div class="shell">
+    <div class="kicker">
+      <span class="chip is-accent">Smooth</span>
+      <span class="chip">Foodics &mdash; pay at table</span>
+      <span class="chip">Integration review</span>
+    </div>
+
+    <h1>The Foodics integration, reviewed</h1>
+
+    <p class="sub">What the integration does well, the places where it can take a guest&rsquo;s money without recording it, and &mdash; for each one &mdash; how it would have been built instead. Written to be read by the people who own the product as well as the people who own the code.</p>
+
+    <dl class="meta-grid">
+      <div><dt>Prepared for</dt><dd>Smooth product team</dd></div>
+      <div><dt>Date</dt><dd>24 July 2026</dd></div>
+      <div><dt>Reviewed</dt><dd>API &middot; merchant panel &middot; guest app</dd></div>
+      <div><dt>Findings</dt><dd>3 critical &middot; 3 high &middot; 14 more</dd></div>
+    </dl>
+  </div>
+</header>
+
+
+<!-- ══════════════════════════════════════════════
+     HOW TO READ THIS
+     ══════════════════════════════════════════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">Start here</span>
+      <h2>What this document is, and what it is not</h2>
+    </div>
+
+    <div class="stack">
+      <div class="prose">
+        <p>The Foodics integration was built and shipped without a review. This document is that review, done after the fact. It reads every line of the integration and the code around it that the integration touches &mdash; the payment engine, the QR scan endpoint, the table sync &mdash; and reports what is actually there.</p>
+        <p><strong>Nothing here is a guess.</strong> Every finding names the file and the exact behaviour it describes, and every recommendation is followed by the reason it is being made. Where something is a deliberate trade-off that the original developer documented, this document says so and does not re-litigate it.</p>
+        <p>Each finding is written three ways: what a guest or a restaurant would experience, what the code actually does, and how it would have been built instead. Read the first column and skip the rest, or read all three &mdash; both are valid ways through.</p>
+      </div>
+
+      <div class="legend">
+        <div>
+          <span class="chip is-alert">Critical</span>
+          <p>Money can be taken and not recorded, or a bill can be marked paid by someone who did not pay. Fix before the next restaurant goes live.</p>
+        </div>
+        <div>
+          <span class="chip is-flag">High</span>
+          <p>Wrong numbers in reports, private guest data exposed, or a failure mode that turns into a critical one under load.</p>
+        </div>
+        <div>
+          <span class="chip is-watch">Medium</span>
+          <p>The feature works until an unusual but entirely normal sequence of events happens. Staff notice; nobody loses money.</p>
+        </div>
+        <div>
+          <span class="chip">Low</span>
+          <p>Wasted work, dead code, misleading documentation. No user impact &mdash; but this is the layer that hides the bigger problems.</p>
+        </div>
+      </div>
+
+      <div class="note">
+        <span class="eyebrow">A note on tone</span>
+        <p>A long findings list is not a verdict on the developer. The parts of this integration that are hard to get right &mdash; encrypted credential storage, a consent step to cover a weak OAuth handshake, defensive handling of a POS API that returns numbers where it promises strings &mdash; were all done carefully and are documented in the code. The problems that remain are almost all in one place: the boundary between an outside system that can be slow or wrong, and a payment ledger that must never be either.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     WHAT IT DOES TODAY
+     ══════════════════════════════════════════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">The feature</span>
+      <h2>What Foodics does inside Smooth today</h2>
+      <p>Before the findings, the shape of the thing being reviewed &mdash; because two of the critical findings only make sense once you know where the boundary sits.</p>
+    </div>
+
+    <div class="stack">
+      <div class="track">
+        <div class="step">
+          <span class="n">Connect</span>
+          <span class="h">Restaurant installs Smooth from the Foodics marketplace</span>
+          <span class="d">Foodics sends the browser back to Smooth with an authorisation code. Smooth forces a fresh owner login, exchanges the code, shows the business name, and waits for the owner to confirm before the connection goes live.</span>
+        </div>
+        <div class="step">
+          <span class="n">Map</span>
+          <span class="h">Smooth staff link a Foodics branch to a Smooth branch</span>
+          <span class="d">Then pull every Foodics table across into Smooth, creating a QR code for each one. Renames, restores and new tables are handled on repeat runs.</span>
+        </div>
+        <div class="step">
+          <span class="n">Scan</span>
+          <span class="h">Guest scans the QR on the table</span>
+          <span class="d">Smooth asks Foodics for the open check on that table, copies it into a Smooth order, and shows the guest the bill &mdash; items, discounts, tax, service charge.</span>
+        </div>
+        <div class="step">
+          <span class="n">Pay</span>
+          <span class="h">Guest pays in the Smooth app</span>
+          <span class="d">Just before charging, Smooth re-reads the check from Foodics so the guest cannot settle a total the kitchen has already changed. Then it takes the payment and frees the table.</span>
+        </div>
+      </div>
+
+      <div class="cols">
+        <div class="card">
+          <span class="eyebrow">Deliberate, and correct</span>
+          <h3>The menu never comes from Foodics</h3>
+          <p>Foodics supplies the <em>bill</em> and nothing else. Menu items always come from Smooth&rsquo;s own catalogue. That separation is enforced in the code and is the right call &mdash; it keeps a POS outage from emptying the menu.</p>
+        </div>
+        <div class="card">
+          <span class="eyebrow">Worth knowing</span>
+          <h3>The connection is read-only</h3>
+          <p>Smooth asks Foodics for only two permissions: read business details, and list orders. It never writes back. See <strong>F-12</strong> &mdash; this one fact shapes how a restaurant has to work day to day, and the client should decide whether it stays.</p>
+        </div>
+        <div class="card">
+          <span class="eyebrow">Worth knowing</span>
+          <h3>Setup needs Smooth staff</h3>
+          <p>A restaurant can connect Foodics on its own, but branch mapping and table sync are admin-only screens. Until someone at Smooth runs them, a connected restaurant sees nothing. See <strong>F-11</strong>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     WHAT WAS DONE WELL
+     ══════════════════════════════════════════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">Credit where due</span>
+      <h2>Seven things this integration gets right</h2>
+      <p>These are listed first because they are load-bearing: several of them are the reason the remaining problems are recoverable rather than catastrophic.</p>
+    </div>
+
+    <div class="cols">
+      <div class="card">
+        <span class="eyebrow">Security</span>
+        <h3>POS credentials are properly encrypted</h3>
+        <p>Access and refresh tokens are stored with AES-256-GCM, an authenticated cipher, and are never included in any API response &mdash; the status endpoint returns a hand-picked list of safe fields. This is the correct standard, not the common shortcut.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Security</span>
+        <h3>A consent step covers a weak handshake</h3>
+        <p>Foodics&rsquo; marketplace install uses one fixed <code>state</code> value, which cannot prove the connection was started by the right person. Rather than pretend otherwise, the developer stores the new credentials <em>inert</em> and requires the owner to see the business name and press Connect. The reasoning is written into the code. That is a mature response to somebody else&rsquo;s protocol limitation.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Security</span>
+        <h3>A failed connection leaves no live key behind</h3>
+        <p>If the restaurant grants fewer permissions than Smooth needs, the just-issued token is revoked at Foodics before the error is returned. Foodics tokens do not expire on their own, so skipping this would strand a working credential forever.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Correctness</span>
+        <h3>A paid bill can never be un-paid by the POS</h3>
+        <p>When Smooth re-reads a check, the recorded paid amount only ever moves up, never down, and a bill Smooth has fully settled is never reopened. The intent is exactly right &mdash; <strong>F-03</strong> is about a gap in how that intent is enforced, not about the intent itself.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Correctness</span>
+        <h3>The bill is re-checked at the moment of payment</h3>
+        <p>Smooth does not trust the total it showed the guest thirty seconds ago; it asks Foodics again before charging. This is the single most valuable idea in the integration. <strong>F-01</strong> and <strong>F-04</strong> are about <em>where</em> that check runs, not whether it should.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Robustness</span>
+        <h3>Foodics&rsquo; loose data types are handled deliberately</h3>
+        <p>Foodics returns some identifiers as numbers and some as text. Rather than discover this in production, the developer wrote coercion helpers, documented why they exist, and routed every stored field through them.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Robustness</span>
+        <h3>Error logs are scrubbed before they are written</h3>
+        <p>Failures from the POS are stripped of query strings before logging, so an access token in a URL never lands in a log file. Small, easy to skip, and skipped almost everywhere.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     CRITICAL
+     ══════════════════════════════════════════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <span class="chip is-alert">Critical</span>
+      <h2>Three ways this can cost real money</h2>
+      <p>These three share one root cause: the integration treats an outside system that can be slow, wrong or impersonated as if it were part of Smooth&rsquo;s own database.</p>
+    </div>
+
+    <div class="findings">
+
+      <!-- F-01 -->
+      <article class="finding sev-critical">
+        <div class="f-top">
+          <div class="f-id">
+            <span class="num">F-01</span>
+            <span class="chip is-alert">Critical</span>
+            <span class="chip">Payments</span>
+          </div>
+          <h3>The card is charged first, and the Foodics check runs afterwards &mdash; inside a step that can cancel the whole payment</h3>
+          <p class="summary">If the POS closes the check, changes the total, or is simply unreachable in the seconds between the card being charged and Smooth writing the payment down, Smooth throws the payment away. The bank has the guest&rsquo;s money. Smooth has no record of it, no receipt, no refund, and no alert.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell">
+            <span class="eyebrow">In the restaurant</span>
+            <p>The guest taps Pay. Their bank app pings. The Smooth screen then says <em>&ldquo;Bill already settled&rdquo;</em> or <em>&ldquo;Bill updated, please review&rdquo;</em> and sends them back. Their money is gone, the table still shows as owing, and there is nothing in Smooth to point at. The waiter&rsquo;s only options are to argue or to comp the bill.</p>
+            <p>The most likely trigger is the most ordinary event in a restaurant: a waiter closes the check on the POS at the same moment the guest pays on their phone.</p>
+          </div>
+          <div class="f-cell">
+            <span class="eyebrow">In the code</span>
+            <p>Card payments are captured by the gateway <em>before</em> Smooth is told about them &mdash; <code>confirmStripePayment</code> refuses to proceed unless the intent already reports <code>succeeded</code>, and the intent is created without <code>capture_method: 'manual'</code>, so the funds are taken, not held.</p>
+            <p>Only then does the payment transaction run, and inside it <code>validateAndRefreshFoodicsOrderBeforePayment</code> can throw <code>GoneException</code>, <code>ConflictException</code> or <code>ServiceUnavailableException</code>. Any of those rolls the whole database transaction back, so no <code>Transaction</code> row is ever written. There is no refund call anywhere in the payments service. The Stripe webhook retry re-runs the identical code and fails identically.</p>
+          </div>
+          <div class="f-cell fix">
+            <span class="eyebrow">How it would have been built</span>
+            <p><strong>Verify before you charge, never after.</strong> The Foodics re-check belongs in front of the gateway call &mdash; at the moment the guest opens the payment screen and again immediately before the intent is confirmed. Once money has moved, the only correct behaviour is to record it.</p>
+            <p>After capture, a changed or closed check is not an error to abort on; it is an <em>overpayment to reconcile</em>. Write the transaction, mark the order over-settled, and raise it for staff. If aborting is genuinely required, it must be paired with an automatic refund and an alert &mdash; silence is the one option that is never acceptable.</p>
+          </div>
+        </div>
+        <div class="f-where">
+          <span class="eyebrow">Where</span>
+          <span class="loc">payments.service.ts:665&ndash;713, 1406&ndash;1441 &nbsp;&middot;&nbsp; foodics-order.service.ts:561&ndash;684 &nbsp;&middot;&nbsp; stripe.service.ts:37</span>
+        </div>
+      </article>
+
+      <!-- F-02 -->
+      <article class="finding sev-critical">
+        <div class="f-top">
+          <div class="f-id">
+            <span class="num">F-02</span>
+            <span class="chip is-alert">Critical</span>
+            <span class="chip">Security</span>
+          </div>
+          <h3>The Foodics webhook accepts any message from anyone, and will record cash payments from it</h3>
+          <p class="summary">The endpoint that Foodics notifies is open to the public internet with no signature, no shared secret and no sender check. Anyone who sends it a correctly shaped message can mark a bill as paid in cash, close it, and free the table.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell">
+            <span class="eyebrow">In the restaurant</span>
+            <p>A bill is shown as settled in cash. It was not. The money is missing from the till, the table is released, and the daily revenue report is wrong &mdash; and nothing distinguishes the fake entry from a real one, because Smooth writes it through the same code path that records genuine POS cash.</p>
+            <p>The same message can also close an open bill outright, so a table that owes money is quietly wiped.</p>
+          </div>
+          <div class="f-cell">
+            <span class="eyebrow">In the code</span>
+            <p>The handler is marked <code>@Public()</code> and takes the body as <code>unknown</code>. The only check is that <code>business.reference</code> matches a connected restaurant &mdash; a Foodics account number, not a secret. There is no HMAC check, no shared header, no IP allow-list, and no verification against the Foodics API.</p>
+            <p>The body is then trusted end to end: a forged <code>payments</code> entry becomes a real <code>CASH</code> transaction, and because a payment with no method name is classified as cash, the attacker does not even need to name one. A global 60-requests-per-minute throttle limits volume, but one message is enough.</p>
+          </div>
+          <div class="f-cell fix">
+            <span class="eyebrow">How it would have been built</span>
+            <p><strong>Treat the webhook body as a rumour, not a fact.</strong> The message tells you <em>which order to look at</em>; the order&rsquo;s true state is then fetched from the Foodics API with the restaurant&rsquo;s own token before anything is written. That single rule removes the entire class of attack and does not depend on what signing Foodics does or does not offer.</p>
+            <p>On top of that: authenticate the caller with whatever Foodics provides (signature header or shared secret) or, failing that, a long random path segment plus an IP allow-list; and never let an inbound message be the sole authority for creating a money record.</p>
+          </div>
+        </div>
+        <div class="f-where">
+          <span class="eyebrow">Where</span>
+          <span class="loc">foodics.controller.ts:83&ndash;89 &nbsp;&middot;&nbsp; foodics-order.service.ts:690&ndash;833 &nbsp;&middot;&nbsp; foodics-mapper.ts:278&ndash;288</span>
+        </div>
+      </article>
+
+      <!-- F-03 -->
+      <article class="finding sev-critical">
+        <div class="f-top">
+          <div class="f-id">
+            <span class="num">F-03</span>
+            <span class="chip is-alert">Critical</span>
+            <span class="chip">Race condition</span>
+          </div>
+          <h3>A second guest scanning the QR can erase a payment that just completed</h3>
+          <p class="summary">Two people at one table is the normal case, not the edge case. If one is paying while the other scans the code, the scan can write the paid amount back to what the POS last said &mdash; which is zero &mdash; and the completed payment disappears from the bill.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell">
+            <span class="eyebrow">In the restaurant</span>
+            <p>One guest pays 200 AED. Their friend scans the QR at the same moment. The bill still reads <em>200 AED due</em>. The transaction record exists, but the order says nothing was paid, so the table stays occupied and the guest is asked to pay again.</p>
+            <p>The window is not milliseconds. Because the payment holds the order open while it waits for a reply from Foodics (see <strong>F-04</strong>), it is wide enough to hit in ordinary service.</p>
+          </div>
+          <div class="f-cell">
+            <span class="eyebrow">In the code</span>
+            <p><code>upsertMirroredOrderFromFoodics</code> reads the order&rsquo;s current <code>paid</code>, computes <code>max(existing, posPaid)</code> in application memory, then writes the result back. Classic read-then-write: the read happens before the payment commits, the write happens after, and the stale value wins.</p>
+            <p>The payment path guards itself with <code>SELECT &hellip; FOR UPDATE</code>. The QR-scan path takes no lock at all, so the guard protects payments from each other but not from a scan.</p>
+          </div>
+          <div class="f-cell fix">
+            <span class="eyebrow">How it would have been built</span>
+            <p><strong>Never compute a money figure in application memory when the database can do it atomically.</strong> <code>paid</code> should be raised with a single conditional statement &mdash; <code>SET paid = GREATEST(paid, :posPaid)</code> &mdash; which is correct under any interleaving and needs no lock.</p>
+            <p>More broadly, only one piece of code should ever write to a mirrored order. Today three do &mdash; the scan, the webhook and the payment &mdash; each with its own copy of the merge rule. One writer, taking the same row lock the payment path already takes, removes this and <strong>F-07</strong> together.</p>
+          </div>
+        </div>
+        <div class="f-where">
+          <span class="eyebrow">Where</span>
+          <span class="loc">foodics-order.service.ts:357&ndash;400 &nbsp;&middot;&nbsp; foodics-mapper.ts:400&ndash;405 &nbsp;&middot;&nbsp; payments.service.ts:679&ndash;681</span>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     HIGH
+     ══════════════════════════════════════════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <span class="chip is-flag">High</span>
+      <h2>Wrong numbers, exposed data, and a fuse waiting to blow</h2>
+    </div>
+
+    <div class="findings">
+
+      <!-- F-04 -->
+      <article class="finding sev-high">
+        <div class="f-top">
+          <div class="f-id">
+            <span class="num">F-04</span>
+            <span class="chip is-flag">High</span>
+            <span class="chip">Architecture</span>
+          </div>
+          <h3>A call to Foodics runs in the middle of the database transaction that records the payment</h3>
+          <p class="summary">The payment transaction opens, locks the order, then waits on a network request to another company&rsquo;s servers before it can finish. The database gives that transaction five seconds. Foodics is under no obligation to answer within five seconds &mdash; and the code sets no time limit of its own at all.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell">
+            <span class="eyebrow">In the restaurant</span>
+            <p>On a normal day nobody notices. On a slow-network day, payments start failing after the card has already been charged &mdash; which is <strong>F-01</strong>, now firing routinely instead of rarely. If Foodics is rate-limiting Smooth, the code&rsquo;s own retry can wait up to thirty seconds inside a five-second budget, so the failure is guaranteed.</p>
+            <p>While each payment waits, it is holding one of a limited number of database connections. Enough of them at once and <em>every</em> restaurant on the platform slows down, not just the one with the POS problem.</p>
+          </div>
+          <div class="f-cell">
+            <span class="eyebrow">In the code</span>
+            <p><code>this.prisma.$transaction(&hellip;)</code> is called with no options, so Prisma&rsquo;s defaults apply: two seconds to acquire, five seconds to complete. Inside it, after <code>SELECT &hellip; FOR UPDATE</code>, the code calls out to the Foodics REST API.</p>
+            <p>The HTTP call has no timeout &mdash; Node&rsquo;s <code>fetch</code> has no default, and none is supplied &mdash; so a stalled connection holds the row lock far past the point the transaction has already been abandoned. The retry-on-network-error branch checks <code>err.code === 'ECONNRESET'</code>, which never matches, because Node wraps network faults in a <code>TypeError</code> and puts the code on <code>err.cause</code>. That retry has never once fired.</p>
+          </div>
+          <div class="f-cell fix">
+            <span class="eyebrow">How it would have been built</span>
+            <p><strong>No network call inside a database transaction. Ever.</strong> The sequence is: talk to Foodics, get an answer, <em>then</em> open a short transaction that only touches Smooth&rsquo;s own tables. Freshness is preserved by re-checking the bill version inside the transaction, not by holding the transaction open while you wait.</p>
+            <p>Alongside that: an explicit <code>AbortSignal.timeout</code> of a few seconds on every outbound call, a total retry budget smaller than the transaction budget, and a fix to the retry condition so it reads <code>err.cause.code</code>.</p>
+          </div>
+        </div>
+        <div class="f-where">
+          <span class="eyebrow">Where</span>
+          <span class="loc">payments.service.ts:665, 698&ndash;713 &nbsp;&middot;&nbsp; foodics-api.service.ts:95&ndash;153 &nbsp;&middot;&nbsp; prisma.service.ts:6&ndash;10</span>
+        </div>
+      </article>
+
+      <!-- F-05 -->
+      <article class="finding sev-high">
+        <div class="f-top">
+          <div class="f-id">
+            <span class="num">F-05</span>
+            <span class="chip is-flag">High</span>
+            <span class="chip">Privacy</span>
+          </div>
+          <h3>The full raw POS record &mdash; including the guest&rsquo;s details held in Foodics &mdash; is returned on a public URL</h3>
+          <p class="summary">Smooth stores the complete Foodics payload for each check and then hands the whole thing back on the QR-scan endpoint, which requires no login. Whatever the restaurant has recorded about that guest in the POS goes out with it.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell">
+            <span class="eyebrow">In the restaurant</span>
+            <p>A guest&rsquo;s name, phone number and other details the restaurant holds in Foodics can be read by anyone who has the table&rsquo;s QR link &mdash; a previous diner, a photo of the table card, a screenshot in a group chat &mdash; for as long as that check is open.</p>
+            <p>For a UAE hospitality client this is a data-protection exposure, not a technical nit.</p>
+          </div>
+          <div class="f-cell">
+            <span class="eyebrow">In the code</span>
+            <p>Smooth requests <code>customer</code> among the related records it pulls from Foodics, saves the entire response as <code>foodicsSnapshot</code>, and then builds the guest-facing payload with <code>{ ...order }</code> &mdash; which carries <code>foodicsSnapshot</code> straight through. No serializer strips it: the app registers only a response-wrapping interceptor and a decimal formatter.</p>
+            <p>The endpoint is <code>GET /qr-codes/:id/menu</code>, marked <code>@Public()</code>.</p>
+          </div>
+          <div class="f-cell fix">
+            <span class="eyebrow">How it would have been built</span>
+            <p><strong>Build the response, do not leak it.</strong> A guest-facing payload should be assembled field by field from an explicit type, so adding a column to the database can never add a field to a public API. The code already builds a clean display bill &mdash; it just spreads the raw record underneath it.</p>
+            <p>And stop requesting <code>customer</code> from Foodics: it is not used anywhere in the bill display, so the safest version of this data is the version never fetched.</p>
+          </div>
+        </div>
+        <div class="f-where">
+          <span class="eyebrow">Where</span>
+          <span class="loc">foodics-order.service.ts:472&ndash;556 &nbsp;&middot;&nbsp; foodics-api.service.ts:13&ndash;43 &nbsp;&middot;&nbsp; qr-codes.controller.ts:101&ndash;105 &nbsp;&middot;&nbsp; main.ts:58&ndash;60</span>
+        </div>
+      </article>
+
+      <!-- F-06 -->
+      <article class="finding sev-high">
+        <div class="f-top">
+          <div class="f-id">
+            <span class="num">F-06</span>
+            <span class="chip is-flag">High</span>
+            <span class="chip">Reporting</span>
+          </div>
+          <h3>POS payments are mirrored by guesswork: unknown methods become cash, and mixed settlements vanish</h3>
+          <p class="summary">Two separate rules decide what Smooth records when a bill is settled at the register. One is too generous, the other too strict, and between them the revenue report can be both overstated and understated on the same day.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell">
+            <span class="eyebrow">In the restaurant</span>
+            <p><em>Too generous:</em> a payment whose method name Smooth cannot read is filed as cash. Gift cards, vouchers, delivery-app settlements, an Arabic method name Smooth does not match &mdash; all appear in the cash column.</p>
+            <p><em>Too strict:</em> when a table settles partly by card and partly by cash at the register, Smooth records <strong>nothing at all</strong>. The bill looks unpaid in Smooth even though it is closed in Foodics.</p>
+          </div>
+          <div class="f-cell">
+            <span class="eyebrow">In the code</span>
+            <p><code>isFoodicsCashPayment</code> returns <code>true</code> when the method name is empty or missing &mdash; a fail-open default on a money classification.</p>
+            <p>Worse, <code>recordFoodicsPosCashPayments</code> exits early unless <em>every</em> payment on the check looks like cash. The per-payment filter inside the loop already handles mixed bills correctly; the outer gate stops it from ever running in exactly the case it was written for.</p>
+            <p>The fallback that covers unmatched amounts builds its de-duplication key out of figures that change as more payments arrive, so it is not a stable key and can write the same amount twice.</p>
+          </div>
+          <div class="f-cell fix">
+            <span class="eyebrow">How it would have been built</span>
+            <p><strong>Map methods explicitly and fail closed.</strong> Keep a real mapping from Foodics payment methods to Smooth&rsquo;s. Anything unrecognised is recorded as <code>OTHER</code> and flagged for reconciliation &mdash; never silently promoted to cash, because cash is the one method nobody can audit later.</p>
+            <p>Delete the all-or-nothing gate and let the per-payment filter do its job. Key each mirrored payment on the Foodics payment id alone, so the same payment can never be written twice regardless of what else changed.</p>
+          </div>
+        </div>
+        <div class="f-where">
+          <span class="eyebrow">Where</span>
+          <span class="loc">foodics-mapper.ts:278&ndash;288, 308&ndash;314 &nbsp;&middot;&nbsp; foodics-order.service.ts:134&ndash;136, 174&ndash;210</span>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     MEDIUM
+     ══════════════════════════════════════════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <span class="chip is-watch">Medium</span>
+      <h2>Where normal-but-unusual sequences break the feature</h2>
+    </div>
+
+    <div class="findings">
+
+      <!-- F-07 -->
+      <article class="finding sev-medium">
+        <div class="f-top">
+          <div class="f-id">
+            <span class="num">F-07</span>
+            <span class="chip is-watch">Medium</span>
+            <span class="chip">Race condition</span>
+          </div>
+          <h3>Two guests scanning at once: one of them silently sees no bill</h3>
+          <p class="summary">The first scan of a new check creates the Smooth copy. Two simultaneous first scans both try to create it; one loses, and its error is swallowed by a fallback that then reports that the table has no open bill.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell">
+            <span class="eyebrow">In the restaurant</span>
+            <p>Two people scan the same table code together. One sees the bill. The other sees an empty screen with no explanation and no way to pay, and the waiter has to be called over.</p>
+          </div>
+          <div class="f-cell">
+            <span class="eyebrow">In the code</span>
+            <p><code>upsertMirroredOrderFromFoodics</code> does a read, then a create &mdash; not a single database upsert &mdash; while <code>foodicsOrderId</code> carries a unique constraint. The loser gets a constraint violation, which the QR route catches and turns into &ldquo;fall back to a native Smooth order&rdquo;. For a Foodics table there is no native order, so the answer is <code>null</code>.</p>
+          </div>
+          <div class="f-cell fix">
+            <span class="eyebrow">How it would have been built</span>
+            <p><strong>Let the database enforce uniqueness rather than checking for it first.</strong> A single <code>upsert</code> keyed on <code>foodicsOrderId</code> makes concurrent scans converge on one row instead of colliding.</p>
+            <p>Separately, the fallback is too broad: &ldquo;Foodics is unreachable&rdquo; and &ldquo;this table has no open bill&rdquo; are different answers and should not share a screen. Today a POS outage shows a guest an empty bill, which invites them to place a duplicate order.</p>
+          </div>
+        </div>
+        <div class="f-where">
+          <span class="eyebrow">Where</span>
+          <span class="loc">foodics-order.service.ts:357&ndash;420 &nbsp;&middot;&nbsp; qr-codes.service.ts:876&ndash;908 &nbsp;&middot;&nbsp; schema.prisma:855</span>
+        </div>
+      </article>
+
+      <!-- F-08 -->
+      <article class="finding sev-medium">
+        <div class="f-top">
+          <div class="f-id">
+            <span class="num">F-08</span>
+            <span class="chip is-watch">Medium</span>
+            <span class="chip">Data integrity</span>
+          </div>
+          <h3>A late or repeated POS message can reopen a closed bill and re-occupy the table</h3>
+          <p class="summary">Messages from Foodics are applied in whatever order they arrive, with no check of which one is newer. An &ldquo;order is open&rdquo; message that arrives after the &ldquo;order is closed&rdquo; message wins.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell">
+            <span class="eyebrow">In the restaurant</span>
+            <p>A table that was cleared shows as occupied again with a live bill on it. Staff clear it manually and lose confidence in the floor view &mdash; which is the whole point of the feature.</p>
+          </div>
+          <div class="f-cell">
+            <span class="eyebrow">In the code</span>
+            <p>Routing is on the order&rsquo;s status number only; the event name is logged but never used. The open-order path unconditionally sets the Smooth order back to <code>PENDING</code>, guarded only by whether Smooth itself has fully settled it. Nothing compares the incoming record against the timestamp already stored, and nothing de-duplicates a repeated delivery.</p>
+            <p>The webhook also performs six separate writes with no transaction around them, so a crash midway leaves the order updated and the table not.</p>
+          </div>
+          <div class="f-cell fix">
+            <span class="eyebrow">How it would have been built</span>
+            <p><strong>Every inbound message needs an identity and an age.</strong> Record the event id so a repeat is ignored, and compare the payload&rsquo;s update timestamp against the one stored before applying it &mdash; older loses. Terminal states should be sticky: once closed, only a newer record may reopen.</p>
+            <p>Wrap the whole handler in one transaction, so a table&rsquo;s state and its bill can never disagree.</p>
+          </div>
+        </div>
+        <div class="f-where">
+          <span class="eyebrow">Where</span>
+          <span class="loc">foodics-order.service.ts:690&ndash;756, 377&ndash;443, 838&ndash;975</span>
+        </div>
+      </article>
+
+      <!-- F-09 -->
+      <article class="finding sev-medium">
+        <div class="f-top">
+          <div class="f-id">
+            <span class="num">F-09</span>
+            <span class="chip is-watch">Medium</span>
+            <span class="chip">Data integrity</span>
+          </div>
+          <h3>Nothing stops two Smooth accounts from connecting the same Foodics business</h3>
+          <p class="summary">The identifier that routes incoming POS messages to a restaurant is not unique in the database, and the lookup takes whichever row it finds first.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell">
+            <span class="eyebrow">In the restaurant</span>
+            <p>A restaurant with a test account and a live account, or one that re-registers on Smooth, can end up with its orders and cash records landing in the wrong account &mdash; unpredictably, because the choice is arbitrary.</p>
+          </div>
+          <div class="f-cell">
+            <span class="eyebrow">In the code</span>
+            <p><code>businessReference</code> has no unique constraint and no index. The webhook resolves the restaurant with <code>findFirst</code> and no ordering. Absent an index it is also a full table scan on every incoming message.</p>
+          </div>
+          <div class="f-cell fix">
+            <span class="eyebrow">How it would have been built</span>
+            <p><strong>If a value routes money, the database should guarantee it points at one place.</strong> A unique index on <code>businessReference</code> turns a silent mis-route into a clear error at connection time: <em>&ldquo;this Foodics business is already connected to another Smooth account.&rdquo;</em> That is a message support can act on.</p>
+          </div>
+        </div>
+        <div class="f-where">
+          <span class="eyebrow">Where</span>
+          <span class="loc">schema.prisma:1663&ndash;1692 &nbsp;&middot;&nbsp; foodics-order.service.ts:768&ndash;780</span>
+        </div>
+      </article>
+
+      <!-- F-10 -->
+      <article class="finding sev-medium">
+        <div class="f-top">
+          <div class="f-id">
+            <span class="num">F-10</span>
+            <span class="chip is-watch">Medium</span>
+            <span class="chip">Operations</span>
+          </div>
+          <h3>Messages Smooth cannot match are answered &ldquo;received&rdquo; and dropped forever</h3>
+          <p class="summary">If a table has not been synced yet, or a branch is not mapped, the incoming message is logged as a warning and discarded &mdash; while telling Foodics it was accepted, so it is never sent again.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell">
+            <span class="eyebrow">In the restaurant</span>
+            <p>During onboarding, or after someone adds a table in Foodics, bills silently do not appear. Nothing in the panel says why. The only trace is a line in a server log nobody is watching.</p>
+          </div>
+          <div class="f-cell">
+            <span class="eyebrow">In the code</span>
+            <p>Every unresolved path returns <code>{ received: true }</code> with HTTP 200. There is no dead-letter store, no counter, no surfacing anywhere in the admin panel. The connection status fields exist in the database and are only ever written by the table sync.</p>
+          </div>
+          <div class="f-cell fix">
+            <span class="eyebrow">How it would have been built</span>
+            <p><strong>Always accept the message; never lose it.</strong> Store every inbound message with its resolution status, so an unmapped table becomes a visible queue that drains automatically the moment the mapping is created.</p>
+            <p>Then surface it: an integration health panel showing last message received, unmatched count, and last error is the difference between a support ticket that takes five minutes and one that takes a day.</p>
+          </div>
+        </div>
+        <div class="f-where">
+          <span class="eyebrow">Where</span>
+          <span class="loc">foodics-order.service.ts:690&ndash;700, 758&ndash;833</span>
+        </div>
+      </article>
+
+      <!-- F-11 -->
+      <article class="finding sev-medium">
+        <div class="f-top">
+          <div class="f-id">
+            <span class="num">F-11</span>
+            <span class="chip is-watch">Medium</span>
+            <span class="chip">Product</span>
+          </div>
+          <h3>A restaurant can connect Foodics but cannot switch it on</h3>
+          <p class="summary">Connecting is self-service. Mapping the branch and importing the tables &mdash; the two steps that actually make the feature work &mdash; exist only on admin screens.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell">
+            <span class="eyebrow">In the restaurant</span>
+            <p>The owner installs Smooth from the Foodics marketplace, confirms the connection, sees &ldquo;Connected&rdquo; &mdash; and nothing happens. No bills at any table. They contact support, and someone at Smooth has to finish the setup by hand. Every new branch and every new table repeats it.</p>
+          </div>
+          <div class="f-cell">
+            <span class="eyebrow">In the code</span>
+            <p>The merchant-facing controller offers exactly four operations: complete, confirm, status, disconnect. Branch mapping, branch listing and table sync live on the admin controller behind an <code>ADMIN</code> role. The merchant API client in the panel mirrors that &mdash; it has no sync method at all.</p>
+          </div>
+          <div class="f-cell fix">
+            <span class="eyebrow">How it would have been built</span>
+            <p><strong>The step after &ldquo;Connected&rdquo; belongs to whoever pressed Connect.</strong> Branch mapping and table sync are merchant-owner operations on merchant-owned data; they should sit in the merchant panel behind the same owner check the connect flow already uses.</p>
+            <p>Keep the admin screens for support. But a marketplace install that needs a phone call to finish is a marketplace install that will show up as a churn number.</p>
+          </div>
+        </div>
+        <div class="f-where">
+          <span class="eyebrow">Where</span>
+          <span class="loc">foodics.controller.ts:44&ndash;81 &nbsp;&middot;&nbsp; foodics-admin.controller.ts:31&ndash;63 &nbsp;&middot;&nbsp; services.ts:2341&ndash;2364</span>
+        </div>
+      </article>
+
+      <!-- F-12 -->
+      <article class="finding sev-medium">
+        <div class="f-top">
+          <div class="f-id">
+            <span class="num">F-12</span>
+            <span class="chip is-watch">Medium</span>
+            <span class="chip">Product decision</span>
+          </div>
+          <h3>Smooth never tells Foodics that the guest paid</h3>
+          <p class="summary">This is a design decision, not a defect &mdash; but it is the decision that shapes the restaurant&rsquo;s day, and it should be an explicit choice rather than an inherited one.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell">
+            <span class="eyebrow">In the restaurant</span>
+            <p>A guest pays the full bill in Smooth. On the POS, the check is still open. A member of staff has to close it manually, choosing some payment method to close it under. Until they do, the POS believes the table owes money.</p>
+            <p>End of day, the restaurant reconciles two systems by hand. Every heuristic in <strong>F-06</strong> exists to paper over this gap.</p>
+          </div>
+          <div class="f-cell">
+            <span class="eyebrow">In the code</span>
+            <p>Smooth requests only <code>general.read</code> and <code>orders.list</code>, and the Foodics client has no write methods &mdash; only reads plus token management. The integration is read-only by construction, and the code never claims otherwise.</p>
+          </div>
+          <div class="f-cell fix">
+            <span class="eyebrow">The decision to make</span>
+            <p><strong>Either close the loop, or make the manual step explicit and supported.</strong> If Foodics permits a partner to post a payment against an order, requesting that scope removes the manual close, removes the guesswork in <strong>F-06</strong>, and makes the two systems agree by construction.</p>
+            <p>If it does not, the workaround should be designed rather than implied: tell merchants plainly that Smooth payments must be closed on the POS, and give them a daily reconciliation view of Smooth-paid-but-POS-open checks. Note that the documents index currently describes this integration as &ldquo;two-way&rdquo;; that line should be corrected either way.</p>
+          </div>
+        </div>
+        <div class="f-where">
+          <span class="eyebrow">Where</span>
+          <span class="loc">foodics-oauth.service.ts:102 &nbsp;&middot;&nbsp; foodics-api.service.ts (no write methods)</span>
+        </div>
+      </article>
+
+      <!-- F-13 -->
+      <article class="finding sev-medium">
+        <div class="f-top">
+          <div class="f-id">
+            <span class="num">F-13</span>
+            <span class="chip is-watch">Medium</span>
+            <span class="chip">Deployment</span>
+          </div>
+          <h3>If one environment variable is missing, production quietly talks to the Foodics test system</h3>
+          <p class="summary">The Foodics address falls back to the sandbox when unset, and nothing at startup checks that the integration is configured correctly.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell">
+            <span class="eyebrow">In the restaurant</span>
+            <p>Every real restaurant appears to have no open bills, or shows test data. The failure looks like &ldquo;the integration is broken&rdquo; rather than &ldquo;a setting is missing&rdquo;, which is the most expensive kind of failure to diagnose.</p>
+          </div>
+          <div class="f-cell">
+            <span class="eyebrow">In the code</span>
+            <p>The base URL defaults to <code>https://api-sandbox.foodics.com/v5</code>. The client id, secret, encryption key and OAuth state all default to empty strings and are only validated when a merchant tries to connect &mdash; not at boot.</p>
+          </div>
+          <div class="f-cell fix">
+            <span class="eyebrow">How it would have been built</span>
+            <p><strong>Fail loudly at startup, not quietly at runtime.</strong> Validate the integration&rsquo;s settings when the application boots and refuse to start in production with a sandbox address or an empty secret. A deployment that will not start is a five-minute problem; one that starts and behaves strangely is a five-hour one.</p>
+          </div>
+        </div>
+        <div class="f-where">
+          <span class="eyebrow">Where</span>
+          <span class="loc">config/index.ts:151&ndash;172 &nbsp;&middot;&nbsp; foodics-oauth.service.ts:24&ndash;34</span>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     LOW
+     ══════════════════════════════════════════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <span class="chip">Low</span>
+      <h2>Wasted work and loose ends</h2>
+      <p>None of these affect a guest today. They are listed because they are cheap to fix, and because unnecessary work in a hot path is where tomorrow&rsquo;s performance incident starts.</p>
+    </div>
+
+    <div class="stack">
+      <div class="tw">
+        <table>
+          <thead>
+            <tr>
+              <th class="num">Ref</th>
+              <th>What it is</th>
+              <th>Why it is worth fixing</th>
+              <th>Where</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="num"><strong>F-14</strong></td>
+              <td><strong>The same rows are read several times per request.</strong> One QR scan reads the connection record twice and the branch&rsquo;s billing settings twice, because the &ldquo;is Foodics on?&rdquo; check and the bill fetch each look them up independently. One payment reads the same order four times.</td>
+              <td>These are the busiest endpoints in the product &mdash; a scan happens at every table, every sitting. Passing the record that was already loaded costs nothing and removes roughly half the database round-trips on the scan path.</td>
+              <td><code>qr-codes.service.ts:997&ndash;1020</code>, <code>foodics-order.service.ts:250, 302, 87</code></td>
+            </tr>
+            <tr>
+              <td class="num"><strong>F-15</strong></td>
+              <td><strong>Every mirror update runs a payments total query, even when the check has no payments,</strong> and rebuilds the entire display bill a second time purely to read one number from it.</td>
+              <td>Pure waste on the hottest path in the integration, and it makes the code read as if the recomputed value might differ from the one already in hand &mdash; it cannot.</td>
+              <td><code>foodics-order.service.ts:174&ndash;179, 345</code></td>
+            </tr>
+            <tr>
+              <td class="num"><strong>F-16</strong></td>
+              <td><strong>Mapping one branch downloads every branch.</strong> To confirm a single Foodics branch exists, the code pages through the restaurant&rsquo;s entire branch list &mdash; while a single-branch fetch already exists in the same file and is used elsewhere.</td>
+              <td>Multiple avoidable calls against a rate-limited third-party API, on an action a support agent may repeat several times during onboarding.</td>
+              <td><code>foodics-sync.service.ts:70&ndash;75</code> vs <code>foodics-api.service.ts:248</code></td>
+            </tr>
+            <tr>
+              <td class="num"><strong>F-17</strong></td>
+              <td><strong>Table sync writes one row at a time with no transaction,</strong> and every newly created table gets a second update immediately after creation just to attach its Foodics ids.</td>
+              <td>A hundred-table branch is two hundred round-trips, and a failure halfway through leaves the branch partly synced with no way to tell. The second update should be part of the create.</td>
+              <td><code>foodics-sync.service.ts:439&ndash;461, 472&ndash;484</code></td>
+            </tr>
+            <tr>
+              <td class="num"><strong>F-18</strong></td>
+              <td><strong>The &ldquo;sync already running&rdquo; guard lives in one server&rsquo;s memory.</strong> With more than one application instance, two admins can sync the same branch simultaneously.</td>
+              <td>Single-instance today, so harmless today. It becomes a duplicate-table bug on the day the platform scales out &mdash; and it will not be obvious that scaling caused it.</td>
+              <td><code>foodics-sync.service.ts:19, 133&ndash;144</code></td>
+            </tr>
+            <tr>
+              <td class="num"><strong>F-19</strong></td>
+              <td><strong>The webhook is documented as &ldquo;a stub &mdash; logs payload only&rdquo;.</strong> It creates orders, writes cash payments and frees tables.</td>
+              <td>The API documentation is what a reviewer or a new developer reads first. This line tells them the riskiest endpoint in the integration is inert.</td>
+              <td><code>foodics.controller.ts:86</code></td>
+            </tr>
+            <tr>
+              <td class="num"><strong>F-20</strong></td>
+              <td><strong>Dead code and undocumented responses.</strong> Two exported helpers are never called, two response types are declared but never attached to their endpoints, and one totals field is always overwritten right after it is set.</td>
+              <td>Small, but each one is a thing a future reader has to check before they can rule it out. Removing them is free.</td>
+              <td><code>foodics-mapper.ts:346, 384&ndash;392</code>, <code>dto/foodics.dto.ts:16, 34</code></td>
+            </tr>
+            <tr>
+              <td class="num"><strong>F-21</strong></td>
+              <td><strong>A zero total is treated as a missing total.</strong> When Foodics reports a check total of zero &mdash; a fully discounted bill &mdash; the stored total and the displayed total are calculated by different rules and can disagree.</td>
+              <td>Narrow, but it is the kind of mismatch that produces a bill a guest cannot settle: they pay what is shown and the order still reads as owing.</td>
+              <td><code>foodics-order.service.ts:493</code> vs <code>billing.util.ts:100&ndash;125</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     THE PATTERN
+     ══════════════════════════════════════════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">The shape of it</span>
+      <h2>One decision explains most of this list</h2>
+    </div>
+
+    <div class="stack">
+      <div class="prose">
+        <p>Read the findings together and they stop looking like twenty separate mistakes. The integration was built as though Foodics were another table in Smooth&rsquo;s database: fetch it inline, trust what it says, write straight through to the ledger. Almost everything above is a consequence of that one framing.</p>
+        <p>The alternative framing &mdash; <em>Foodics is a separate system that can be slow, wrong, out of order, or impersonated</em> &mdash; would have produced a different design, and it is the design worth moving towards.</p>
+      </div>
+
+      <div class="cols">
+        <div class="card">
+          <span class="eyebrow">Boundary</span>
+          <h3>Fetch outside, write inside</h3>
+          <p>Every call to Foodics completes before a database transaction opens. Transactions touch Smooth&rsquo;s tables only, and stay short. This removes <strong>F-04</strong>, defuses <strong>F-01</strong>, and stops one restaurant&rsquo;s POS problems from becoming everyone&rsquo;s.</p>
+        </div>
+        <div class="card">
+          <span class="eyebrow">Trust</span>
+          <h3>Inbound messages are triggers, not facts</h3>
+          <p>A message says <em>look at this order</em>. The truth then comes from the Foodics API using the restaurant&rsquo;s own token. This removes <strong>F-02</strong> entirely and does not depend on what signing Foodics offers.</p>
+        </div>
+        <div class="card">
+          <span class="eyebrow">Ownership</span>
+          <h3>One writer for a mirrored bill</h3>
+          <p>Today the scan, the webhook and the payment each write the mirror with their own copy of the merge rule. One function, one lock, one place to reason about &mdash; that is <strong>F-03</strong> and <strong>F-07</strong> together.</p>
+        </div>
+        <div class="card">
+          <span class="eyebrow">Ordering</span>
+          <h3>Every update carries an identity and an age</h3>
+          <p>Record the event id, compare the source timestamp, ignore anything older than what is already stored. Distributed systems deliver twice and out of order; a design that assumes otherwise is relying on luck (<strong>F-08</strong>).</p>
+        </div>
+        <div class="card">
+          <span class="eyebrow">Money</span>
+          <h3>Amounts move in the database, not in memory</h3>
+          <p>Read-modify-write on a money column is a lost payment waiting for traffic. Conditional statements and locks are not optimisations here; they are the correctness argument (<strong>F-03</strong>).</p>
+        </div>
+        <div class="card">
+          <span class="eyebrow">Visibility</span>
+          <h3>An integration you can see the health of</h3>
+          <p>Last message received, unmatched messages, last error, last sync &mdash; on a screen, not in a log file. Most of the medium findings are only expensive because nobody can see them happening (<strong>F-10</strong>).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     ORDER OF WORK
+     ══════════════════════════════════════════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">Recommendation</span>
+      <h2>What to do, in what order</h2>
+      <p>Ordered by risk removed per unit of work, not by severity label. The first two are small changes with disproportionate effect.</p>
+    </div>
+
+    <div class="stack">
+      <div class="tw">
+        <table>
+          <thead>
+            <tr>
+              <th class="num">Order</th>
+              <th>Work</th>
+              <th>Removes</th>
+              <th class="num">Size</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="num"><strong>1</strong></td>
+              <td>Close the webhook: verify the sender, and re-fetch the order from the Foodics API before writing anything from it.</td>
+              <td><strong>F-02</strong>, and most of <strong>F-08</strong></td>
+              <td class="num">Small</td>
+            </tr>
+            <tr>
+              <td class="num"><strong>2</strong></td>
+              <td>Raise <code>paid</code> with a conditional database update instead of a read-then-write, and switch the mirror to a real upsert.</td>
+              <td><strong>F-03</strong>, <strong>F-07</strong></td>
+              <td class="num">Small</td>
+            </tr>
+            <tr>
+              <td class="num"><strong>3</strong></td>
+              <td>Move the Foodics re-check in front of the gateway charge, and make a post-capture failure record an over-settlement instead of discarding the payment.</td>
+              <td><strong>F-01</strong></td>
+              <td class="num">Medium</td>
+            </tr>
+            <tr>
+              <td class="num"><strong>4</strong></td>
+              <td>Take every network call out of the payment transaction; add request timeouts and fix the retry condition.</td>
+              <td><strong>F-04</strong></td>
+              <td class="num">Medium</td>
+            </tr>
+            <tr>
+              <td class="num"><strong>5</strong></td>
+              <td>Build the guest-facing bill from an explicit type; stop storing and returning the raw POS record, and stop requesting customer details from Foodics.</td>
+              <td><strong>F-05</strong></td>
+              <td class="num">Small</td>
+            </tr>
+            <tr>
+              <td class="num"><strong>6</strong></td>
+              <td>Map POS payment methods explicitly, fail closed on unknown ones, and remove the all-or-nothing gate on mixed settlements.</td>
+              <td><strong>F-06</strong></td>
+              <td class="num">Small</td>
+            </tr>
+            <tr>
+              <td class="num"><strong>7</strong></td>
+              <td>Unique index on the business reference; store unmatched messages instead of dropping them; add an integration health panel.</td>
+              <td><strong>F-09</strong>, <strong>F-10</strong></td>
+              <td class="num">Medium</td>
+            </tr>
+            <tr>
+              <td class="num"><strong>8</strong></td>
+              <td>Move branch mapping and table sync into the merchant panel behind the owner check.</td>
+              <td><strong>F-11</strong></td>
+              <td class="num">Medium</td>
+            </tr>
+            <tr>
+              <td class="num"><strong>9</strong></td>
+              <td>Decide the write-back question with the client, then either request the scope or design the reconciliation view.</td>
+              <td><strong>F-12</strong></td>
+              <td class="num">Decision</td>
+            </tr>
+            <tr>
+              <td class="num"><strong>10</strong></td>
+              <td>Startup validation of integration settings, then the low-severity cleanups as a single pass.</td>
+              <td><strong>F-13</strong> &ndash; <strong>F-21</strong></td>
+              <td class="num">Small</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note is-accent">
+        <span class="eyebrow">Worth saying plainly</span>
+        <p>Items 1 and 2 are each a few lines of code and together they remove the two ways a bill can be marked paid without anyone paying. If only one thing gets done from this document, it should be those two.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     METHOD
+     ══════════════════════════════════════════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">Method</span>
+      <h2>How this review was done, and what it does not cover</h2>
+    </div>
+
+    <div class="cols">
+      <div class="card">
+        <span class="eyebrow">What was read</span>
+        <h3>The integration and everything it touches</h3>
+        <p>All twelve integration source files, plus the payment engine, the QR scan endpoint, the table service, the database schema, the configuration layer, and the corresponding screens in the merchant panel and the guest app. Each finding was traced from the entry point a user reaches to the line that does the damage.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">What was verified</span>
+        <h3>Behaviour, not assumption</h3>
+        <p>Claims that depend on framework behaviour were checked against the code rather than from memory: the transaction defaults come from the database service having no options set; the capture-before-record ordering from the payment intent being created without manual capture; the exposed payload from the app registering no serializer.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">What was not done</span>
+        <h3>Nothing was run</h3>
+        <p>This is a reading of the code, not a live test against a Foodics account. Timing-dependent findings are argued from the code paths and are stated as reachable, not as observed in production. Reproducing <strong>F-01</strong> and <strong>F-03</strong> against a sandbox is the natural next step.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">What is out of scope</span>
+        <h3>The rest of the platform</h3>
+        <p>Findings are limited to the Foodics integration and the code it changes the behaviour of. Where a problem is broader than Foodics &mdash; the absence of any refund path in the payments service, for instance &mdash; it is named as such rather than filed as a Foodics defect.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<footer class="foot">
+  <div class="shell">
+    <hr class="rule" style="margin-bottom:26px;">
+    <div class="r">
+      <span>Smooth &times; Foodics &mdash; Integration Review</span>
+      <span>&middot;</span>
+      <span>24 July 2026</span>
+      <span>&middot;</span>
+      <a href="../">All documents</a>
+    </div>
+  </div>
+</footer>
+
+<button class="theme-toggle" type="button" id="themeToggle" aria-label="Switch colour theme">
+  <span id="themeLabel">Dark</span>
+</button>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  var label = document.getElementById('themeLabel');
+  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+  function current() {
+    return root.getAttribute('data-theme') || (prefersDark.matches ? 'dark' : 'light');
+  }
+  function paint() {
+    label.textContent = current() === 'dark' ? 'Light' : 'Dark';
+  }
+  try {
+    var saved = localStorage.getItem('ss-docs-theme');
+    if (saved === 'dark' || saved === 'light') root.setAttribute('data-theme', saved);
+  } catch (e) {}
+  paint();
+
+  btn.addEventListener('click', function () {
+    var next = current() === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('ss-docs-theme', next); } catch (e) {}
+    paint();
+  });
+
+  prefersDark.addEventListener('change', paint);
+})();
+</script>
+</body>
+</html>

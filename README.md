@@ -7,8 +7,9 @@ Design and engineering documents, published with GitHub Pages.
 ## Layout
 
 ```
-index.html                      Introduction + list of every document
-smooth-tabby-bnpl/index.html    Smooth × Tabby — Design Walkthrough
+index.html                            Introduction + list of every document
+smooth-tabby-bnpl/index.html          Smooth × Tabby — Design Walkthrough
+foodics-integration-review/index.html Smooth × Foodics — Integration Review
 ```
 
 One folder per document. The folder name becomes the URL, so
