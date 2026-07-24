@@ -1,0 +1,1448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex, nofollow">
+<title>Smooth &times; Tabby &mdash; Design Walkthrough</title>
+<meta name="description" content="A screen-by-screen walkthrough of how Tabby Pay in 4 will work across Smooth's admin panel, merchant panel and customer app.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129534;</text></svg>">
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  img,svg{max-width:100%;height:auto}
+  body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+</style>
+</head>
+<body>
+
+<div style="border-bottom:1px solid var(--line);background:var(--surface);">
+  <div style="max-width:1120px;margin-inline:auto;padding:11px clamp(18px,4vw,48px);">
+    <a href="../" style="font-family:var(--mono);font-size:0.68rem;font-weight:600;letter-spacing:0.13em;text-transform:uppercase;color:var(--slate);text-decoration:none;">&#8592;&nbsp;&nbsp;Shivam Singh &middot; Documents</a>
+  </div>
+</div>
+
+<style>
+/* ────────────────────────────────────────────────
+   TOKENS
+   ──────────────────────────────────────────────── */
+:root{
+  --paper:#FCFCFB;
+  --surface:#F3F6F4;
+  --raise:#FFFFFF;
+  --ink:#0D1512;
+  --ink-2:#39473F;
+  --slate:#61706A;
+  --line:#E1E7E3;
+  --line-2:#CBD5D0;
+
+  --accent:#088F58;
+  --accent-strong:#0AB971;
+  --accent-bg:#E8F7F0;
+
+  --tabby:#0B8E71;
+  --tabby-bg:#E2FAF2;
+
+  --flag:#9C5C0C;
+  --flag-bg:#FBF1E1;
+
+  --alert:#A93028;
+  --alert-bg:#FBEAE8;
+
+  --sans:ui-sans-serif,"Segoe UI Variable Text","SF Pro Text",-apple-system,"Segoe UI",system-ui,"Helvetica Neue",sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","Segoe UI Mono",Consolas,"Liberation Mono",monospace;
+
+  --shell:1120px;
+  --prose:69ch;
+}
+
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#0A100D;
+    --surface:#101815;
+    --raise:#131D19;
+    --ink:#ECF2EF;
+    --ink-2:#BDCAC4;
+    --slate:#84968E;
+    --line:#1E2C26;
+    --line-2:#2C3D36;
+
+    --accent:#2ED68F;
+    --accent-strong:#3FE39C;
+    --accent-bg:#0D2A1F;
+
+    --tabby:#3EEDBF;
+    --tabby-bg:#082A22;
+
+    --flag:#E3AC5C;
+    --flag-bg:#2A2013;
+
+    --alert:#EC7A70;
+    --alert-bg:#2B1512;
+  }
+}
+
+:root[data-theme="dark"]{
+  --paper:#0A100D;
+  --surface:#101815;
+  --raise:#131D19;
+  --ink:#ECF2EF;
+  --ink-2:#BDCAC4;
+  --slate:#84968E;
+  --line:#1E2C26;
+  --line-2:#2C3D36;
+  --accent:#2ED68F;
+  --accent-strong:#3FE39C;
+  --accent-bg:#0D2A1F;
+  --tabby:#3EEDBF;
+  --tabby-bg:#082A22;
+  --flag:#E3AC5C;
+  --flag-bg:#2A2013;
+  --alert:#EC7A70;
+  --alert-bg:#2B1512;
+}
+
+:root[data-theme="light"]{
+  --paper:#FCFCFB;
+  --surface:#F3F6F4;
+  --raise:#FFFFFF;
+  --ink:#0D1512;
+  --ink-2:#39473F;
+  --slate:#61706A;
+  --line:#E1E7E3;
+  --line-2:#CBD5D0;
+  --accent:#088F58;
+  --accent-strong:#0AB971;
+  --accent-bg:#E8F7F0;
+  --tabby:#0B8E71;
+  --tabby-bg:#E2FAF2;
+  --flag:#9C5C0C;
+  --flag-bg:#FBF1E1;
+  --alert:#A93028;
+  --alert-bg:#FBEAE8;
+}
+
+/* ────────────────────────────────────────────────
+   BASE
+   ──────────────────────────────────────────────── */
+html{ -webkit-text-size-adjust:100%; }
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:16.5px;
+  line-height:1.62;
+  letter-spacing:-0.005em;
+  overflow-x:hidden;
+}
+*,*::before,*::after{ box-sizing:border-box; }
+
+.shell{
+  max-width:var(--shell);
+  margin-inline:auto;
+  padding-inline:clamp(18px,4vw,48px);
+}
+
+.prose{ max-width:var(--prose); }
+
+p{ margin:0 0 1.05em; color:var(--ink-2); }
+p:last-child{ margin-bottom:0; }
+strong{ color:var(--ink); font-weight:650; }
+a{ color:var(--accent); text-decoration-thickness:1px; text-underline-offset:2px; }
+a:focus-visible,button:focus-visible{ outline:2px solid var(--accent-strong); outline-offset:3px; border-radius:3px; }
+
+h1,h2,h3,h4{ color:var(--ink); text-wrap:balance; margin:0; }
+h1{ font-size:clamp(2.5rem,6vw,4.1rem); font-weight:760; letter-spacing:-0.038em; line-height:1.02; }
+h2{ font-size:clamp(1.6rem,3.2vw,2.3rem); font-weight:720; letter-spacing:-0.028em; line-height:1.12; }
+h3{ font-size:1.19rem; font-weight:680; letter-spacing:-0.018em; line-height:1.28; }
+h4{ font-size:1rem; font-weight:670; letter-spacing:-0.01em; }
+
+.eyebrow{
+  font-family:var(--mono);
+  font-size:0.685rem;
+  font-weight:600;
+  letter-spacing:0.16em;
+  text-transform:uppercase;
+  color:var(--slate);
+}
+
+.lede{ font-size:1.16rem; line-height:1.55; color:var(--ink-2); }
+
+code,.mono{ font-family:var(--mono); font-size:0.86em; letter-spacing:-0.01em; }
+code{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:4px;
+  padding:0.08em 0.36em;
+  color:var(--ink);
+}
+
+hr.rule{ border:0; border-top:1px solid var(--line); margin:0; }
+
+/* ────────────────────────────────────────────────
+   COVER
+   ──────────────────────────────────────────────── */
+.cover{
+  padding-block:clamp(56px,9vw,104px) clamp(40px,6vw,64px);
+  border-bottom:1px solid var(--line);
+}
+.cover .kicker{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:26px; }
+.cover h1{ margin-bottom:22px; }
+.cover .sub{ font-size:clamp(1.1rem,2vw,1.32rem); line-height:1.5; color:var(--slate); max-width:60ch; }
+
+.meta-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(178px,1fr));
+  gap:1px;
+  background:var(--line);
+  border:1px solid var(--line);
+  border-radius:10px;
+  overflow:hidden;
+  margin-top:44px;
+}
+.meta-grid > div{ background:var(--paper); padding:16px 18px; }
+.meta-grid dt{ font-family:var(--mono); font-size:0.66rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--slate); margin-bottom:6px; }
+.meta-grid dd{ margin:0; font-size:0.94rem; font-weight:600; color:var(--ink); }
+
+/* ────────────────────────────────────────────────
+   CHIPS
+   ──────────────────────────────────────────────── */
+.chip{
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:var(--mono);
+  font-size:0.66rem; font-weight:600; letter-spacing:0.09em; text-transform:uppercase;
+  padding:4px 9px; border-radius:5px;
+  border:1px solid var(--line-2); color:var(--slate); background:var(--surface);
+  white-space:nowrap;
+}
+.chip.is-accent{ color:var(--accent); border-color:color-mix(in srgb,var(--accent) 34%,transparent); background:var(--accent-bg); }
+.chip.is-tabby{ color:var(--tabby); border-color:color-mix(in srgb,var(--tabby) 36%,transparent); background:var(--tabby-bg); }
+.chip.is-flag{ color:var(--flag); border-color:color-mix(in srgb,var(--flag) 34%,transparent); background:var(--flag-bg); }
+.chip.is-alert{ color:var(--alert); border-color:color-mix(in srgb,var(--alert) 34%,transparent); background:var(--alert-bg); }
+
+/* ────────────────────────────────────────────────
+   SECTIONS
+   ──────────────────────────────────────────────── */
+section{ padding-block:clamp(48px,7vw,86px); border-bottom:1px solid var(--line); }
+section:last-of-type{ border-bottom:0; }
+
+.sec-head{ display:flex; flex-direction:column; gap:14px; margin-bottom:38px; max-width:var(--prose); }
+
+.part-head{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:clamp(18px,3vw,34px);
+  align-items:start;
+  margin-bottom:42px;
+}
+.part-num{
+  font-family:var(--mono);
+  font-size:clamp(2.6rem,6vw,4.2rem);
+  font-weight:600;
+  line-height:0.82;
+  color:var(--line-2);
+  letter-spacing:-0.05em;
+}
+.part-head .txt{ display:flex; flex-direction:column; gap:12px; max-width:var(--prose); }
+
+/* ────────────────────────────────────────────────
+   STACKS
+   ──────────────────────────────────────────────── */
+.stack{ display:flex; flex-direction:column; gap:clamp(20px,3vw,32px); }
+.stack-sm{ display:flex; flex-direction:column; gap:14px; }
+.cols{ display:grid; gap:clamp(16px,2.4vw,26px); grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); }
+
+/* ────────────────────────────────────────────────
+   CARDS
+   ──────────────────────────────────────────────── */
+.card{
+  background:var(--raise);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:clamp(18px,2.6vw,26px);
+  display:flex; flex-direction:column; gap:13px;
+}
+.card > .eyebrow{ margin-bottom:-4px; }
+.card p{ font-size:0.955rem; }
+
+.note{
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:16px 18px;
+  background:var(--surface);
+  display:flex; flex-direction:column; gap:8px;
+}
+.note.is-flag{ background:var(--flag-bg); border-color:color-mix(in srgb,var(--flag) 26%,transparent); }
+.note.is-alert{ background:var(--alert-bg); border-color:color-mix(in srgb,var(--alert) 26%,transparent); }
+.note.is-tabby{ background:var(--tabby-bg); border-color:color-mix(in srgb,var(--tabby) 26%,transparent); }
+.note p{ margin:0; font-size:0.93rem; }
+.note .eyebrow{ color:inherit; opacity:0.85; }
+.note.is-flag .eyebrow{ color:var(--flag); }
+.note.is-alert .eyebrow{ color:var(--alert); }
+.note.is-tabby .eyebrow{ color:var(--tabby); }
+
+/* decision card */
+.decision{
+  background:var(--raise);
+  border:1px solid var(--line);
+  border-radius:12px;
+  overflow:hidden;
+}
+.decision > .d-top{
+  padding:18px clamp(18px,2.4vw,24px) 16px;
+  border-bottom:1px solid var(--line);
+  display:flex; flex-direction:column; gap:9px;
+}
+.decision .d-title{ display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
+.decision .d-body{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(232px,1fr));
+  gap:1px; background:var(--line);
+}
+.decision .d-cell{ background:var(--raise); padding:16px clamp(18px,2.4vw,24px) 20px; display:flex; flex-direction:column; gap:7px; }
+.decision .d-cell p{ margin:0; font-size:0.925rem; }
+.d-cell .eyebrow{ font-size:0.63rem; }
+
+/* ────────────────────────────────────────────────
+   WIREFRAME
+   ──────────────────────────────────────────────── */
+.wf{
+  border:1px solid var(--line-2);
+  border-radius:14px;
+  background:var(--surface);
+  overflow:hidden;
+  font-size:0.86rem;
+  min-width:270px;
+}
+.wf-bar{
+  display:flex; align-items:center; gap:9px;
+  padding:9px 14px;
+  background:var(--raise);
+  border-bottom:1px solid var(--line);
+}
+.wf-dots{ display:flex; gap:4px; }
+.wf-dots i{ width:7px; height:7px; border-radius:50%; background:var(--line-2); display:block; }
+.wf-name{ font-family:var(--mono); font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--slate); }
+.wf-body{ padding:14px; display:flex; flex-direction:column; gap:9px; }
+
+.wf-block{
+  border:1px solid var(--line);
+  background:var(--raise);
+  border-radius:9px;
+  padding:11px 13px;
+  display:flex; flex-direction:column; gap:5px;
+}
+.wf-block.is-new{ border-color:color-mix(in srgb,var(--accent) 45%,transparent); background:var(--accent-bg); }
+.wf-block.is-tabby{ border-color:color-mix(in srgb,var(--tabby) 45%,transparent); background:var(--tabby-bg); }
+.wf-block.is-ghost{ border-style:dashed; background:transparent; opacity:0.75; }
+.wf-t{ font-weight:640; color:var(--ink); font-size:0.9rem; }
+.wf-s{ color:var(--slate); font-size:0.8rem; line-height:1.45; }
+.wf-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.wf-radio{ width:15px; height:15px; border-radius:50%; border:2px solid var(--line-2); flex:none; }
+.wf-radio.on{ border-color:var(--tabby); background:var(--tabby); box-shadow:inset 0 0 0 2.5px var(--raise); }
+.wf-field{
+  border:1px solid var(--line-2); border-radius:7px; background:var(--raise);
+  padding:8px 11px; font-family:var(--mono); font-size:0.76rem; color:var(--slate);
+}
+.wf-btn{
+  border-radius:8px; padding:10px 14px; text-align:center;
+  font-weight:640; font-size:0.88rem;
+  background:var(--ink); color:var(--paper);
+}
+.wf-btn.is-alt{ background:transparent; color:var(--ink); border:1px solid var(--line-2); }
+.wf-mini{ font-family:var(--mono); font-size:0.7rem; letter-spacing:0.05em; color:var(--slate); }
+.wf-strip{
+  border-radius:8px; padding:10px 12px;
+  background:var(--tabby-bg);
+  border:1px dashed color-mix(in srgb,var(--tabby) 45%,transparent);
+  color:var(--tabby); font-weight:620; font-size:0.85rem;
+}
+
+.wf-caption{
+  font-size:0.87rem; color:var(--slate); margin-top:10px; line-height:1.5;
+}
+
+.wf-pair{ display:grid; gap:clamp(16px,2.4vw,26px); grid-template-columns:repeat(auto-fit,minmax(288px,1fr)); align-items:start; }
+
+/* ────────────────────────────────────────────────
+   SCREEN ENTRY (page-by-page list)
+   ──────────────────────────────────────────────── */
+.screen{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:16px;
+  padding-top:26px;
+  border-top:1px solid var(--line);
+}
+.screen:first-of-type{ border-top:0; padding-top:0; }
+@media (min-width:880px){
+  .screen{ grid-template-columns:minmax(0,1.05fr) minmax(0,0.95fr); gap:clamp(24px,3.4vw,44px); align-items:start; }
+}
+.screen .s-txt{ display:flex; flex-direction:column; gap:11px; }
+.screen .s-txt h3{ display:flex; align-items:baseline; gap:11px; flex-wrap:wrap; }
+.screen .s-txt p{ font-size:0.96rem; margin:0; }
+
+/* ────────────────────────────────────────────────
+   TRACK (step chain)
+   ──────────────────────────────────────────────── */
+.track{ display:grid; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:12px; overflow:hidden; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); }
+.track .step{ background:var(--raise); padding:17px 18px 20px; display:flex; flex-direction:column; gap:7px; }
+.track .step .n{ font-family:var(--mono); font-size:0.68rem; letter-spacing:0.12em; color:var(--slate); }
+.track .step .h{ font-weight:660; font-size:0.97rem; letter-spacing:-0.012em; }
+.track .step .d{ font-size:0.87rem; color:var(--slate); line-height:1.5; }
+.track .step.is-tabby{ background:var(--tabby-bg); }
+.track .step.is-tabby .n,.track .step.is-tabby .d{ color:color-mix(in srgb,var(--tabby) 78%,var(--ink)); }
+
+/* ────────────────────────────────────────────────
+   TABLES
+   ──────────────────────────────────────────────── */
+.tw{ overflow-x:auto; border:1px solid var(--line); border-radius:11px; background:var(--raise); }
+table{ border-collapse:collapse; width:100%; min-width:560px; font-size:0.92rem; }
+th,td{ text-align:left; padding:12px 15px; border-bottom:1px solid var(--line); vertical-align:top; }
+thead th{
+  font-family:var(--mono); font-size:0.66rem; letter-spacing:0.12em; text-transform:uppercase;
+  color:var(--slate); font-weight:600; background:var(--surface); white-space:nowrap;
+}
+tbody tr:last-child td{ border-bottom:0; }
+td strong{ font-weight:640; }
+.num{ font-variant-numeric:tabular-nums; }
+
+/* ────────────────────────────────────────────────
+   Q&A LIST
+   ──────────────────────────────────────────────── */
+.qlist{ display:flex; flex-direction:column; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:11px; overflow:hidden; }
+.q{ background:var(--raise); padding:18px clamp(16px,2.2vw,22px); display:grid; grid-template-columns:auto 1fr; gap:14px; align-items:start; }
+.q .qn{ font-family:var(--mono); font-size:0.75rem; color:var(--slate); padding-top:3px; font-variant-numeric:tabular-nums; }
+.q .qc{ display:flex; flex-direction:column; gap:7px; }
+.q .qq{ font-weight:640; letter-spacing:-0.012em; color:var(--ink); }
+.q .qa{ font-size:0.925rem; color:var(--slate); margin:0; }
+.q .qa b{ color:var(--ink-2); font-weight:600; }
+
+/* ────────────────────────────────────────────────
+   LISTS
+   ──────────────────────────────────────────────── */
+ul.plain{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:9px; }
+ul.plain li{ position:relative; padding-left:19px; font-size:0.955rem; color:var(--ink-2); line-height:1.55; }
+ul.plain li::before{
+  content:""; position:absolute; left:2px; top:0.62em;
+  width:6px; height:6px; border-radius:1.5px; background:var(--line-2);
+}
+ul.plain.is-accent li::before{ background:var(--accent); }
+ul.plain.is-alert li::before{ background:var(--alert); }
+
+/* ────────────────────────────────────────────────
+   FOOT
+   ──────────────────────────────────────────────── */
+.foot{ padding-block:44px 66px; color:var(--slate); font-size:0.88rem; }
+.foot .r{ display:flex; flex-wrap:wrap; gap:10px 22px; align-items:center; }
+
+@media (prefers-reduced-motion:reduce){
+  *{ animation:none !important; transition:none !important; }
+}
+</style>
+
+
+<header class="cover">
+  <div class="shell">
+    <div class="kicker">
+      <span class="chip is-accent">Smooth</span>
+      <span class="chip is-tabby">Tabby — Pay in 4</span>
+      <span class="chip">Design walkthrough</span>
+    </div>
+
+    <h1>Adding Tabby to Smooth</h1>
+
+    <p class="sub">Exactly what changes on the admin panel, the merchant panel and the customer app when we introduce Buy Now, Pay Later — written so you can approve the experience without reading a line of code.</p>
+
+    <dl class="meta-grid">
+      <div><dt>Prepared for</dt><dd>Smooth product team</dd></div>
+      <div><dt>Date</dt><dd>24 July 2026</dd></div>
+      <div><dt>Covers</dt><dd>Admin · Merchant · Customer</dd></div>
+      <div><dt>Status</dt><dd>Awaiting your sign-off</dd></div>
+    </dl>
+  </div>
+</header>
+
+
+<!-- ══════════════════════════════════════════════
+     WHAT THIS IS
+     ══════════════════════════════════════════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">Start here</span>
+      <h2>What this document is</h2>
+    </div>
+
+    <div class="prose stack">
+      <p>Tabby lets a customer split a restaurant bill into <strong>four interest-free payments</strong>. The customer pays the first quarter today; Tabby pays the restaurant the <strong>full amount</strong> and collects the rest from the customer over the following weeks. The restaurant carries no credit risk.</p>
+
+      <p>This document walks through every screen that changes, in the order the work actually happens: <strong>you configure it in the admin panel</strong>, <strong>the merchant sees the results in their panel</strong>, and <strong>the customer pays with it in the app</strong>. Alongside each screen you'll find what we're proposing and why.</p>
+
+      <p>Where a choice is genuinely yours to make, it's flagged. Everything flagged is collected again at the end so you have a single list to respond to.</p>
+    </div>
+
+    <div class="cols" style="margin-top:34px;">
+      <div class="card">
+        <span class="eyebrow">In scope</span>
+        <p>Tabby as a payment option everywhere Smooth takes money — table QR bills, in-app orders, pay-later, payment links and Foodics tables. Plus Tabby's promotional messaging on the menu, product and cart screens.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Not in scope</span>
+        <p>Arabic language support, a refund button inside Smooth, Saudi Arabia and Kuwait, and Tabby's mobile app SDKs. Each is explained where it comes up, and none of them block launch.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">What we need from you</span>
+        <p>Answers to the fourteen design questions at the end, and a decision on how Tabby accounts are set up. Everything else is ready to build.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     THE BIG DECISIONS
+     ══════════════════════════════════════════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">Decisions</span>
+      <h2>The choices that shape everything else</h2>
+      <p class="lede">Six decisions define how the whole feature behaves. Each one is set out with what we recommend, why, and what the alternative would cost you.</p>
+    </div>
+
+    <div class="stack">
+
+      <!-- D1 -->
+      <article class="decision">
+        <div class="d-top">
+          <div class="d-title">
+            <h3>Each restaurant gets its own Tabby account</h3>
+            <span class="chip is-flag">Your call — biggest one</span>
+          </div>
+          <p style="margin:0;font-size:0.95rem;">Tabby issues credentials per business. We need to decide whether every restaurant on Smooth signs up with Tabby individually, or whether Smooth signs up once and puts all restaurants underneath it.</p>
+        </div>
+        <div class="d-body">
+          <div class="d-cell">
+            <span class="eyebrow" style="color:var(--accent);">Our recommendation</span>
+            <p><strong>One Tabby account per restaurant.</strong> You enter each restaurant's Tabby details into the Smooth admin panel, exactly the way AFS credentials already work today.</p>
+          </div>
+          <div class="d-cell">
+            <span class="eyebrow">Why it's the safer choice</span>
+            <p>Tabby pays each restaurant directly. Smooth never holds anyone else's money, so no payment-institution licensing question arises, and every restaurant sees its own Tabby dashboard and settlements.</p>
+          </div>
+          <div class="d-cell">
+            <span class="eyebrow">The alternative</span>
+            <p><strong>One Smooth account for everyone.</strong> Tabby switches on instantly for every restaurant with no paperwork — but Tabby pays <em>Smooth</em>, and Smooth then has to pay each restaurant. That makes Smooth a money handler, which needs Tabby's approval and probably a licence.</p>
+          </div>
+          <div class="d-cell">
+            <span class="eyebrow">The trade-off</span>
+            <p>Per-restaurant means onboarding friction: every restaurant has to sign with Tabby before it can be switched on. If you want Tabby live across the whole platform on day one, tell us — we can build it so both models work.</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- D2 -->
+      <article class="decision">
+        <div class="d-top">
+          <div class="d-title">
+            <h3>Tabby sits alongside the card gateway, it doesn't replace it</h3>
+            <span class="chip is-accent">Recommended</span>
+          </div>
+          <p style="margin:0;font-size:0.95rem;">Today each restaurant is on exactly one card gateway — Stripe, Telr or AFS — and you tick which methods that gateway offers.</p>
+        </div>
+        <div class="d-body">
+          <div class="d-cell">
+            <span class="eyebrow" style="color:var(--accent);">What we're doing</span>
+            <p>Tabby becomes another tickbox in the same list, next to Apple Pay, Google Pay and Card. It works with all three gateways because Tabby handles the money itself.</p>
+          </div>
+          <div class="d-cell">
+            <span class="eyebrow">Why</span>
+            <p>Nothing about the existing card setup changes. A restaurant on Telr keeps Telr for cards and simply gains Tabby. One tickbox to turn on, one tickbox to turn off.</p>
+          </div>
+          <div class="d-cell">
+            <span class="eyebrow">What you'll see</span>
+            <p>In the admin panel, the payment-methods list gains a fifth option: <span class="mono">Tabby (Pay in 4)</span>. Everywhere Smooth already shows payment methods, Tabby appears automatically.</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- D3 -->
+      <article class="decision">
+        <div class="d-top">
+          <div class="d-title">
+            <h3>We ask the customer for their name and email — once</h3>
+            <span class="chip is-flag">Your call</span>
+          </div>
+          <p style="margin:0;font-size:0.95rem;">Tabby requires a name, an email and a mobile number for every payment. Smooth only ever requires a phone number, and guests scanning a QR code have given us nothing at all.</p>
+        </div>
+        <div class="d-body">
+          <div class="d-cell">
+            <span class="eyebrow" style="color:var(--accent);">What we're doing</span>
+            <p>When the customer picks Tabby, a short form appears asking for name, email and mobile. For a signed-in customer these are pre-filled and they just tap Continue. Anything they type is saved to their profile, so they never fill it in twice.</p>
+          </div>
+          <div class="d-cell">
+            <span class="eyebrow">Why</span>
+            <p>The alternative is forcing customers to create an account before they can use Tabby — which would shut out the guest QR customers who are the majority of Smooth's traffic.</p>
+          </div>
+          <div class="d-cell">
+            <span class="eyebrow">The cost</span>
+            <p>One extra screen, only for Tabby. Every other payment method stays exactly as fast as it is today.</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- D4 -->
+      <article class="decision">
+        <div class="d-top">
+          <div class="d-title">
+            <h3>Tabby appears on every bill — Tabby decides who qualifies</h3>
+            <span class="chip is-accent">Recommended</span>
+          </div>
+          <p style="margin:0;font-size:0.95rem;">Tabby has a minimum and maximum order value, and it also runs its own credit check on each customer. Both can change without notice.</p>
+        </div>
+        <div class="d-body">
+          <div class="d-cell">
+            <span class="eyebrow" style="color:var(--accent);">What we're doing</span>
+            <p>Tabby is offered on full bills, split shares, custom amounts, payment links and Foodics tables alike. When the customer confirms their details, we check with Tabby in the background before sending them anywhere.</p>
+          </div>
+          <div class="d-cell">
+            <span class="eyebrow">If Tabby says no</span>
+            <p>The customer sees Tabby's own wording — <em>"This purchase is below the minimum required"</em>, <em>"This purchase exceeds your spending limit with Tabby"</em>, or a general decline — and a button to pick another method. They are never sent to a dead end.</p>
+          </div>
+          <div class="d-cell">
+            <span class="eyebrow">Why not hide it below a threshold</span>
+            <p>Because we'd have to hard-code Tabby's limits, and the moment Tabby changes them our app is wrong. Letting Tabby answer keeps us permanently in step.</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- D5 -->
+      <article class="decision">
+        <div class="d-top">
+          <div class="d-title">
+            <h3>An order is only marked paid once the money is genuinely on its way</h3>
+            <span class="chip is-accent">Recommended</span>
+          </div>
+          <p style="margin:0;font-size:0.95rem;">Tabby works in two steps that cards don't have. First it <em>approves</em> the customer. Then the restaurant has to <em>claim</em> the money. If nobody claims it, it is never paid out.</p>
+        </div>
+        <div class="d-body">
+          <div class="d-cell">
+            <span class="eyebrow" style="color:var(--accent);">What we're doing</span>
+            <p>Smooth claims the money automatically the instant Tabby approves the customer — and only <em>then</em> marks the bill paid, prints the receipt and awards cashback.</p>
+          </div>
+          <div class="d-cell">
+            <span class="eyebrow">Why this order matters</span>
+            <p>If we marked the bill paid first and claimed later, a failed claim would leave a table showing "settled" while no money ever arrived. This way an order can never look paid when it isn't.</p>
+          </div>
+          <div class="d-cell">
+            <span class="eyebrow">Three safety nets</span>
+            <p>If the claim doesn't go through immediately, Tabby notifies us and we retry. A background check also sweeps every few minutes for anything stuck. No approved payment is left unclaimed.</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- D6 -->
+      <article class="decision">
+        <div class="d-top">
+          <div class="d-title">
+            <h3>Refunds are issued in Tabby's dashboard — Smooth shows them accurately</h3>
+            <span class="chip is-flag">Your call</span>
+          </div>
+          <p style="margin:0;font-size:0.95rem;">Smooth has never had a refund feature for any payment method. Tabby, on the other hand, has a full refund tool in its own merchant dashboard.</p>
+        </div>
+        <div class="d-body">
+          <div class="d-cell">
+            <span class="eyebrow" style="color:var(--accent);">What we're doing</span>
+            <p>The restaurant refunds from Tabby's dashboard. Tabby tells Smooth immediately, and the transaction row in the merchant panel updates to read <span class="mono">Refunded AED 62.50 of AED 250.00</span>.</p>
+          </div>
+          <div class="d-cell">
+            <span class="eyebrow">Why not a refund button in Smooth</span>
+            <p>Building one only for Tabby would leave Stripe, Telr and AFS without it — confusing for merchants. A proper refund feature across all methods is a project in its own right.</p>
+          </div>
+          <div class="d-cell">
+            <span class="eyebrow">What it does guarantee</span>
+            <p>Smooth's reports are never wrong. A refunded Tabby payment shows as refunded in transactions, dashboards and exports without anyone having to remember to update it.</p>
+          </div>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     PART 1 — ADMIN
+     ══════════════════════════════════════════════ -->
+<section>
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">01</div>
+      <div class="txt">
+        <span class="eyebrow">Admin panel</span>
+        <h2>What you set up, and where</h2>
+        <p class="lede">Nothing about Tabby is self-service. A restaurant cannot switch it on themselves — it happens here, in the same place you already manage gateways.</p>
+      </div>
+    </div>
+
+    <div class="stack">
+
+      <div class="screen">
+        <div class="s-txt">
+          <h3>Merchants → Add / Edit merchant <span class="chip">Changed</span></h3>
+          <p>The <strong>Payment Methods</strong> checkbox list gains a fifth option: <span class="mono">Tabby (Pay in 4)</span>. It's available for every gateway — Stripe, Telr and AFS — because Tabby is independent of them.</p>
+          <p>It is <strong>off by default</strong>. A restaurant only gets Tabby when you deliberately tick it.</p>
+          <p>Ticking it opens a new <strong>Tabby</strong> panel below, mirroring the AFS panel that already exists. Once saved, Smooth registers itself with Tabby automatically so Tabby can send us payment updates — you'll see a green confirmation, and a <strong>Re-register</strong> button if it ever needs redoing.</p>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><span class="wf-dots"><i></i><i></i><i></i></span><span class="wf-name">Admin · Edit merchant</span></div>
+            <div class="wf-body">
+              <div class="wf-block is-ghost">
+                <div class="wf-t">Payment Gateway</div>
+                <div class="wf-field">AFS (Arab Financial Services)</div>
+              </div>
+              <div class="wf-block">
+                <div class="wf-t">Payment Methods</div>
+                <div class="wf-s">☑ Apple Pay &nbsp; ☑ Google Pay &nbsp; ☑ Card</div>
+                <div class="wf-s" style="color:var(--tabby);font-weight:640;">☑ Tabby (Pay in 4) &nbsp;— new</div>
+              </div>
+              <div class="wf-block is-tabby">
+                <div class="wf-t">Tabby — Buy Now Pay Later</div>
+                <div class="wf-field">Merchant Code &nbsp;·&nbsp; required</div>
+                <div class="wf-field">Public Key &nbsp;·&nbsp; required</div>
+                <div class="wf-field">Secret Key &nbsp;·&nbsp; ••••••••••</div>
+                <div class="wf-s">☐ Test Mode</div>
+                <div class="wf-s" style="color:var(--accent);">✓ Connected — Tabby will notify us of payments</div>
+                <div class="wf-mini">[ Re-register ]</div>
+              </div>
+              <div class="wf-btn">Save merchant</div>
+            </div>
+          </div>
+          <p class="wf-caption">Simplified layout. The Tabby panel only appears once the Tabby method is ticked.</p>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div class="s-txt">
+          <h3>Merchant detail page <span class="chip">Changed</span></h3>
+          <p>The overview already lists a restaurant's payment methods, so Tabby will show up there on its own. We're adding a small read-only Tabby block showing the merchant code, whether it's in test mode, and whether the notification link is healthy.</p>
+          <p><strong>Secret keys are never displayed</strong> — not to you, not to anyone. They go in once and are stored encrypted.</p>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><span class="wf-dots"><i></i><i></i><i></i></span><span class="wf-name">Admin · Merchant detail</span></div>
+            <div class="wf-body">
+              <div class="wf-block is-ghost">
+                <div class="wf-row"><span class="wf-s">Payment Gateway</span><span class="wf-t">AFS</span></div>
+                <div class="wf-row"><span class="wf-s">Payment Methods</span><span class="wf-t">Apple, Google, Card, Tabby</span></div>
+              </div>
+              <div class="wf-block is-tabby">
+                <div class="wf-t">Tabby</div>
+                <div class="wf-row"><span class="wf-s">Merchant code</span><span class="wf-mini">smooth_dxb_014</span></div>
+                <div class="wf-row"><span class="wf-s">Mode</span><span class="wf-mini">Live</span></div>
+                <div class="wf-row"><span class="wf-s">Notifications</span><span class="wf-mini" style="color:var(--accent);">Healthy</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div class="s-txt">
+          <h3>Admin dashboard <span class="chip">Changed</span></h3>
+          <p>Wherever payment methods are broken down, Tabby joins the list as its own line rather than being lumped in with cards. You'll be able to see Tabby volume across the platform from day one.</p>
+        </div>
+        <div>
+          <div class="note is-flag">
+            <span class="eyebrow">While we're in there</span>
+            <p>The merchant Reports page currently doesn't list <strong>AFS</strong> at all — an existing gap that predates this work. We'll add it at the same time so the reports are complete.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     PART 2 — MERCHANT
+     ══════════════════════════════════════════════ -->
+<section>
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">02</div>
+      <div class="txt">
+        <span class="eyebrow">Merchant panel</span>
+        <h2>What the restaurant sees</h2>
+        <p class="lede">The restaurant configures nothing. Tabby simply starts appearing in their numbers, clearly labelled and clearly separate from card payments.</p>
+      </div>
+    </div>
+
+    <div class="stack">
+
+      <div class="screen">
+        <div class="s-txt">
+          <h3>Transactions <span class="chip">Changed</span></h3>
+          <p>A Tabby payment appears in the list like any other, with the Tabby logo and the label <strong>Tabby</strong>. The filter bar gains a <strong>Tabby</strong> option of its own — deliberately <em>not</em> folded into the existing "Credit Card" group.</p>
+          <p>If a payment has been refunded from Tabby's dashboard, the row carries a refund line beneath it. The merchant can't take any action on it here; it's there so their records are never out of date.</p>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><span class="wf-dots"><i></i><i></i><i></i></span><span class="wf-name">Merchant · Transactions</span></div>
+            <div class="wf-body">
+              <div class="wf-block is-ghost">
+                <div class="wf-s">Filter: Cash · Credit Card · Apple Pay · Google Pay · Cashback <span style="color:var(--tabby);font-weight:640;">· Tabby</span></div>
+              </div>
+              <div class="wf-block is-ghost">
+                <div class="wf-row"><span class="wf-t">Table 12 · #4471</span><span class="wf-t num">AED 180.00</span></div>
+                <div class="wf-mini">Apple Pay · 14:22</div>
+              </div>
+              <div class="wf-block is-tabby">
+                <div class="wf-row"><span class="wf-t">Table 04 · #4472</span><span class="wf-t num">AED 250.00</span></div>
+                <div class="wf-mini">Tabby · Pay in 4 · 14:48</div>
+                <div class="wf-mini" style="color:var(--flag);">Refunded AED 62.50 of AED 250.00</div>
+              </div>
+              <div class="wf-block is-ghost">
+                <div class="wf-row"><span class="wf-t">Table 09 · #4473</span><span class="wf-t num">AED 96.00</span></div>
+                <div class="wf-mini">Card · 15:03</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div class="s-txt">
+          <h3>Dashboard &amp; Reports <span class="chip">Changed</span></h3>
+          <p>The payment-methods breakdown card, the reports filters and the CSV export all gain Tabby as a separate line with its own colour.</p>
+          <p>We're keeping it separate on purpose: <strong>Tabby's fees and settlement timing differ from card payments</strong>, so a restaurant reconciling its bank account needs to see the two apart.</p>
+        </div>
+        <div>
+          <div class="note is-tabby">
+            <span class="eyebrow">Worth telling merchants</span>
+            <p>With Tabby the restaurant is paid the <strong>full bill</strong> — Tabby carries the instalments and the credit risk. What the merchant sees in Smooth is the full amount, not a quarter of it.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="screen">
+        <div class="s-txt">
+          <h3>Payment links &amp; POS <span class="chip">No change needed</span></h3>
+          <p>Payment links and the POS bill screen pick up Tabby automatically, because they use the same payment screen the customer app uses. There is nothing extra for the merchant to learn.</p>
+        </div>
+        <div>
+          <div class="note">
+            <span class="eyebrow">Not being built</span>
+            <p>Merchants will <strong>not</strong> get a switch to turn Tabby on or off themselves. It stays an admin decision, exactly like the card gateway. Tell us if you'd rather merchants controlled it.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     PART 3 — CUSTOMER
+     ══════════════════════════════════════════════ -->
+<section>
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">03</div>
+      <div class="txt">
+        <span class="eyebrow">Customer app</span>
+        <h2>The customer journey, screen by screen</h2>
+        <p class="lede">This is where most of the design work lives. Tabby appears in six places — three that advertise it, and three that take the payment.</p>
+      </div>
+    </div>
+
+    <div class="track" style="margin-bottom:44px;">
+      <div class="step"><span class="n">01</span><span class="h">Menu</span><span class="d">Customer learns Tabby is available here</span></div>
+      <div class="step"><span class="n">02</span><span class="h">Dish &amp; Cart</span><span class="d">Sees the instalment amount on real prices</span></div>
+      <div class="step"><span class="n">03</span><span class="h">Payment</span><span class="d">Picks Tabby from the methods list</span></div>
+      <div class="step"><span class="n">04</span><span class="h">Details</span><span class="d">Confirms name, email, mobile</span></div>
+      <div class="step is-tabby"><span class="n">05</span><span class="h">Tabby</span><span class="d">Approves on Tabby's own screens</span></div>
+      <div class="step"><span class="n">06</span><span class="h">Receipt</span><span class="d">Back in Smooth, bill settled</span></div>
+    </div>
+
+    <div class="stack">
+
+      <!-- 1 menu -->
+      <div class="screen">
+        <div class="s-txt">
+          <h3>1 · Menu screen <span class="chip is-flag">Your call</span></h3>
+          <p>A slim Tabby strip sits under the restaurant header: <em>"Pay in 4 with Tabby. No interest, no fees."</em> Tapping it opens a short <strong>How Tabby works</strong> panel.</p>
+          <p><strong>Why a plain strip and not a price here.</strong> Tabby's official widget shows a specific instalment figure — <em>"or 4 payments of AED 22.50"</em> — which needs one real price. A menu is a list of dozens of prices, so any single figure would either be invented or misleading. We show the offer here and the real numbers on the screens where a real price exists.</p>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><span class="wf-dots"><i></i><i></i><i></i></span><span class="wf-name">Customer · Menu</span></div>
+            <div class="wf-body">
+              <div class="wf-block is-ghost"><div class="wf-t">Marina Social</div><div class="wf-mini">Table 04 · ★ 4.6</div></div>
+              <div class="wf-strip">Pay in 4 with Tabby — no interest, no fees &nbsp;›</div>
+              <div class="wf-block is-ghost"><div class="wf-row"><span class="wf-t">Truffle Arancini</span><span class="wf-mini num">AED 48</span></div></div>
+              <div class="wf-block is-ghost"><div class="wf-row"><span class="wf-t">Wagyu Slider</span><span class="wf-mini num">AED 72</span></div></div>
+            </div>
+          </div>
+          <p class="wf-caption">Tabby has to approve any wording that isn't their standard widget — this is on the question list for them.</p>
+        </div>
+      </div>
+
+      <!-- 2 dish -->
+      <div class="screen">
+        <div class="s-txt">
+          <h3>2 · Dish screen &amp; Cart <span class="chip">Changed</span></h3>
+          <p>Here we use Tabby's own widget, because there's a real price to work with. On the dish screen it sits directly under the price and <strong>recalculates live</strong> as the customer adds sizes and extras. In the cart it sits under the total and updates as items and quantities change.</p>
+          <p>Both are Tabby's official components, so the wording, styling and legal text come from Tabby and stay correct automatically.</p>
+        </div>
+        <div>
+          <div class="wf-pair">
+            <div>
+              <div class="wf">
+                <div class="wf-bar"><span class="wf-dots"><i></i><i></i><i></i></span><span class="wf-name">Dish</span></div>
+                <div class="wf-body">
+                  <div class="wf-block is-ghost"><div class="wf-t">Wagyu Slider</div><div class="wf-t num" style="font-size:1.15rem;">AED 90.00</div></div>
+                  <div class="wf-block is-tabby"><div class="wf-s" style="color:var(--tabby);font-weight:620;">4 interest-free payments of AED 22.50</div><div class="wf-mini">Tabby widget</div></div>
+                  <div class="wf-block is-ghost"><div class="wf-s">Size · Extras · Notes</div></div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="wf">
+                <div class="wf-bar"><span class="wf-dots"><i></i><i></i><i></i></span><span class="wf-name">Cart</span></div>
+                <div class="wf-body">
+                  <div class="wf-block is-ghost"><div class="wf-s">3 items</div></div>
+                  <div class="wf-block is-ghost"><div class="wf-row"><span class="wf-t">Total</span><span class="wf-t num">AED 250.00</span></div></div>
+                  <div class="wf-block is-tabby"><div class="wf-s" style="color:var(--tabby);font-weight:620;">4 interest-free payments of AED 62.50</div></div>
+                  <div class="wf-btn">Proceed to pay</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3 payment methods -->
+      <div class="screen">
+        <div class="s-txt">
+          <h3>3 · Payment screen — choosing Tabby <span class="chip is-flag">Your call</span></h3>
+          <p>Tabby joins the payment-methods list with its logo, the name <strong>Tabby</strong>, the line <em>"4 interest-free payments"</em> and the calculated <strong>4 × AED 62.50</strong>.</p>
+          <p><strong>Where we're placing it:</strong> second — directly under Smooth Cashback, above Apple Pay. It's a new option customers won't be looking for, so it needs to be seen.</p>
+          <p><strong>What doesn't change:</strong> the pre-selected method stays Apple Pay → Google Pay → Card, exactly as today. Tabby is never auto-selected. A customer who just wants to tap Apple Pay taps it as fast as they always have.</p>
+          <p>When Tabby is selected, its instalment breakdown expands underneath — Tabby requires this at checkout.</p>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><span class="wf-dots"><i></i><i></i><i></i></span><span class="wf-name">Customer · Payment methods</span></div>
+            <div class="wf-body">
+              <div class="wf-block is-ghost">
+                <div class="wf-row"><span><span class="wf-t">Smooth Cashback</span><br><span class="wf-mini">Balance AED 40.00</span></span><span class="wf-radio"></span></div>
+              </div>
+              <div class="wf-block is-tabby">
+                <div class="wf-row"><span><span class="wf-t" style="color:var(--tabby);">Tabby — Pay in 4</span><br><span class="wf-s">4 interest-free payments · 4 × AED 62.50</span></span><span class="wf-radio on"></span></div>
+                <div class="wf-mini" style="border-top:1px dashed color-mix(in srgb,var(--tabby) 40%,transparent);padding-top:8px;">Tabby instalment breakdown</div>
+              </div>
+              <div class="wf-block is-ghost"><div class="wf-row"><span class="wf-t">Apple Pay</span><span class="wf-radio"></span></div></div>
+              <div class="wf-block is-ghost"><div class="wf-row"><span class="wf-t">Google Pay</span><span class="wf-radio"></span></div></div>
+              <div class="wf-block is-ghost"><div class="wf-row"><span class="wf-t">Credit / Debit Cards</span><span class="wf-radio"></span></div></div>
+              <div class="wf-btn">Confirm payment method</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 details -->
+      <div class="screen">
+        <div class="s-txt">
+          <h3>4 · Your details — new screen <span class="chip is-accent">New</span></h3>
+          <p>Tapping <strong>Pay</strong> with Tabby selected opens this panel. It is the only screen Tabby adds to the flow.</p>
+          <ul class="plain">
+            <li><strong>Signed-in customer</strong> — all three fields pre-filled; they tap Continue.</li>
+            <li><strong>Guest</strong> — mobile pre-filled if we already have it; name and email typed once.</li>
+            <li>The mobile field accepts <strong>UAE, Saudi and Kuwait numbers only</strong>, because Tabby doesn't operate elsewhere.</li>
+            <li>Anything new is saved to their Smooth profile, so it's pre-filled next time.</li>
+          </ul>
+          <p>On Continue we check with Tabby in the background. Approved, and the customer goes straight to Tabby. Declined, and the message appears right here in the panel — they never leave Smooth for nothing.</p>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><span class="wf-dots"><i></i><i></i><i></i></span><span class="wf-name">Customer · Your details</span></div>
+            <div class="wf-body">
+              <div class="wf-block is-tabby"><div class="wf-t" style="color:var(--tabby);">Pay in 4 with Tabby</div><div class="wf-s">Just a few details to get started</div></div>
+              <div class="wf-block">
+                <div class="wf-s">Full name</div><div class="wf-field">Ahmed Al Mansoori</div>
+                <div class="wf-s" style="margin-top:4px;">Email</div><div class="wf-field">ahmed@example.com</div>
+                <div class="wf-s" style="margin-top:4px;">Mobile number</div><div class="wf-field">🇦🇪 +971 50 000 0001</div>
+              </div>
+              <div class="wf-block is-tabby"><div class="wf-s" style="color:var(--tabby);font-weight:620;">AED 250.00 → 4 × AED 62.50 · 0% interest</div></div>
+              <div class="wf-btn">Continue with Tabby</div>
+              <div class="wf-mini" style="text-align:center;">Tabby will confirm your approval on the next screen</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5 tabby -->
+      <div class="screen">
+        <div class="s-txt">
+          <h3>5 · Tabby's own screens <span class="chip is-tabby">Not ours</span></h3>
+          <p>The customer moves to Tabby's hosted checkout — <strong>in the same browser tab</strong>, not a pop-up. That's Tabby's requirement, and it also means nothing is lost if the customer switches apps mid-way.</p>
+          <p>On Tabby's side they confirm their identity, receive an SMS code and pick a card for the instalments. We don't design or control any of it, and no card details ever touch Smooth.</p>
+          <p>Tabby then sends them back to Smooth on one of three paths: <strong>approved</strong>, <strong>cancelled</strong>, or <strong>declined</strong>.</p>
+        </div>
+        <div>
+          <div class="note is-tabby">
+            <span class="eyebrow">A rule we can't bend</span>
+            <p>Tabby is explicit that a merchant must never trust the return link alone. Smooth <strong>always</strong> verifies the payment directly with Tabby's servers before settling a bill — so a customer can't fake a successful return.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6 return -->
+      <div class="screen">
+        <div class="s-txt">
+          <h3>6 · Back in Smooth <span class="chip is-accent">New</span></h3>
+          <p>A brief confirming screen appears while Smooth verifies with Tabby and claims the money — usually a second or two. Then:</p>
+          <ul class="plain is-accent">
+            <li><strong>Approved</strong> — straight to the normal receipt screen. Bill settled, cashback awarded, table released. Identical to any other payment.</li>
+            <li><strong>Cancelled</strong> — "You cancelled the payment. Nothing was charged," with the payment screen one tap away.</li>
+            <li><strong>Declined</strong> — Tabby's own decline wording, plus a prompt to pick another method.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><span class="wf-dots"><i></i><i></i><i></i></span><span class="wf-name">Customer · Receipt</span></div>
+            <div class="wf-body">
+              <div class="wf-block"><div class="wf-t" style="color:var(--accent);">Payment successful</div><div class="wf-t num" style="font-size:1.2rem;">AED 250.00</div></div>
+              <div class="wf-block is-tabby">
+                <div class="wf-row"><span class="wf-s">Paid with</span><span class="wf-t" style="color:var(--tabby);">Tabby — Pay in 4</span></div>
+                <div class="wf-mini">4 payments of AED 62.50 · first payment today</div>
+              </div>
+              <div class="wf-block is-ghost"><div class="wf-row"><span class="wf-s">Cashback earned</span><span class="wf-t num">AED 5.00</span></div></div>
+              <div class="wf-btn is-alt">Email me the receipt</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7 history -->
+      <div class="screen">
+        <div class="s-txt">
+          <h3>7 · My Orders &amp; My Payments <span class="chip">Changed</span></h3>
+          <p>Past Tabby payments carry a Tabby badge in the customer's history, and the emailed and downloaded receipts say <strong>Tabby (Pay in 4)</strong> with the instalment summary.</p>
+          <p><strong>Deliberately not shown:</strong> the customer's remaining instalments, due dates or balance. Tabby owns that relationship and shows it in the Tabby app. Duplicating it in Smooth would risk showing a stale figure — and it would make Smooth look like the lender, which it isn't.</p>
+        </div>
+        <div>
+          <div class="note is-flag">
+            <span class="eyebrow">Tell us if you disagree</span>
+            <p>If you'd rather customers saw their instalment schedule inside Smooth, say so — it changes what we ask Tabby for and adds to the scope.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     SPECIAL FLOWS
+     ══════════════════════════════════════════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">Flows</span>
+      <h2>How Tabby behaves with everything Smooth already does</h2>
+      <p class="lede">Smooth's payment screen already handles split bills, cashback, tips and payment links. Here's exactly how each behaves once Tabby is in the mix.</p>
+    </div>
+
+    <div class="stack">
+
+      <!-- SPLIT -->
+      <div class="card">
+        <span class="eyebrow" style="color:var(--accent);">Split bill</span>
+        <h3>Four people, four separate Tabby plans</h3>
+        <p>A split bill works exactly as it does today, except each person can independently choose Tabby. If four people split an AED 250 bill, each pays AED 62.50 — and any of them can put their own share on Tabby while the others use Apple Pay or cash. Each Tabby user gets their own Pay-in-4 plan for their own share.</p>
+        <p><strong>The one thing to know:</strong> Tabby has a minimum order value. A small share of a small bill may fall below it, in which case that person sees <em>"The purchase amount is below the minimum required"</em> and simply picks another method. The rest of the table is unaffected.</p>
+
+        <div class="tw" style="margin-top:6px;">
+          <table>
+            <thead><tr><th>Situation</th><th>What the customer sees</th><th>What the merchant sees</th></tr></thead>
+            <tbody>
+              <tr><td>2 of 4 people pay with Tabby at the same time</td><td>Both succeed, each with their own plan</td><td>Two Tabby rows, correct running balance</td></tr>
+              <tr><td>A share falls under Tabby's minimum</td><td>Tabby's minimum-amount message and another method suggested</td><td>Nothing — no failed payment is recorded</td></tr>
+              <tr><td>Someone settles the whole bill while another is mid-Tabby</td><td>"This bill has already been settled. You have not been charged."</td><td>One payment for the full bill; no duplicate</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note is-alert">
+          <span class="eyebrow">The case we've designed hardest for</span>
+          <p>That last row is the one that would otherwise double-charge someone. If a bill is already settled by the time a Tabby customer returns, Smooth <strong>cancels the Tabby plan instead of claiming the money</strong> — Tabby refunds them in full, automatically, and they're told clearly that nothing was taken.</p>
+        </div>
+      </div>
+
+      <!-- CASHBACK -->
+      <div class="card">
+        <span class="eyebrow" style="color:var(--accent);">Smooth Cashback</span>
+        <h3>Cashback works with Tabby in both directions</h3>
+        <p><strong>Spending cashback.</strong> If a customer applies AED 40 of Smooth cashback to a AED 250 bill, Tabby is asked for AED 210 — and the instalments shown become 4 × AED 52.50. The discount is applied before Tabby ever sees the amount.</p>
+        <p><strong>Earning cashback.</strong> A Tabby payment earns Smooth cashback on exactly the same terms as a card payment. From the loyalty engine's point of view Tabby is just another way the bill got paid.</p>
+        <p><strong>Paying entirely with cashback.</strong> Unchanged — if cashback covers the whole bill there's nothing left to finance, so Tabby isn't offered.</p>
+        <div class="note is-flag">
+          <span class="eyebrow">Confirm with us</span>
+          <p>Should a Tabby payment earn cashback at the <strong>same rate</strong> as a card payment? Tabby's fees are typically higher, so you may want a different rate — or none. We've assumed the same rate; changing it is easy now and awkward later.</p>
+        </div>
+      </div>
+
+      <!-- TIPS -->
+      <div class="card">
+        <span class="eyebrow" style="color:var(--accent);">Tips</span>
+        <h3>The tip is financed along with the bill</h3>
+        <p>A tip is added before Tabby is asked for the amount, so a AED 250 bill with a AED 25 tip becomes a AED 275 Tabby plan — 4 × AED 68.75. The restaurant receives the tip in full with the rest of the bill.</p>
+        <p>Where a payment link has tips switched off, nothing changes: no tip, no effect on Tabby.</p>
+      </div>
+
+      <!-- LINKS -->
+      <div class="card">
+        <span class="eyebrow" style="color:var(--accent);">Payment links, pay-later &amp; Foodics</span>
+        <h3>All three get Tabby with no extra work</h3>
+        <ul class="plain">
+          <li><strong>Payment links</strong> — a customer opening a link sees Tabby in the methods list and the instalment figure under the payable amount, just as on a table bill.</li>
+          <li><strong>Pay later</strong> — a customer who eats first and pays afterwards can choose Tabby at the end. No difference.</li>
+          <li><strong>Foodics tables</strong> — Tabby works on Foodics bills too. Foodics bills can change while the customer is paying, so if the total drops mid-payment Smooth claims only what's actually owed and cancels the remainder, which Tabby refunds automatically.</li>
+        </ul>
+      </div>
+
+      <!-- REFUND -->
+      <div class="card">
+        <span class="eyebrow" style="color:var(--flag);">Refunds</span>
+        <h3>How a Tabby refund actually happens</h3>
+        <div class="track" style="margin:4px 0 8px;">
+          <div class="step"><span class="n">01</span><span class="h">Restaurant refunds</span><span class="d">In Tabby's own merchant dashboard, full or partial</span></div>
+          <div class="step is-tabby"><span class="n">02</span><span class="h">Tabby adjusts</span><span class="d">The customer's remaining instalments are reduced or cancelled</span></div>
+          <div class="step"><span class="n">03</span><span class="h">Smooth updates</span><span class="d">Tabby notifies us within seconds; the transaction row updates itself</span></div>
+        </div>
+        <p>The customer is refunded by Tabby directly and sees it in the Tabby app. The restaurant sees the refund reflected in Smooth without touching anything.</p>
+        <div class="note is-flag">
+          <span class="eyebrow">Known limitation, and it's a real one</span>
+          <p>If a refunded bill had earned Smooth cashback, <strong>that cashback is not automatically taken back</strong>. Smooth has never had refund handling for any payment method, so there's nothing to hook into. If clawback matters to you, it needs to be its own piece of work covering every method — not just Tabby.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     WHEN THINGS GO WRONG
+     ══════════════════════════════════════════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">Resilience</span>
+      <h2>When something goes wrong</h2>
+      <p class="lede">Payments fail in ordinary ways — a customer closes the app, a network drops, someone else pays first. Here's what happens in each case, in plain terms.</p>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead>
+          <tr><th style="width:26%;">What happens</th><th style="width:37%;">What the customer sees</th><th>What Smooth does behind the scenes</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Customer closes the browser right after approving</strong></td>
+            <td>Nothing at that moment. When they reopen the bill it already shows as paid, with the receipt available.</td>
+            <td>Tabby notifies us independently of the customer's device. We claim the money and settle the bill without them.</td>
+          </tr>
+          <tr>
+            <td><strong>Tabby approves but the claim doesn't go through</strong></td>
+            <td>A "confirming your payment" screen for a moment longer than usual, then the receipt.</td>
+            <td>We retry immediately, then every few minutes. The bill is never marked paid until the claim succeeds — so it can't show settled with no money behind it.</td>
+          </tr>
+          <tr>
+            <td><strong>Someone else pays the bill first</strong></td>
+            <td>"This bill has already been settled. You have not been charged."</td>
+            <td>We cancel the Tabby plan rather than claiming it. Tabby refunds in full, automatically. No double charge.</td>
+          </tr>
+          <tr>
+            <td><strong>The Foodics bill drops while the customer is on Tabby</strong></td>
+            <td>The receipt shows the corrected, lower amount.</td>
+            <td>We claim only what's owed and cancel the rest; Tabby refunds the difference to the customer.</td>
+          </tr>
+          <tr>
+            <td><strong>Tabby's service is unavailable</strong></td>
+            <td>"Tabby is unavailable right now. Please try again or choose another method." Tabby stays visible in the list.</td>
+            <td>Nothing is recorded, nothing is charged. Every other payment method carries on working normally.</td>
+          </tr>
+          <tr>
+            <td><strong>Customer taps Pay twice, or the network retries</strong></td>
+            <td>One payment, one receipt.</td>
+            <td>Every Tabby payment carries a unique reference. A repeat is recognised as the same payment, not a new one.</td>
+          </tr>
+          <tr>
+            <td><strong>Customer abandons Tabby's checkout</strong></td>
+            <td>Back on the payment screen with the bill untouched. They can try Tabby again or pick another method.</td>
+            <td>The abandoned attempt expires on Tabby's side. Nothing is charged and nothing is recorded against the bill.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     QUESTIONS FOR THE CLIENT
+     ══════════════════════════════════════════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">Action required</span>
+      <h2>Decisions we need from you</h2>
+      <p class="lede">Each has our recommendation next to it, so a simple "agreed" is a complete answer. Only tell us where you want something different.</p>
+    </div>
+
+    <div class="qlist">
+
+      <div class="q"><span class="qn">01</span><div class="qc">
+        <span class="qq">Should each restaurant have its own Tabby account, or should Smooth hold one account for all of them?</span>
+        <p class="qa"><b>We recommend one account per restaurant.</b> Tabby then pays each restaurant directly and Smooth never handles anyone else's money. A single Smooth account would switch Tabby on everywhere instantly, but makes Smooth responsible for paying restaurants out — which needs Tabby's approval and most likely a licence.</p>
+      </div></div>
+
+      <div class="q"><span class="qn">02</span><div class="qc">
+        <span class="qq">Where should Tabby sit in the payment-methods list?</span>
+        <p class="qa"><b>We recommend second — under Smooth Cashback, above Apple Pay.</b> It's new, so it needs to be seen. The pre-selected method doesn't change, so the express Apple Pay path stays exactly as fast.</p>
+      </div></div>
+
+      <div class="q"><span class="qn">03</span><div class="qc">
+        <span class="qq">Is the extra "your details" screen acceptable, or should Tabby require a Smooth account?</span>
+        <p class="qa"><b>We recommend the short form.</b> Requiring an account would shut out guest QR customers, who are the majority of Smooth's traffic. The form is one screen and only appears for Tabby.</p>
+      </div></div>
+
+      <div class="q"><span class="qn">04</span><div class="qc">
+        <span class="qq">Should guests — customers who aren't signed in — be able to use Tabby at all?</span>
+        <p class="qa"><b>We recommend yes.</b> They give their details on the form and Tabby does its own identity checks regardless. Restricting Tabby to signed-in customers would cut its reach sharply.</p>
+      </div></div>
+
+      <div class="q"><span class="qn">05</span><div class="qc">
+        <span class="qq">On the menu screen: a plain Tabby strip, or Tabby's priced widget?</span>
+        <p class="qa"><b>We recommend the plain strip.</b> A menu has dozens of prices and no single one to quote. The priced widget goes on the dish and cart screens, where the price is real and updates live.</p>
+      </div></div>
+
+      <div class="q"><span class="qn">06</span><div class="qc">
+        <span class="qq">Should Tabby be offered on split bills and custom amounts, or only on full bills?</span>
+        <p class="qa"><b>We recommend offering it everywhere.</b> Tabby applies its own minimum and tells the customer directly if a share is too small. Hiding it ourselves would mean hard-coding Tabby's limits and going stale the moment they change.</p>
+      </div></div>
+
+      <div class="q"><span class="qn">07</span><div class="qc">
+        <span class="qq">Should a Tabby payment earn Smooth cashback at the same rate as a card payment?</span>
+        <p class="qa"><b>We've assumed yes.</b> Tabby's merchant fee is typically higher than a card's, so you may want a reduced rate — or none — for Tabby. This is far easier to set now than to change later.</p>
+      </div></div>
+
+      <div class="q"><span class="qn">08</span><div class="qc">
+        <span class="qq">Should merchants be able to switch Tabby on and off themselves?</span>
+        <p class="qa"><b>We recommend admin-only</b>, matching how the card gateway works today. Tabby credentials are sensitive and a wrong entry breaks payments, so it belongs with the team that already handles gateway setup.</p>
+      </div></div>
+
+      <div class="q"><span class="qn">09</span><div class="qc">
+        <span class="qq">In merchant reports, should Tabby be its own line or grouped with card payments?</span>
+        <p class="qa"><b>We recommend its own line.</b> Tabby's fees and settlement timing differ from cards, so a restaurant reconciling its bank account needs to see them separately.</p>
+      </div></div>
+
+      <div class="q"><span class="qn">10</span><div class="qc">
+        <span class="qq">Are you comfortable with refunds being issued in Tabby's dashboard rather than in Smooth?</span>
+        <p class="qa"><b>We recommend yes for now.</b> Smooth's reports stay accurate automatically. Building a refund button only for Tabby would leave Stripe, Telr and AFS without one — a proper cross-method refund feature is its own project.</p>
+      </div></div>
+
+      <div class="q"><span class="qn">11</span><div class="qc">
+        <span class="qq">Should we automatically save the name and email a customer types for Tabby to their Smooth profile?</span>
+        <p class="qa"><b>We recommend yes.</b> It means they only ever type it once. If you'd prefer an explicit "save my details" tick, we'll add one.</p>
+      </div></div>
+
+      <div class="q"><span class="qn">12</span><div class="qc">
+        <span class="qq">When Tabby declines a customer, should we suggest a specific alternative or just reopen the method list?</span>
+        <p class="qa"><b>We've assumed reopening the list</b> with Tabby's own explanation shown. We can instead push them straight to a named method — say Apple Pay — if you'd rather reduce the taps.</p>
+      </div></div>
+
+      <div class="q"><span class="qn">13</span><div class="qc">
+        <span class="qq">Should customers see their remaining Tabby instalments inside Smooth?</span>
+        <p class="qa"><b>We recommend not.</b> Tabby owns that relationship and shows it in the Tabby app; mirroring it risks showing stale figures and makes Smooth look like the lender. Say the word if you want it and we'll scope it.</p>
+      </div></div>
+
+      <div class="q"><span class="qn">14</span><div class="qc">
+        <span class="qq">Is Arabic in scope for this release?</span>
+        <p class="qa"><b>We've assumed not.</b> The Smooth customer app is English-only today with no Arabic support anywhere, so adding it for Tabby alone isn't possible. Tabby's own checklist asks for Arabic, so we're raising it with them — but it would be a separate project across the whole app.</p>
+      </div></div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     QUESTIONS FOR TABBY
+     ══════════════════════════════════════════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">For the partnership call</span>
+      <h2>Questions for Tabby</h2>
+      <p class="lede">Things Tabby's documentation doesn't settle, that affect how we build. Grouped so you can take them into a single conversation.</p>
+    </div>
+
+    <div class="cols">
+
+      <div class="card">
+        <span class="eyebrow" style="color:var(--flag);">Commercial</span>
+        <ul class="plain">
+          <li>Does every restaurant need its own Tabby account, or can Smooth onboard as a platform and issue codes to restaurants underneath it?</li>
+          <li>How long does onboarding one restaurant take, end to end?</li>
+          <li>What is the settlement cycle and the merchant fee? We need to show it to restaurants.</li>
+          <li>Do test and live use the same merchant code or different ones?</li>
+          <li>Do you have a reference integration for restaurants and table-side QR payments?</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow" style="color:var(--flag);">Experience &amp; approvals</span>
+        <ul class="plain">
+          <li>Your checklist asks for Arabic. Smooth's app is English-only today — can we launch in English and add Arabic later?</li>
+          <li>A restaurant menu has no single price, so your priced widget can't run there. Can we use a plain Tabby banner on the menu screen instead?</li>
+          <li>What are the exact minimum and maximum order values for the UAE?</li>
+          <li>Can we have the brand assets — logo files, colours and approved wording? The toolkit link isn't downloadable.</li>
+          <li>Dine-in has no delivery address. Is the restaurant's own address acceptable where you require a shipping address?</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow" style="color:var(--flag);">Technical</span>
+        <ul class="plain">
+          <li>Can several people pay separately against the same bill, or does each payment need its own reference?</li>
+          <li>Is there a deadline for claiming an approved payment? Our retry design depends on it.</li>
+          <li>A bill can include a tip and a Smooth cashback discount, so the item list won't add up to the charged amount. How should we express each?</li>
+          <li>Can the customer's email be optional? Guests scanning a QR code often only have a phone number.</li>
+          <li>When a refund is issued from your dashboard, is a notification to us guaranteed?</li>
+          <li>How quickly does the automatic refund reach a customer when we cancel an approved payment?</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════
+     BEFORE WE START + ROLLOUT
+     ══════════════════════════════════════════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">Readiness</span>
+      <h2>What we need before building can start</h2>
+    </div>
+
+    <div class="tw" style="margin-bottom:44px;">
+      <table>
+        <thead><tr><th style="width:33%;">What's needed</th><th style="width:20%;">From</th><th>Why it blocks us</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Tabby test credentials</strong></td><td>Tabby</td><td>Nothing can be built or tested without them — this is the first thing to ask for.</td></tr>
+          <tr><td><strong>A decision on the account model</strong></td><td>You + Tabby</td><td>Determines whether the admin panel stores credentials per restaurant or once for the platform.</td></tr>
+          <tr><td><strong>Tabby brand assets</strong></td><td>Tabby</td><td>Logo, colours and approved wording for every screen where Tabby appears.</td></tr>
+          <tr><td><strong>A public test environment</strong></td><td>Smooth</td><td>Tabby sends payment updates to a real internet address; it can't reach a developer's laptop.</td></tr>
+          <tr><td><strong>Answers to the fourteen questions</strong></td><td>You</td><td>Several change the customer screens, which is the largest part of the work.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sec-head">
+      <span class="eyebrow">Rollout</span>
+      <h2>The order we'd build it in</h2>
+      <p class="lede">Each stage is testable on its own, so you can see progress rather than waiting for one large delivery.</p>
+    </div>
+
+    <div class="track">
+      <div class="step"><span class="n">Stage 1</span><span class="h">Foundations</span><span class="d">Talking to Tabby, taking payments, claiming money, handling notifications</span></div>
+      <div class="step"><span class="n">Stage 2</span><span class="h">Admin panel</span><span class="d">Tabby setup for a merchant, end to end</span></div>
+      <div class="step"><span class="n">Stage 3</span><span class="h">Customer checkout</span><span class="d">Method list, details screen, return screens — the first payable Tabby bill</span></div>
+      <div class="step"><span class="n">Stage 4</span><span class="h">Promotion &amp; receipts</span><span class="d">Menu, dish and cart messaging; receipts and order history</span></div>
+      <div class="step"><span class="n">Stage 5</span><span class="h">Merchant reporting</span><span class="d">Transactions, dashboard, reports, refund display</span></div>
+      <div class="step"><span class="n">Stage 6</span><span class="h">Tabby sign-off</span><span class="d">Tabby's full checklist, then submission for approval</span></div>
+    </div>
+
+    <div class="note is-flag" style="margin-top:34px;max-width:var(--prose);">
+      <span class="eyebrow">One thing to plan around</span>
+      <p>Stage 6 is Tabby's approval, not ours. Their review sits between "built" and "live", so it's worth agreeing a target date with them early rather than at the end.</p>
+    </div>
+  </div>
+</section>
+
+
+<footer class="foot">
+  <div class="shell">
+    <hr class="rule" style="margin-bottom:28px;">
+    <div class="r">
+      <span class="chip is-accent">Smooth × Tabby</span>
+      <span>Design walkthrough · 24 July 2026</span>
+      <span>Prepared for review and sign-off</span>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .theme-toggle{
+    position:fixed; right:16px; bottom:16px; z-index:50;
+    display:inline-flex; align-items:center; gap:7px;
+    padding:9px 13px; border-radius:9px; cursor:pointer;
+    background:var(--raise); color:var(--ink);
+    border:1px solid var(--line-2);
+    font-family:var(--mono); font-size:0.68rem; font-weight:600;
+    letter-spacing:0.11em; text-transform:uppercase;
+    box-shadow:0 2px 14px rgba(0,0,0,0.10);
+  }
+  .theme-toggle:hover{ border-color:var(--accent); color:var(--accent); }
+  @media print{ .theme-toggle{ display:none; } }
+</style>
+
+<button class="theme-toggle" type="button" id="themeToggle" aria-label="Switch colour theme">
+  <span id="themeLabel">Dark</span>
+</button>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  var label = document.getElementById('themeLabel');
+  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+  function current() {
+    return root.getAttribute('data-theme') || (prefersDark.matches ? 'dark' : 'light');
+  }
+  function paint() {
+    label.textContent = current() === 'dark' ? 'Light' : 'Dark';
+  }
+  try {
+    var saved = localStorage.getItem('sx-tabby-theme');
+    if (saved === 'dark' || saved === 'light') root.setAttribute('data-theme', saved);
+  } catch (e) {}
+  paint();
+
+  btn.addEventListener('click', function () {
+    var next = current() === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('sx-tabby-theme', next); } catch (e) {}
+    paint();
+  });
+
+  prefersDark.addEventListener('change', paint);
+})();
+</script>
+</body>
+</html>
