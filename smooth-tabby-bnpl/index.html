@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="light">
 <meta name="robots" content="noindex, nofollow">
 <title>Smooth &times; Tabby &mdash; Design Walkthrough</title>
-<meta name="description" content="A screen-by-screen walkthrough of how Tabby Pay in 4 will work across Smooth's admin panel, merchant panel and customer app.">
+<meta name="description" content="A screen-by-screen walkthrough of how Tabby will work across Smooth's admin panel, merchant panel and customer app.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129534;</text></svg>">
 
 <!-- Theme, applied before first paint. Light unless this browser chose dark
@@ -434,7 +434,7 @@ ul.plain.is-alert li::before{ background:var(--alert); }
   <div class="shell">
     <div class="kicker">
       <span class="chip is-accent">Smooth</span>
-      <span class="chip is-tabby">Tabby — Pay in 4</span>
+      <span class="chip is-tabby">Tabby</span>
       <span class="chip">Design walkthrough</span>
     </div>
 
@@ -550,7 +550,7 @@ ul.plain.is-alert li::before{ background:var(--alert); }
           </div>
           <div class="d-cell">
             <span class="eyebrow">What you'll see</span>
-            <p>In the admin panel, the payment-methods list gains a fifth option: <span class="mono">Tabby (Pay in 4)</span>. Everywhere Smooth already shows payment methods, Tabby appears automatically.</p>
+            <p>In the admin panel, the payment-methods list gains a fifth option: <span class="mono">Tabby</span>. Everywhere Smooth already shows payment methods, Tabby appears automatically.</p>
           </div>
         </div>
       </article>
@@ -679,7 +679,7 @@ ul.plain.is-alert li::before{ background:var(--alert); }
       <div class="screen">
         <div class="s-txt">
           <h3>Merchants → Add / Edit merchant <span class="chip">Changed</span></h3>
-          <p>The <strong>Payment Methods</strong> checkbox list gains a fifth option: <span class="mono">Tabby (Pay in 4)</span>. It's available for every gateway — Stripe, Telr and AFS — because Tabby is independent of them.</p>
+          <p>The <strong>Payment Methods</strong> checkbox list gains a fifth option: <span class="mono">Tabby</span>. It's available for every gateway — Stripe, Telr and AFS — because Tabby is independent of them.</p>
           <p>It is <strong>off by default</strong>. A restaurant only gets Tabby when you deliberately tick it.</p>
           <p>Ticking it opens a new <strong>Tabby</strong> panel below, mirroring the AFS panel that already exists. Once saved, Smooth registers itself with Tabby automatically so Tabby can send us payment updates — you'll see a green confirmation, and a <strong>Re-register</strong> button if it ever needs redoing.</p>
         </div>
@@ -694,7 +694,7 @@ ul.plain.is-alert li::before{ background:var(--alert); }
               <div class="wf-block">
                 <div class="wf-t">Payment Methods</div>
                 <div class="wf-s">☑ Apple Pay &nbsp; ☑ Google Pay &nbsp; ☑ Card</div>
-                <div class="wf-s" style="color:var(--tabby);font-weight:640;">☑ Tabby (Pay in 4) &nbsp;— new</div>
+                <div class="wf-s" style="color:var(--tabby);font-weight:640;">☑ Tabby &nbsp;— new</div>
               </div>
               <div class="wf-block is-tabby">
                 <div class="wf-t">Tabby — Buy Now Pay Later</div>
@@ -790,7 +790,7 @@ ul.plain.is-alert li::before{ background:var(--alert); }
               </div>
               <div class="wf-block is-tabby">
                 <div class="wf-row"><span class="wf-t">Table 04 · #4472</span><span class="wf-t num">AED 250.00</span></div>
-                <div class="wf-mini">Tabby · Pay in 4 · 14:48</div>
+                <div class="wf-mini">Tabby · 14:48</div>
                 <div class="wf-mini" style="color:var(--flag);">Refunded AED 62.50 of AED 250.00</div>
               </div>
               <div class="wf-block is-ghost">
@@ -850,7 +850,7 @@ ul.plain.is-alert li::before{ background:var(--alert); }
 
     <div class="track" style="margin-bottom:44px;">
       <div class="step"><span class="n">01</span><span class="h">Menu</span><span class="d">Customer learns Tabby is available here</span></div>
-      <div class="step"><span class="n">02</span><span class="h">Dish &amp; Cart</span><span class="d">Sees the instalment amount on real prices</span></div>
+      <div class="step"><span class="n">02</span><span class="h">Dish &amp; Cart</span><span class="d">Sees Tabby&rsquo;s own plan on real prices</span></div>
       <div class="step"><span class="n">03</span><span class="h">Payment</span><span class="d">Picks Tabby from the methods list</span></div>
       <div class="step"><span class="n">04</span><span class="h">Details</span><span class="d">Confirms name, email, mobile</span></div>
       <div class="step is-tabby"><span class="n">05</span><span class="h">Tabby</span><span class="d">Approves on Tabby's own screens</span></div>
@@ -863,15 +863,15 @@ ul.plain.is-alert li::before{ background:var(--alert); }
       <div class="screen">
         <div class="s-txt">
           <h3>1 · Menu screen <span class="chip is-flag">Your call</span></h3>
-          <p>A slim Tabby strip sits under the restaurant header: <em>"Pay in 4 with Tabby. No interest, no fees."</em> Tapping it opens a short <strong>How Tabby works</strong> panel.</p>
-          <p><strong>Why a plain strip and not a price here.</strong> Tabby's official widget shows a specific instalment figure — <em>"or 4 payments of AED 22.50"</em> — which needs one real price. A menu is a list of dozens of prices, so any single figure would either be invented or misleading. We show the offer here and the real numbers on the screens where a real price exists.</p>
+          <p>A slim Tabby strip sits under the restaurant header — <em>&ldquo;Pay with Tabby&rdquo;</em> — and tapping it opens a short <strong>How Tabby works</strong> panel.</p>
+          <p><strong>Why a plain strip and not a price here.</strong> Tabby&rsquo;s official widget quotes a specific instalment figure, which needs one real price. A menu is a list of dozens of prices, so any single figure would either be invented or misleading. We show the offer here and let Tabby&rsquo;s widget show the real numbers on the screens where a real price exists.</p>
         </div>
         <div>
           <div class="wf">
             <div class="wf-bar"><span class="wf-dots"><i></i><i></i><i></i></span><span class="wf-name">Customer · Menu</span></div>
             <div class="wf-body">
               <div class="wf-block is-ghost"><div class="wf-t">Marina Social</div><div class="wf-mini">Table 04 · ★ 4.6</div></div>
-              <div class="wf-strip">Pay in 4 with Tabby — no interest, no fees &nbsp;›</div>
+              <div class="wf-strip">Pay with Tabby &nbsp;›</div>
               <div class="wf-block is-ghost"><div class="wf-row"><span class="wf-t">Truffle Arancini</span><span class="wf-mini num">AED 48</span></div></div>
               <div class="wf-block is-ghost"><div class="wf-row"><span class="wf-t">Wagyu Slider</span><span class="wf-mini num">AED 72</span></div></div>
             </div>
@@ -894,7 +894,7 @@ ul.plain.is-alert li::before{ background:var(--alert); }
                 <div class="wf-bar"><span class="wf-dots"><i></i><i></i><i></i></span><span class="wf-name">Dish</span></div>
                 <div class="wf-body">
                   <div class="wf-block is-ghost"><div class="wf-t">Wagyu Slider</div><div class="wf-t num" style="font-size:1.15rem;">AED 90.00</div></div>
-                  <div class="wf-block is-tabby"><div class="wf-s" style="color:var(--tabby);font-weight:620;">4 interest-free payments of AED 22.50</div><div class="wf-mini">Tabby widget</div></div>
+                  <div class="wf-block is-tabby"><div class="wf-s" style="color:var(--tabby);font-weight:620;">Tabby&rsquo;s plan for AED 90.00</div><div class="wf-mini">Tabby widget — their wording, their numbers</div></div>
                   <div class="wf-block is-ghost"><div class="wf-s">Size · Extras · Notes</div></div>
                 </div>
               </div>
@@ -905,7 +905,7 @@ ul.plain.is-alert li::before{ background:var(--alert); }
                 <div class="wf-body">
                   <div class="wf-block is-ghost"><div class="wf-s">3 items</div></div>
                   <div class="wf-block is-ghost"><div class="wf-row"><span class="wf-t">Total</span><span class="wf-t num">AED 250.00</span></div></div>
-                  <div class="wf-block is-tabby"><div class="wf-s" style="color:var(--tabby);font-weight:620;">4 interest-free payments of AED 62.50</div></div>
+                  <div class="wf-block is-tabby"><div class="wf-s" style="color:var(--tabby);font-weight:620;">Tabby&rsquo;s plan for AED 250.00</div><div class="wf-mini">Tabby widget</div></div>
                   <div class="wf-btn">Proceed to pay</div>
                 </div>
               </div>
@@ -918,10 +918,10 @@ ul.plain.is-alert li::before{ background:var(--alert); }
       <div class="screen">
         <div class="s-txt">
           <h3>3 · Payment screen — choosing Tabby <span class="chip is-flag">Your call</span></h3>
-          <p>Tabby joins the payment-methods list with its logo, the name <strong>Tabby</strong>, the line <em>"4 interest-free payments"</em> and the calculated <strong>4 × AED 62.50</strong>.</p>
+          <p>Tabby joins the payment-methods list with its logo and the name <strong>Tabby</strong> — the same shape as every other row on that screen. <strong>Smooth writes no instalment figure of its own.</strong></p>
           <p><strong>Where we're placing it:</strong> second — directly under Smooth Cashback, above Apple Pay. It's a new option customers won't be looking for, so it needs to be seen.</p>
           <p><strong>What doesn't change:</strong> the pre-selected method stays Apple Pay → Google Pay → Card, exactly as today. Tabby is never auto-selected. A customer who just wants to tap Apple Pay taps it as fast as they always have.</p>
-          <p>When Tabby is selected, its instalment breakdown expands underneath — Tabby requires this at checkout.</p>
+          <p>When Tabby is selected, <strong>Tabby&rsquo;s own widget</strong> expands underneath and shows the plan. Tabby requires it at checkout, and it is the only place a plan appears — see the note below on why.</p>
         </div>
         <div>
           <div class="wf">
@@ -931,14 +931,19 @@ ul.plain.is-alert li::before{ background:var(--alert); }
                 <div class="wf-row"><span><span class="wf-t">Smooth Cashback</span><br><span class="wf-mini">Balance AED 40.00</span></span><span class="wf-radio"></span></div>
               </div>
               <div class="wf-block is-tabby">
-                <div class="wf-row"><span><span class="wf-t" style="color:var(--tabby);">Tabby — Pay in 4</span><br><span class="wf-s">4 interest-free payments · 4 × AED 62.50</span></span><span class="wf-radio on"></span></div>
-                <div class="wf-mini" style="border-top:1px dashed color-mix(in srgb,var(--tabby) 40%,transparent);padding-top:8px;">Tabby instalment breakdown</div>
+                <div class="wf-row"><span class="wf-t" style="color:var(--tabby);">Tabby</span><span class="wf-radio on"></span></div>
+                <div class="wf-mini" style="border-top:1px dashed color-mix(in srgb,var(--tabby) 40%,transparent);padding-top:8px;">Tabby&rsquo;s widget — the live plan for AED 250.00</div>
               </div>
               <div class="wf-block is-ghost"><div class="wf-row"><span class="wf-t">Apple Pay</span><span class="wf-radio"></span></div></div>
               <div class="wf-block is-ghost"><div class="wf-row"><span class="wf-t">Google Pay</span><span class="wf-radio"></span></div></div>
               <div class="wf-block is-ghost"><div class="wf-row"><span class="wf-t">Credit / Debit Cards</span><span class="wf-radio"></span></div></div>
               <div class="wf-btn">Confirm payment method</div>
             </div>
+          </div>
+          <div class="note is-tabby" style="margin-top:16px;">
+            <span class="eyebrow">Why Smooth never states the plan</span>
+            <p>Testing with Tabby showed that the same bill can be split into <strong>4, 6, 8 or 12 payments</strong>, and the longer plans carry a service fee the customer pays on top. Tabby decides what a given customer is offered, and the customer chooses at Tabby&rsquo;s own checkout.</p>
+            <p>So any &ldquo;4 payments of AED …&rdquo; line written by Smooth would be a guess, and wrong the moment a customer picked something else. Every plan figure comes from Tabby&rsquo;s own widget instead. In Smooth the method is called simply <strong>Tabby</strong>.</p>
           </div>
         </div>
       </div>
@@ -960,13 +965,13 @@ ul.plain.is-alert li::before{ background:var(--alert); }
           <div class="wf">
             <div class="wf-bar"><span class="wf-dots"><i></i><i></i><i></i></span><span class="wf-name">Customer · Your details</span></div>
             <div class="wf-body">
-              <div class="wf-block is-tabby"><div class="wf-t" style="color:var(--tabby);">Pay in 4 with Tabby</div><div class="wf-s">Just a few details to get started</div></div>
+              <div class="wf-block is-tabby"><div class="wf-t" style="color:var(--tabby);">Pay with Tabby</div><div class="wf-s">Just a few details to get started</div></div>
               <div class="wf-block">
                 <div class="wf-s">Full name</div><div class="wf-field">Ahmed Al Mansoori</div>
                 <div class="wf-s" style="margin-top:4px;">Email</div><div class="wf-field">ahmed@example.com</div>
                 <div class="wf-s" style="margin-top:4px;">Mobile number</div><div class="wf-field">🇦🇪 +971 50 000 0001</div>
               </div>
-              <div class="wf-block is-tabby"><div class="wf-s" style="color:var(--tabby);font-weight:620;">AED 250.00 → 4 × AED 62.50 · 0% interest</div></div>
+              <div class="wf-block is-tabby"><div class="wf-row"><span class="wf-s">Total</span><span class="wf-t num">AED 250.00</span></div><div class="wf-mini">Tabby&rsquo;s widget — the live plan</div></div>
               <div class="wf-btn">Continue with Tabby</div>
               <div class="wf-mini" style="text-align:center;">Tabby will confirm your approval on the next screen</div>
             </div>
@@ -1007,8 +1012,8 @@ ul.plain.is-alert li::before{ background:var(--alert); }
             <div class="wf-body">
               <div class="wf-block"><div class="wf-t" style="color:var(--accent);">Payment successful</div><div class="wf-t num" style="font-size:1.2rem;">AED 250.00</div></div>
               <div class="wf-block is-tabby">
-                <div class="wf-row"><span class="wf-s">Paid with</span><span class="wf-t" style="color:var(--tabby);">Tabby — Pay in 4</span></div>
-                <div class="wf-mini">4 payments of AED 62.50 · first payment today</div>
+                <div class="wf-row"><span class="wf-s">Paid with</span><span class="wf-t" style="color:var(--tabby);">Tabby</span></div>
+                <div class="wf-mini">Your schedule is in the Tabby app</div>
               </div>
               <div class="wf-block is-ghost"><div class="wf-row"><span class="wf-s">Cashback earned</span><span class="wf-t num">AED 5.00</span></div></div>
               <div class="wf-btn is-alt">Email me the receipt</div>
@@ -1021,7 +1026,7 @@ ul.plain.is-alert li::before{ background:var(--alert); }
       <div class="screen">
         <div class="s-txt">
           <h3>7 · My Orders &amp; My Payments <span class="chip">Changed</span></h3>
-          <p>Past Tabby payments carry a Tabby badge in the customer's history, and the emailed and downloaded receipts say <strong>Tabby (Pay in 4)</strong> with the instalment summary.</p>
+          <p>Past Tabby payments carry a Tabby badge in the customer&rsquo;s history, and the emailed and downloaded receipts say <strong>Tabby</strong> and the amount paid.</p>
           <p><strong>Deliberately not shown:</strong> the customer's remaining instalments, due dates or balance. Tabby owns that relationship and shows it in the Tabby app. Duplicating it in Smooth would risk showing a stale figure — and it would make Smooth look like the lender, which it isn't.</p>
         </div>
         <div>
@@ -1078,7 +1083,7 @@ ul.plain.is-alert li::before{ background:var(--alert); }
       <div class="card">
         <span class="eyebrow" style="color:var(--accent);">Smooth Cashback</span>
         <h3>Cashback works with Tabby in both directions</h3>
-        <p><strong>Spending cashback.</strong> If a customer applies AED 40 of Smooth cashback to a AED 250 bill, Tabby is asked for AED 210 — and the instalments shown become 4 × AED 52.50. The discount is applied before Tabby ever sees the amount.</p>
+        <p><strong>Spending cashback.</strong> If a customer applies AED 40 of Smooth cashback to a AED 250 bill, Tabby is asked for AED 210 — and Tabby&rsquo;s widget re-quotes against AED 210. The discount is applied before Tabby ever sees the amount.</p>
         <p><strong>Earning cashback.</strong> A Tabby payment earns Smooth cashback on exactly the same terms as a card payment. From the loyalty engine's point of view Tabby is just another way the bill got paid.</p>
         <p><strong>Paying entirely with cashback.</strong> Unchanged — if cashback covers the whole bill there's nothing left to finance, so Tabby isn't offered.</p>
         <div class="note is-flag">
@@ -1091,7 +1096,7 @@ ul.plain.is-alert li::before{ background:var(--alert); }
       <div class="card">
         <span class="eyebrow" style="color:var(--accent);">Tips</span>
         <h3>The tip is financed along with the bill</h3>
-        <p>A tip is added before Tabby is asked for the amount, so a AED 250 bill with a AED 25 tip becomes a AED 275 Tabby plan — 4 × AED 68.75. The restaurant receives the tip in full with the rest of the bill.</p>
+        <p>A tip is added before Tabby is asked for the amount, so a AED 250 bill with a AED 25 tip becomes a AED 275 Tabby plan. The restaurant receives the tip in full with the rest of the bill.</p>
         <p>Where a payment link has tips switched off, nothing changes: no tip, no effect on Tabby.</p>
       </div>
 
@@ -1100,7 +1105,7 @@ ul.plain.is-alert li::before{ background:var(--alert); }
         <span class="eyebrow" style="color:var(--accent);">Payment links, pay-later &amp; Foodics</span>
         <h3>All three get Tabby with no extra work</h3>
         <ul class="plain">
-          <li><strong>Payment links</strong> — a customer opening a link sees Tabby in the methods list and the instalment figure under the payable amount, just as on a table bill.</li>
+          <li><strong>Payment links</strong> — a customer opening a link sees Tabby in the methods list and Tabby&rsquo;s widget under the payable amount, just as on a table bill.</li>
           <li><strong>Pay later</strong> — a customer who eats first and pays afterwards can choose Tabby at the end. No difference.</li>
           <li><strong>Foodics tables</strong> — Tabby works on Foodics bills too. Foodics bills can change while the customer is paying, so if the total drops mid-payment Smooth claims only what's actually owed and cancels the remainder, which Tabby refunds automatically.</li>
         </ul>
