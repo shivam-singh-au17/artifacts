@@ -1,0 +1,2583 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex, nofollow">
+<title>Smooth Checkout &mdash; Product Walkthrough</title>
+<meta name="description" content="Every screen of Smooth Checkout, Phase 1: the admin CMS, the merchant CMS and the checkout box on a merchant's own website. Screen by screen, field by field, in the order a new merchant meets them.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#128179;</text></svg>">
+
+<!-- Theme, applied before first paint. Light unless this browser chose dark
+     on any page of the site; the key is shared by every document. -->
+<script>
+(function () {
+  var saved;
+  try { saved = localStorage.getItem('ss-docs-theme'); } catch (e) {}
+  document.documentElement.setAttribute('data-theme', saved === 'dark' ? 'dark' : 'light');
+})();
+</script>
+
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  img,svg{max-width:100%;height:auto}
+  body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+</style>
+</head>
+<body>
+
+<div style="border-bottom:1px solid var(--line);background:var(--surface);">
+  <div style="max-width:1120px;margin-inline:auto;padding:11px clamp(18px,4vw,48px);">
+    <a href="../" style="font-family:var(--mono);font-size:0.68rem;font-weight:600;letter-spacing:0.13em;text-transform:uppercase;color:var(--slate);text-decoration:none;">&#8592;&nbsp;&nbsp;Shivam Singh &middot; Documents</a>
+  </div>
+</div>
+<style>
+/* ────────────────────────────────────────────────
+   TOKENS
+   ──────────────────────────────────────────────── */
+:root{
+  color-scheme:light;
+  --paper:#FCFCFB;
+  --surface:#F3F6F4;
+  --raise:#FFFFFF;
+  --ink:#0D1512;
+  --ink-2:#39473F;
+  --slate:#61706A;
+  --line:#E1E7E3;
+  --line-2:#CBD5D0;
+
+  --accent:#088F58;
+  --accent-strong:#0AB971;
+  --accent-bg:#E8F7F0;
+
+  --tabby:#0B8E71;
+  --tabby-bg:#E2FAF2;
+
+  --flag:#9C5C0C;
+  --flag-bg:#FBF1E1;
+
+  --alert:#A93028;
+  --alert-bg:#FBEAE8;
+
+  --sans:ui-sans-serif,"Segoe UI Variable Text","SF Pro Text",-apple-system,"Segoe UI",system-ui,"Helvetica Neue",sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","Segoe UI Mono",Consolas,"Liberation Mono",monospace;
+
+  --shell:1120px;
+  --prose:69ch;
+}
+
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#0A100D;
+  --surface:#101815;
+  --raise:#131D19;
+  --ink:#ECF2EF;
+  --ink-2:#BDCAC4;
+  --slate:#84968E;
+  --line:#1E2C26;
+  --line-2:#2C3D36;
+  --accent:#2ED68F;
+  --accent-strong:#3FE39C;
+  --accent-bg:#0D2A1F;
+  --tabby:#3EEDBF;
+  --tabby-bg:#082A22;
+  --flag:#E3AC5C;
+  --flag-bg:#2A2013;
+  --alert:#EC7A70;
+  --alert-bg:#2B1512;
+}
+
+:root[data-theme="light"]{
+  --paper:#FCFCFB;
+  --surface:#F3F6F4;
+  --raise:#FFFFFF;
+  --ink:#0D1512;
+  --ink-2:#39473F;
+  --slate:#61706A;
+  --line:#E1E7E3;
+  --line-2:#CBD5D0;
+  --accent:#088F58;
+  --accent-strong:#0AB971;
+  --accent-bg:#E8F7F0;
+  --tabby:#0B8E71;
+  --tabby-bg:#E2FAF2;
+  --flag:#9C5C0C;
+  --flag-bg:#FBF1E1;
+  --alert:#A93028;
+  --alert-bg:#FBEAE8;
+}
+
+/* ────────────────────────────────────────────────
+   BASE
+   ──────────────────────────────────────────────── */
+html{ -webkit-text-size-adjust:100%; }
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:16.5px;
+  line-height:1.62;
+  letter-spacing:-0.005em;
+  overflow-x:hidden;
+}
+*,*::before,*::after{ box-sizing:border-box; }
+
+.shell{ max-width:var(--shell); margin-inline:auto; padding-inline:clamp(18px,4vw,48px); }
+.prose{ max-width:var(--prose); }
+
+p{ margin:0 0 1.05em; color:var(--ink-2); }
+p:last-child{ margin-bottom:0; }
+strong{ color:var(--ink); font-weight:650; }
+a{ color:var(--accent); text-decoration-thickness:1px; text-underline-offset:2px; }
+a:focus-visible,button:focus-visible{ outline:2px solid var(--accent-strong); outline-offset:3px; border-radius:3px; }
+
+h1,h2,h3,h4{ color:var(--ink); text-wrap:balance; margin:0; }
+h1{ font-size:clamp(2.5rem,6vw,4.1rem); font-weight:760; letter-spacing:-0.038em; line-height:1.02; }
+h2{ font-size:clamp(1.6rem,3.2vw,2.3rem); font-weight:720; letter-spacing:-0.028em; line-height:1.12; }
+h3{ font-size:1.19rem; font-weight:680; letter-spacing:-0.018em; line-height:1.28; }
+h4{ font-size:1rem; font-weight:670; letter-spacing:-0.01em; }
+
+.eyebrow{
+  font-family:var(--mono); font-size:0.685rem; font-weight:600;
+  letter-spacing:0.16em; text-transform:uppercase; color:var(--slate);
+}
+.lede{ font-size:1.16rem; line-height:1.55; color:var(--ink-2); }
+
+code,.mono{ font-family:var(--mono); font-size:0.86em; letter-spacing:-0.01em; }
+code{
+  background:var(--surface); border:1px solid var(--line); border-radius:4px;
+  padding:0.08em 0.36em; color:var(--ink);
+  overflow-wrap:anywhere;
+}
+hr.rule{ border:0; border-top:1px solid var(--line); margin:0; }
+
+/* ────────────────────────────────────────────────
+   COVER
+   ──────────────────────────────────────────────── */
+.cover{ padding-block:clamp(56px,9vw,104px) clamp(40px,6vw,64px); border-bottom:1px solid var(--line); }
+.cover .kicker{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:26px; }
+.cover h1{ margin-bottom:22px; }
+.cover .sub{ font-size:clamp(1.1rem,2vw,1.32rem); line-height:1.5; color:var(--slate); max-width:62ch; }
+
+.meta-grid{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(178px,1fr));
+  gap:1px; background:var(--line); border:1px solid var(--line);
+  border-radius:10px; overflow:hidden; margin-top:44px;
+}
+.meta-grid > div{ background:var(--paper); padding:16px 18px; }
+.meta-grid dt{ font-family:var(--mono); font-size:0.66rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--slate); margin-bottom:6px; }
+.meta-grid dd{ margin:0; font-size:0.94rem; font-weight:600; color:var(--ink); }
+
+/* ────────────────────────────────────────────────
+   CHIPS
+   ──────────────────────────────────────────────── */
+.chip{
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:var(--mono); font-size:0.66rem; font-weight:600;
+  letter-spacing:0.09em; text-transform:uppercase;
+  padding:4px 9px; border-radius:5px;
+  border:1px solid var(--line-2); color:var(--slate); background:var(--surface);
+  white-space:nowrap;
+}
+.chip.is-accent{ color:var(--accent); border-color:color-mix(in srgb,var(--accent) 34%,transparent); background:var(--accent-bg); }
+.chip.is-tabby{ color:var(--tabby); border-color:color-mix(in srgb,var(--tabby) 36%,transparent); background:var(--tabby-bg); }
+.chip.is-flag{ color:var(--flag); border-color:color-mix(in srgb,var(--flag) 34%,transparent); background:var(--flag-bg); }
+.chip.is-alert{ color:var(--alert); border-color:color-mix(in srgb,var(--alert) 34%,transparent); background:var(--alert-bg); }
+
+/* ────────────────────────────────────────────────
+   SECTIONS
+   ──────────────────────────────────────────────── */
+section{ padding-block:clamp(48px,7vw,86px); border-bottom:1px solid var(--line); }
+section:last-of-type{ border-bottom:0; }
+.sec-head{ display:flex; flex-direction:column; gap:14px; margin-bottom:38px; max-width:var(--prose); }
+
+.part-head{ display:grid; grid-template-columns:auto 1fr; gap:clamp(18px,3vw,34px); align-items:start; margin-bottom:42px; }
+.part-num{ font-family:var(--mono); font-size:clamp(2.6rem,6vw,4.2rem); font-weight:600; line-height:0.82; color:var(--line-2); letter-spacing:-0.05em; }
+.part-head .txt{ display:flex; flex-direction:column; gap:12px; max-width:var(--prose); }
+
+.stack{ display:flex; flex-direction:column; gap:clamp(20px,3vw,32px); }
+.stack-sm{ display:flex; flex-direction:column; gap:14px; }
+.cols{ display:grid; gap:clamp(16px,2.4vw,26px); grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); }
+
+/* ────────────────────────────────────────────────
+   CARDS
+   ──────────────────────────────────────────────── */
+.card{
+  background:var(--raise); border:1px solid var(--line); border-radius:12px;
+  padding:clamp(18px,2.6vw,26px); display:flex; flex-direction:column; gap:13px;
+}
+.card > .eyebrow{ margin-bottom:-4px; }
+.card p{ font-size:0.955rem; }
+
+.note{
+  border:1px solid var(--line); border-radius:10px; padding:16px 18px;
+  background:var(--surface); display:flex; flex-direction:column; gap:8px;
+}
+.note.is-flag{ background:var(--flag-bg); border-color:color-mix(in srgb,var(--flag) 26%,transparent); }
+.note.is-alert{ background:var(--alert-bg); border-color:color-mix(in srgb,var(--alert) 26%,transparent); }
+.note.is-accent{ background:var(--accent-bg); border-color:color-mix(in srgb,var(--accent) 26%,transparent); }
+.note p{ margin:0; font-size:0.93rem; }
+.note .eyebrow{ color:inherit; opacity:0.85; }
+.note.is-flag .eyebrow{ color:var(--flag); }
+.note.is-alert .eyebrow{ color:var(--alert); }
+.note.is-accent .eyebrow{ color:var(--accent); }
+
+/* ────────────────────────────────────────────────
+   WIREFRAME
+   ──────────────────────────────────────────────── */
+.wf{ border:1px solid var(--line-2); border-radius:14px; background:var(--surface); overflow:hidden; font-size:0.86rem; min-width:264px; }
+.wf-bar{ display:flex; align-items:center; gap:9px; padding:9px 14px; background:var(--raise); border-bottom:1px solid var(--line); }
+.wf-dots{ display:flex; gap:4px; }
+.wf-dots i{ width:7px; height:7px; border-radius:50%; background:var(--line-2); display:block; }
+.wf-name{ font-family:var(--mono); font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--slate); }
+.wf-body{ padding:14px; display:flex; flex-direction:column; gap:9px; }
+
+.wf-block{ border:1px solid var(--line); background:var(--raise); border-radius:9px; padding:11px 13px; display:flex; flex-direction:column; gap:5px; }
+.wf-block.is-new{ border-color:color-mix(in srgb,var(--accent) 45%,transparent); background:var(--accent-bg); }
+.wf-block.is-flag{ border-color:color-mix(in srgb,var(--flag) 45%,transparent); background:var(--flag-bg); }
+.wf-block.is-alert{ border-color:color-mix(in srgb,var(--alert) 45%,transparent); background:var(--alert-bg); }
+.wf-block.is-ghost{ border-style:dashed; background:transparent; opacity:0.78; }
+.wf-t{ font-weight:640; color:var(--ink); font-size:0.9rem; }
+.wf-s{ color:var(--slate); font-size:0.8rem; line-height:1.45; }
+.wf-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.wf-field{ border:1px solid var(--line-2); border-radius:7px; background:var(--raise); padding:8px 11px; font-family:var(--mono); font-size:0.76rem; color:var(--slate); }
+.wf-btn{ border-radius:8px; padding:10px 14px; text-align:center; font-weight:640; font-size:0.88rem; background:var(--ink); color:var(--paper); }
+.wf-btn.is-alt{ background:transparent; color:var(--ink); border:1px solid var(--line-2); }
+.wf-btn.is-apple{ background:#000; color:#fff; font-weight:600; letter-spacing:-0.01em; }
+.wf-btn.is-gpay{ background:#000; color:#fff; font-weight:600; letter-spacing:-0.01em; }
+.wf-mini{ font-family:var(--mono); font-size:0.7rem; letter-spacing:0.05em; color:var(--slate); }
+.wf-caption{ font-size:0.87rem; color:var(--slate); margin-top:10px; line-height:1.5; }
+.wf-pair{ display:grid; gap:clamp(16px,2.4vw,26px); grid-template-columns:repeat(auto-fit,minmax(288px,1fr)); align-items:start; }
+
+/* wireframe extras for this document */
+.wf-tabs{ display:flex; gap:4px; flex-wrap:wrap; padding-bottom:2px; }
+.wf-tab{ font-size:0.74rem; padding:5px 9px; border-radius:6px; color:var(--slate); border:1px solid transparent; }
+.wf-tab.on{ background:var(--raise); border-color:var(--line-2); color:var(--ink); font-weight:620; }
+.wf-side{ display:grid; grid-template-columns:104px 1fr; gap:10px; }
+.wf-nav{ display:flex; flex-direction:column; gap:4px; }
+.wf-nav span{ font-size:0.74rem; color:var(--slate); padding:5px 7px; border-radius:6px; }
+.wf-nav span.on{ background:var(--raise); color:var(--ink); font-weight:620; border:1px solid var(--line-2); }
+.wf-tbl{ border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--raise); }
+.wf-tr{ display:grid; gap:8px; padding:7px 10px; border-bottom:1px solid var(--line); font-size:0.75rem; color:var(--ink-2); align-items:center; }
+.wf-tr:last-child{ border-bottom:0; }
+.wf-tr.h{ background:var(--surface); font-family:var(--mono); font-size:0.64rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--slate); }
+.wf-pill{ display:inline-block; font-size:0.66rem; font-weight:640; padding:2px 7px; border-radius:20px; background:var(--surface); border:1px solid var(--line-2); color:var(--slate); }
+.wf-pill.ok{ background:var(--accent-bg); border-color:color-mix(in srgb,var(--accent) 35%,transparent); color:var(--accent); }
+.wf-pill.warn{ background:var(--flag-bg); border-color:color-mix(in srgb,var(--flag) 35%,transparent); color:var(--flag); }
+.wf-pill.bad{ background:var(--alert-bg); border-color:color-mix(in srgb,var(--alert) 35%,transparent); color:var(--alert); }
+.wf-ribbon{ background:var(--flag-bg); border:1px dashed color-mix(in srgb,var(--flag) 45%,transparent); color:var(--flag); border-radius:7px; padding:7px 10px; font-size:0.76rem; font-weight:620; text-align:center; }
+.wf-kv{ display:grid; grid-template-columns:auto 1fr; gap:4px 12px; font-size:0.76rem; }
+.wf-kv dt{ color:var(--slate); font-family:var(--mono); font-size:0.68rem; letter-spacing:0.06em; text-transform:uppercase; }
+.wf-kv dd{ margin:0; color:var(--ink-2); }
+
+/* ────────────────────────────────────────────────
+   MAP / PRE
+   ──────────────────────────────────────────────── */
+pre{
+  margin:0; overflow-x:auto; background:var(--surface);
+  border:1px solid var(--line); border-radius:11px;
+  padding:16px 18px; font-family:var(--mono); font-size:0.8rem;
+  line-height:1.66; color:var(--ink-2); letter-spacing:-0.005em;
+}
+pre b{ color:var(--ink); font-weight:650; }
+pre i{ color:var(--slate); font-style:normal; }
+pre em{ color:var(--accent); font-style:normal; font-weight:600; }
+.pre-label{ font-family:var(--mono); font-size:0.66rem; letter-spacing:0.13em; text-transform:uppercase; color:var(--slate); margin-bottom:8px; display:block; }
+
+/* ────────────────────────────────────────────────
+   CONTENTS
+   ──────────────────────────────────────────────── */
+.toc{ display:grid; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:12px; overflow:hidden; grid-template-columns:repeat(auto-fit,minmax(248px,1fr)); }
+.toc a{ background:var(--raise); padding:13px 16px; text-decoration:none; color:var(--ink); display:flex; gap:11px; align-items:baseline; }
+.toc a:hover{ background:var(--accent-bg); }
+.toc a .n{ font-family:var(--mono); font-size:0.68rem; color:var(--slate); font-weight:600; flex:none; }
+.toc a .t{ font-size:0.93rem; font-weight:620; letter-spacing:-0.012em; line-height:1.35; }
+.toc a .s{ display:block; font-size:0.8rem; color:var(--slate); font-weight:400; margin-top:2px; }
+
+/* anchors clear the sticky nothing, but keep a breathing gap when jumped to */
+[id]{ scroll-margin-top:22px; }
+.inv-link{ color:var(--accent); text-decoration:none; font-family:var(--mono); }
+.inv-link:hover{ text-decoration:underline; }
+
+/* ────────────────────────────────────────────────
+   SCREEN ENTRY
+   ──────────────────────────────────────────────── */
+.screen{ display:grid; grid-template-columns:minmax(0,1fr); gap:16px; padding-top:28px; border-top:1px solid var(--line); }
+.screen:first-of-type{ border-top:0; padding-top:0; }
+@media (min-width:880px){
+  .screen{ grid-template-columns:minmax(0,1.02fr) minmax(0,0.98fr); gap:clamp(24px,3.4vw,44px); align-items:start; }
+}
+.screen .s-txt{ display:flex; flex-direction:column; gap:11px; }
+.screen .s-txt h3{ display:flex; align-items:baseline; gap:11px; flex-wrap:wrap; }
+.screen .s-txt p{ font-size:0.955rem; margin:0; }
+.screen-id{ font-family:var(--mono); font-size:0.68rem; letter-spacing:0.1em; color:var(--slate); font-weight:600; }
+
+/* ────────────────────────────────────────────────
+   TRACK
+   ──────────────────────────────────────────────── */
+.track{ display:grid; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:12px; overflow:hidden; grid-template-columns:repeat(auto-fit,minmax(186px,1fr)); }
+.track .step{ background:var(--raise); padding:17px 18px 20px; display:flex; flex-direction:column; gap:7px; }
+.track .step .n{ font-family:var(--mono); font-size:0.68rem; letter-spacing:0.12em; color:var(--slate); }
+.track .step .h{ font-weight:660; font-size:0.97rem; letter-spacing:-0.012em; }
+.track .step .d{ font-size:0.87rem; color:var(--slate); line-height:1.5; }
+.track .step.is-accent{ background:var(--accent-bg); }
+.track .step.is-flag{ background:var(--flag-bg); }
+
+/* ────────────────────────────────────────────────
+   TABLES
+   ──────────────────────────────────────────────── */
+.tw{ overflow-x:auto; border:1px solid var(--line); border-radius:11px; background:var(--raise); }
+table{ border-collapse:collapse; width:100%; min-width:560px; font-size:0.92rem; }
+th,td{ text-align:left; padding:12px 15px; border-bottom:1px solid var(--line); vertical-align:top; }
+thead th{ font-family:var(--mono); font-size:0.66rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--slate); font-weight:600; background:var(--surface); white-space:nowrap; }
+tbody tr:last-child td{ border-bottom:0; }
+td strong{ font-weight:640; }
+.num{ font-variant-numeric:tabular-nums; }
+
+/* ────────────────────────────────────────────────
+   LISTS
+   ──────────────────────────────────────────────── */
+ul.plain{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:9px; }
+ul.plain li{ position:relative; padding-left:19px; font-size:0.955rem; color:var(--ink-2); line-height:1.55; }
+ul.plain li::before{ content:""; position:absolute; left:2px; top:0.62em; width:6px; height:6px; border-radius:1.5px; background:var(--line-2); }
+ul.plain.is-accent li::before{ background:var(--accent); }
+ul.plain.is-alert li::before{ background:var(--alert); }
+ul.plain.is-flag li::before{ background:var(--flag); }
+
+/* ────────────────────────────────────────────────
+   FOOT
+   ──────────────────────────────────────────────── */
+.foot{ padding-block:44px 66px; color:var(--slate); font-size:0.88rem; }
+.foot .r{ display:flex; flex-wrap:wrap; gap:10px 22px; align-items:center; }
+
+@media (prefers-reduced-motion:reduce){ *{ animation:none !important; transition:none !important; } }
+</style>
+
+<!-- ══════════ COVER ══════════ -->
+<section class="cover">
+  <div class="shell">
+    <div class="kicker">
+      <span class="chip is-accent">Product walkthrough</span>
+      <span class="chip">Phase 1</span>
+      <span class="chip">Card &middot; Apple Pay &middot; Google Pay</span>
+      <span class="chip">September 2026</span>
+    </div>
+
+    <h1>Smooth<br>Checkout</h1>
+
+    <p class="sub">A business puts one small snippet on their website and starts taking payments. This document shows <em>every screen</em> that makes that possible: what our team sees, what the business sees, and what their customer sees. In the order they actually meet them.</p>
+
+    <dl class="meta-grid">
+      <div><dt>Panels</dt><dd>Admin CMS, Merchant CMS, Checkout box</dd></div>
+      <div><dt>Screens</dt><dd>38, plus 7 emails and states, in &sect;14</dd></div>
+      <div><dt>Phase 1 methods</dt><dd>Card, Apple Pay, Google Pay</dd></div>
+      <div><dt>Purpose</dt><dd>Design source and product sign-off</dd></div>
+    </dl>
+  </div>
+</section>
+
+<!-- ══════════ HOW TO READ ══════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">How to read this</span>
+      <h2>Three audiences, one document</h2>
+    </div>
+
+    <div class="cols">
+      <div class="card">
+        <span class="eyebrow">If you are not technical</span>
+        <p>Read the words and look at the grey boxes. Each grey box is one screen. You should be able to follow the whole product from a business signing up to their customer paying, without knowing anything about code.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">If you are the designer</span>
+        <p>Each screen has an ID (like <code>A-04</code>), a purpose, and a list of every field and state it needs. &sect;14 is the complete screen inventory with priorities, so nothing is discovered halfway through.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">If you are building it</span>
+        <p>This document is the <em>what</em>. The companion document, <strong>Technical Design</strong>, is the <em>how</em>: tables, fields, endpoints, security, and the list of things that must be confirmed before any code is written.</p>
+      </div>
+    </div>
+
+    <div class="note is-flag" style="margin-top:30px;">
+      <span class="eyebrow">Read this before anything else</span>
+      <p>Grey boxes are <strong>wireframes, not designs</strong>. They show what information is on a screen and roughly how it is grouped. Colour, spacing, type and the actual visual language are the designer's job, not this document's.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ CONTENTS ══════════ -->
+<section id="contents">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">Contents</span>
+      <h2>Fifteen parts</h2>
+      <p>Parts 1 to 5 explain the product. Parts 6 to 11 are the screens. Parts 12 to 15 are what the designer and the developer need before starting.</p>
+    </div>
+
+    <div class="toc">
+      <a href="#p01"><span class="n">01</span><span class="t">Who is involved<span class="s">Four parties, and what each one wants</span></span></a>
+      <a href="#p02"><span class="n">02</span><span class="t">How everything connects<span class="s">Business, website, keys, gateway, payment. And what changes when one changes</span></span></a>
+      <a href="#p03"><span class="n">03</span><span class="t">How a payment moves<span class="s">Seven steps, and the three places it can go wrong</span></span></a>
+      <a href="#p04"><span class="n">04</span><span class="t">The words on every screen<span class="s">Statuses, what we record, what we tell the business</span></span></a>
+      <a href="#p05"><span class="n">05</span><span class="t">Every message the product sends<span class="s">Five channels, every case end to end, every email</span></span></a>
+      <a href="#p06"><span class="n">06</span><span class="t">A new business goes live<span class="s">Nine steps from first contact to real payments</span></span></a>
+      <a href="#p07"><span class="n">07</span><span class="t">Admin CMS<span class="s">Sixteen screens, A-01 to A-16</span></span></a>
+      <a href="#p08"><span class="n">08</span><span class="t">Merchant CMS<span class="s">Twelve screens, M-01 to M-12</span></span></a>
+      <a href="#p09"><span class="n">09</span><span class="t">The checkout box<span class="s">Ten states, C-01 to C-10</span></span></a>
+      <a href="#p10"><span class="n">10</span><span class="t">Test and live<span class="s">How two worlds stay separate, forever</span></span></a>
+      <a href="#p11"><span class="n">11</span><span class="t">Apple Pay and Google Pay<span class="s">What it really takes, and what waits on somebody else</span></span></a>
+      <a href="#p12"><span class="n">12</span><span class="t">Who sees what<span class="s">Every role, every screen, in one grid</span></span></a>
+      <a href="#p13"><span class="n">13</span><span class="t">What nobody had written down<span class="s">Things Phase 1 needs that were missing from both earlier plans</span></span></a>
+      <a href="#p14"><span class="n">14</span><span class="t">Screen inventory<span class="s">All 38 screens with priorities and states to draw</span></span></a>
+      <a href="#p15"><span class="n">15</span><span class="t">Before design and code begin<span class="s">Ten questions, who answers each, and what it blocks</span></span></a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PART 1 · THE PRODUCT ══════════ -->
+<section id="p01">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">01</div>
+      <div class="txt">
+        <span class="eyebrow">The product</span>
+        <h2>Who is involved, and what each of them wants</h2>
+        <p class="lede">Four parties. Everything in this document is one of them doing one thing.</p>
+      </div>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead>
+          <tr><th style="width:18%">Party</th><th style="width:30%">What they want</th><th>Where they do it</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Our team</strong><br><span class="wf-mini">Smooth staff</span></td>
+            <td>Bring a business on board, connect their gateway, and make sure no payment is ever lost.</td>
+            <td><strong>Admin CMS</strong>, a new internal panel. Screens <code>A-01</code> to <code>A-16</code>.</td>
+          </tr>
+          <tr>
+            <td><strong>The business</strong><br><span class="wf-mini">our customer</span></td>
+            <td>Take card payments on their own website with as little work as possible, and see their money.</td>
+            <td><strong>Merchant CMS</strong>, a new panel they log into. Screens <code>M-01</code> to <code>M-12</code>.</td>
+          </tr>
+          <tr>
+            <td><strong>The shopper</strong><br><span class="wf-mini">their customer</span></td>
+            <td>Pay quickly and safely, without being thrown to a strange website.</td>
+            <td>The <strong>checkout box</strong> on the business's own page. Screens <code>C-01</code> to <code>C-10</code>.</td>
+          </tr>
+          <tr>
+            <td><strong>The gateway</strong><br><span class="wf-mini">AFS today</span></td>
+            <td>Not a user. It takes the card, asks the bank, and tells us the result.</td>
+            <td>No screens. It appears in this document only as the thing we ask and the thing we wait for.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note is-accent" style="margin-top:28px;">
+      <span class="eyebrow">The single most important idea</span>
+      <p>The business connects to <strong>us</strong>, never to a gateway. Which gateway sits behind them is our setting, and we can change it later without them touching a single line of their code. Every screen in this document is built so that stays true.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PART 02 · HOW THINGS CONNECT ══════════ -->
+<section id="p02">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">02</div>
+      <div class="txt">
+        <span class="eyebrow">Relationships</span>
+        <h2>How everything connects</h2>
+        <p class="lede">Before any screen makes sense, this does. There are only five things in the product, and almost every screen is a view of one of them.</p>
+      </div>
+    </div>
+
+    <span class="pre-label">The shape of it</span>
+    <pre>
+<b>ONE BUSINESS</b>   Acme Retail LLC
+    │              <i>the company. Contract, contact details, one relationship with us.</i>
+    │
+    ├── <b>WEBSITE 1</b>   acme.example
+    │        │        <i>everything below belongs to the</i> website<i>, not to the business.</i>
+    │        │        <i>This is the most important line in this document.</i>
+    │        │
+    │        ├── <b>Test keys</b>          pk_test_…   +   sk_test_…
+    │        ├── <b>Live keys</b>          pk_live_…   +   sk_live_…
+    │        ├── <b>Allowed addresses</b>  acme.example, shop.acme.example
+    │        ├── <b>Notification URL</b>   one for test, one for live
+    │        ├── <b>Branding</b>           name, logo, one colour
+    │        ├── <b>Gateway, test</b>      the sandbox account
+    │        ├── <b>Gateway, live</b>      the real account      <em>&#9664; we can change this one</em>
+    │        └── <b>Payments</b>           every payment taken on this website
+    │
+    └── <b>WEBSITE 2</b>   acme-outlet.example
+             └── <i>its own keys, its own addresses, its own gateway. Fully independent.</i>
+    </pre>
+
+    <div class="cols" style="margin-top:32px;">
+      <div class="card">
+        <span class="eyebrow">Why the website, not the business</span>
+        <p>Because a business may run two shops on two different gateways, and because we want to move one of them to a new gateway without touching the other. If keys and gateways hung off the business, neither would be possible.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">What the business shares</span>
+        <p>Only their company details, their staff logins, and their relationship with us. Nothing that a payment depends on.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">What this means for the panels</span>
+        <p>Almost every screen in the merchant panel needs a website selector at the top. A business with one website will never notice it. A business with two will need it everywhere.</p>
+      </div>
+    </div>
+
+    <h3 style="margin:42px 0 16px;">2.1 One payment, and everything hanging off it</h3>
+    <p class="prose">A shopper may try twice: once with a card that gets declined, then with Apple Pay that works. That is <strong>one payment with two tries</strong>, not two payments. Keeping those separate is what lets the merchant see "this order is paid" while our team can still see "the first try was declined by the bank, here is why".</p>
+
+    <span class="pre-label" style="margin-top:18px;">What we hold about a single payment</span>
+    <pre>
+<b>PAYMENT</b>   AED 240.00  ·  their order ORD-7741  ·  created by their server
+    │
+    ├── <b>TRY 1</b>   card  ·  declined by the bank  ·  14:20
+    │        └── <i>kept. The merchant sees "attempted", our team sees the reason.</i>
+    │
+    └── <b>TRY 2</b>   Apple Pay  ·  paid  ·  14:22    <em>&#9664; the try that took the money</em>
+             ├── <b>which gateway it ran on</b>    <i>fixed at this moment, never changed again</i>
+             ├── <b>what the gateway told us</b>   <i>its references, its codes, the card's last four</i>
+             └── <b>the notification we sent</b>   <i>when, and what their server answered</i>
+    </pre>
+
+    <h3 style="margin:42px 0 16px;">2.2 If this changes, what else changes</h3>
+    <p class="prose">This table is the whole product on one page. It is also the quickest way to check whether a screen is designed correctly: if a change made on that screen would surprise somebody, that screen needs a warning on it.</p>
+
+    <div class="tw" style="margin-top:20px;">
+      <table>
+        <thead><tr><th style="width:24%">If this changes</th><th style="width:38%">This is affected</th><th>This is deliberately <em>not</em> affected</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>The gateway behind a website</strong></td>
+            <td>Only payments started <em>after</em> the switch go to the new gateway.</td>
+            <td>Their keys, their code, their notification URL, their address list, and every payment already taken. This is the entire point of the product.</td>
+          </tr>
+          <tr>
+            <td><strong>A secret key is revoked</strong></td>
+            <td>Any server still using that key can no longer create payments, immediately.</td>
+            <td>Payments already created, and every other key. This is exactly why several live keys are allowed at once.</td>
+          </tr>
+          <tr>
+            <td><strong>An address is removed</strong></td>
+            <td>The checkout box stops appearing on that address.</td>
+            <td>Their other addresses, and payments already taken from the removed one.</td>
+          </tr>
+          <tr>
+            <td><strong>Apple verification is lost</strong></td>
+            <td>The Apple Pay button stops appearing on that address, by itself, within a day.</td>
+            <td>Card payments and Google Pay, which keep working normally.</td>
+          </tr>
+          <tr>
+            <td><strong>The business is suspended</strong></td>
+            <td>Every website under it stops accepting new payments.</td>
+            <td>All records, and payments already in flight, which still complete and are still reported.</td>
+          </tr>
+          <tr>
+            <td><strong>A website goes live</strong></td>
+            <td>Live keys appear for the first time, and the test ribbon disappears from the box once a live key is used.</td>
+            <td>Test mode, which keeps working forever afterwards.</td>
+          </tr>
+          <tr>
+            <td><strong>The notification secret is rotated</strong></td>
+            <td>New notifications are signed with the new secret.</td>
+            <td>Nothing breaks. The old secret keeps verifying for 24 hours, so they can deploy at their own pace.</td>
+          </tr>
+          <tr>
+            <td><strong>Branding is changed</strong></td>
+            <td>The next checkout box shows the new name, logo and colour.</td>
+            <td>Everything else. Branding can never affect whether a payment works.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PART 03 · HOW A PAYMENT MOVES ══════════ -->
+<section id="p03">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">03</div>
+      <div class="txt">
+        <span class="eyebrow">The flow</span>
+        <h2>How a payment actually moves</h2>
+        <p class="lede">Seven steps, four parties. Worth reading once slowly, because every screen in the rest of this document is a window onto one of these steps.</p>
+      </div>
+    </div>
+
+    <span class="pre-label">One successful payment, start to finish</span>
+    <pre>
+   <b>SHOPPER</b>          <b>THEIR SERVER</b>         <b>US</b>                  <b>GATEWAY / BANK</b>
+
+1  clicks "Pay"  ──&#9658;
+2                   tells us the amount
+                    <i>(never the browser)</i>  ──&#9658;
+3                                           we create the payment
+                                            and hand back a ticket
+                    &#9668;──────────────────────────
+4  the box appears  &#9668;── they put the ticket
+                       on their page
+5  taps Apple Pay,
+   or types a card ─────────────────────────────────────&#9658;  the card details
+                                                           go straight here.
+                                                           Never through us,
+                                                           never through them.
+6                                           &#9668;── the bank answers
+                                            <em>we then ask the gateway
+                                            again, to be certain.
+                                            We never believe the browser.</em>
+7                   &#9668;── we notify their server: <b>PAID</b>
+                    <em>this is the moment they ship the goods</em>
+   sees "paid"      &#9668;── <i>the screen is only a courtesy</i>
+    </pre>
+
+    <div class="cols" style="margin-top:32px;">
+      <div class="card">
+        <span class="eyebrow">Rule one</span>
+        <p><strong>The amount comes from their server, at step 2.</strong> The shopper's browser never tells us a price. So a shopper who edits the page cannot pay less, and there is no route through which they could try.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Rule two</span>
+        <p><strong>Step 7 is the truth, not the screen.</strong> The message on the shopper's screen is display only. The business releases the goods when their own server receives our notification. We say this in the documentation, on the install screen, and inside the notification itself, because every integrator tries to ship on the screen at least once.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Rule three</span>
+        <p><strong>Card details never touch two of the four parties.</strong> At step 5 they travel from the shopper's device straight to the gateway. Not to the business's servers, and not to ours. This is the single most important design decision in the product.</p>
+      </div>
+    </div>
+
+    <h3 style="margin:42px 0 16px;">3.1 The three places it can go wrong</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:24%">What happens</th><th style="width:20%">What is actually true</th><th>What we do about it</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>The bank says no</strong></td>
+            <td>No money moved</td>
+            <td>The shopper sees a plain reason and a button to try another card. The business is told the attempt failed. Nothing is left stuck.</td>
+          </tr>
+          <tr>
+            <td><strong>The shopper closes the tab right after paying</strong></td>
+            <td><strong>They were charged</strong></td>
+            <td>This is the dangerous one. Our screen is gone, so nothing in the browser can tell us anything. The system keeps asking the gateway by itself until it gets a final answer, then records the payment and notifies the business exactly as normal. The shopper is charged once, and the order is not lost.</td>
+          </tr>
+          <tr>
+            <td><strong>The gateway does not answer us</strong></td>
+            <td><strong>We do not know</strong></td>
+            <td>We never guess. The payment is marked "checking", never "failed", and the system keeps asking. Marking it failed is precisely how a charged customer ends up paying a second time.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note is-accent" style="margin-top:28px;">
+      <span class="eyebrow">The idea behind all three rows</span>
+      <p><strong>"We do not know" is never the same as "it failed".</strong> A payment that is stuck can always be resolved later. A payment we wrongly declared failed leads to a customer paying twice, and that cannot be undone quietly. Every screen in the admin panel carrying the words "checking" or "at risk" exists because of this one sentence.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PART 04 · VOCABULARY ══════════ -->
+<section id="p04">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">04</div>
+      <div class="txt">
+        <span class="eyebrow">Language</span>
+        <h2>The words on every screen</h2>
+        <p class="lede">Three short lists. If the product uses these words consistently, nobody has to be trained to read it.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-bottom:16px;">4.1 What a payment's status means</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:17%">Status</th><th style="width:31%">In plain words</th><th style="width:22%">Should the business act?</th><th>How long it normally lasts</th></tr></thead>
+        <tbody>
+          <tr><td><span class="wf-pill">Awaiting payment</span></td><td>We are ready, the shopper has not paid yet</td><td>No</td><td>Until they pay, or 30 minutes</td></tr>
+          <tr><td><span class="wf-pill warn">Checking</span></td><td>The shopper has paid and we are confirming with the gateway</td><td>No. Do not ship yet</td><td>Seconds, normally</td></tr>
+          <tr><td><span class="wf-pill warn">With the bank</span></td><td>The shopper is entering a code their bank sent them</td><td>No</td><td>Under two minutes, normally</td></tr>
+          <tr><td><span class="wf-pill ok">Paid</span></td><td>Money confirmed. Final</td><td><strong>Yes, ship now</strong></td><td>Final</td></tr>
+          <tr><td><span class="wf-pill bad">Attempt failed</span></td><td>That try did not work. The shopper can try again</td><td>No. Do not ship</td><td>Until they try again, or it expires</td></tr>
+          <tr><td><span class="wf-pill">Expired</span></td><td>Nobody paid in time. Nothing was charged</td><td>Release any stock held</td><td>Final, with one exception below</td></tr>
+          <tr><td><span class="wf-pill">Cancelled</span></td><td>The business cancelled it themselves</td><td>No</td><td>Final</td></tr>
+          <tr><td><span class="wf-pill bad">On hold</span></td><td>Something does not add up. Somebody at Smooth is looking at it</td><td>No. Do not ship. We will contact them</td><td>Until a person decides</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note is-flag" style="margin-top:22px;">
+      <span class="eyebrow">The one exception, and it matters</span>
+      <p>An <strong>expired</strong> payment can still become <strong>paid</strong>. If a shopper started the bank's code step at minute 29 and finished at minute 31, the bank really did take the money. Refusing to record it would leave a customer charged with nothing to show for it. So the clock stops new attempts, and it never throws away real money. This is the only status in the product that can move backwards, and this is the entire reason it can.</p>
+    </div>
+
+    <h3 style="margin:42px 0 16px;">4.2 What we record about every payment</h3>
+    <p class="prose">Set out in plain language because it decides what the screens can show, what the reports can answer, and what we can prove if a payment is ever disputed.</p>
+    <div class="cols" style="margin-top:20px;">
+      <div class="card">
+        <span class="eyebrow">Their side</span>
+        <ul class="plain">
+          <li>The amount and currency</li>
+          <li>Their own order reference</li>
+          <li>A description, if they sent one</li>
+          <li>Any extra labels they attached, returned to them untouched</li>
+          <li>Who the customer was, if they told us: a reference, name, email, phone</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="eyebrow">What happened</span>
+        <ul class="plain">
+          <li>Every try, with its own result and time</li>
+          <li>The method used: card, Apple Pay or Google Pay</li>
+          <li>Card brand, first six and last four digits, expiry</li>
+          <li>Whether the bank asked for a code</li>
+          <li>Why it failed, in our own words rather than the gateway's</li>
+          <li>Which website address the box was shown on</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Our proof</span>
+        <ul class="plain is-accent">
+          <li>Which gateway account took it, locked forever</li>
+          <li>The gateway's own references, including the bank's authorisation code and the reference that appears in the monthly settlement report</li>
+          <li>What the gateway said it took, next to what we asked for</li>
+          <li>Every message the gateway sent us, stored as received</li>
+          <li>Every notification we sent, and their server's answer</li>
+        </ul>
+      </div>
+    </div>
+    <div class="note is-accent" style="margin-top:22px;">
+      <span class="eyebrow">Why the third column exists</span>
+      <p>Those gateway references are what turn the monthly settlement check from guesswork into an exact match. In the current Smooth Pay system they arrive on every payment and are only written to a log, which is why today's reconciliation has to match on merchant, amount and time, and sometimes cannot tell two similar payments apart. Storing them costs one column each and removes that whole problem before it starts.</p>
+    </div>
+    <div class="note is-alert" style="margin-top:16px;">
+      <span class="eyebrow">What we never record, anywhere, in any form</span>
+      <p>The full card number, the three digits on the back, or anything from which they could be reconstructed. Not in the database, not in a log, not in an error report, not in a support tool. No screen in this product could show them, because the data never arrives in the first place.</p>
+    </div>
+
+    <h3 style="margin:42px 0 16px;">4.3 What we tell the business, and when</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:24%">We send</th><th style="width:30%">When</th><th>What they should do</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Paid</strong></td><td>The moment money is confirmed</td><td>Ship the goods. This is the only message they must act on</td></tr>
+          <tr><td><strong>Attempt failed</strong></td><td>A try was declined</td><td>Nothing. Useful for their own reporting</td></tr>
+          <tr><td><strong>Expired</strong></td><td>Nobody paid in time</td><td>Release any stock they were holding</td></tr>
+          <tr><td><strong>Cancelled</strong></td><td>They cancelled it themselves</td><td>Nothing, it is their own action echoed back</td></tr>
+          <tr><td><strong>On hold</strong></td><td>Something did not add up</td><td>Do not ship. We will be in touch</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="plain" style="margin-top:20px;">
+      <li>Every message carries a unique id, and the same message may arrive twice. Their server should ignore one it has already seen. This is normal for every payment provider, and it is stated in bold in the documentation.</li>
+      <li>Messages about one payment always arrive in order.</li>
+      <li>Every message is signed, so they can be certain it came from us and not from somebody pretending to be us.</li>
+      <li>If their server is down we keep trying for about two days, and they can see every attempt on their own screen.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ══════════ PART 05 · COMMUNICATIONS ══════════ -->
+<section id="p05">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">05</div>
+      <div class="txt">
+        <span class="eyebrow">Who gets told what</span>
+        <h2>Every message the product sends</h2>
+        <p class="lede">Five different channels carry information in this product, and each one is trusted differently. Getting these confused is the most common way a payment integration goes wrong, so they are separated here before any screen is designed.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-bottom:16px;">5.1 The five channels</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:17%">Channel</th><th style="width:20%">From, to</th><th style="width:26%">Carries</th><th>How much it can be trusted</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>1. Page message</strong><br><span class="wf-mini">IN THE BROWSER</span></td>
+            <td>Our box to the business's own page</td>
+            <td>The box is ready, the box changed height, the payment succeeded, failed or was cancelled</td>
+            <td><span class="wf-pill warn">Display only.</span> Good enough to show a spinner or move the shopper on. Never good enough to release goods, because anything in a browser can be faked or simply never arrive</td>
+          </tr>
+          <tr>
+            <td><strong>2. Live status</strong><br><span class="wf-mini">BOX TO US</span></td>
+            <td>Our box to our own server</td>
+            <td>"Has this payment finished yet?"</td>
+            <td><span class="wf-pill ok">Accurate</span> while the tab is open. It dies the instant the shopper closes the tab, which is exactly why channel 5 exists</td>
+          </tr>
+          <tr>
+            <td><strong>3. Server notification</strong><br><span class="wf-mini">THE IMPORTANT ONE</span></td>
+            <td>Our server to the business's server</td>
+            <td>Paid, attempt failed, expired, cancelled, on hold</td>
+            <td><span class="wf-pill ok">This is the truth.</span> Signed by us, retried for two days, and the only message a business should ever act on</td>
+          </tr>
+          <tr>
+            <td><strong>4. Email</strong><br><span class="wf-mini">TO PEOPLE</span></td>
+            <td>Us to humans, on both sides</td>
+            <td>Invitations, go-live decisions, security notices, "your notification endpoint is failing"</td>
+            <td><span class="wf-pill">Informational.</span> No part of a payment ever depends on an email arriving</td>
+          </tr>
+          <tr>
+            <td><strong>5. Our own chasing</strong><br><span class="wf-mini">THE SAFETY NET</span></td>
+            <td>Our server to the gateway, by itself</td>
+            <td>"What actually happened to this payment?"</td>
+            <td><span class="wf-pill ok">The final word.</span> It runs whether or not any browser is open and whether or not the gateway ever told us anything</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note is-accent" style="margin-top:26px;">
+      <span class="eyebrow">The sentence that summarises all five</span>
+      <p><strong>Channels 1 and 2 make the shopper's screen feel right. Channels 3 and 5 make the money right.</strong> If every browser in the world failed at once, channels 3 and 5 would still deliver every payment correctly, late but complete. That is the test of whether this design is sound.</p>
+    </div>
+
+    <h3 style="margin:42px 0 16px;">5.2 Every case, end to end</h3>
+    <p class="prose">Each row is one thing that can happen to a real payment. Read across to see what each party experiences. This table is the specification for the checkout screens, for the notification behaviour, and for the admin queues all at once.</p>
+
+    <div class="tw" style="margin-top:20px;">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:15%">What happens</th>
+            <th style="width:19%">The shopper sees</th>
+            <th style="width:17%">Their page gets</th>
+            <th style="width:18%">Their server gets</th>
+            <th style="width:15%">Emails</th>
+            <th>We see</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Paid</strong><br><span class="wf-mini">THE NORMAL CASE</span></td>
+            <td>A success panel with the amount and last four digits, then a move to their thank-you page if they set one <code>C-06</code></td>
+            <td>A <em>success</em> page message, roughly a second after the bank answers</td>
+            <td><strong>Paid</strong>, signed. Normally within a second or two of the success panel appearing</td>
+            <td>None. Nobody needs an email for a payment that worked</td>
+            <td>The payment appears as Paid on <code>A-09</code> with its full timeline</td>
+          </tr>
+          <tr>
+            <td><strong>Bank declines</strong></td>
+            <td>A plain reason and a <em>try another card</em> button <code>C-07</code></td>
+            <td>A <em>failed</em> page message with a reason code</td>
+            <td><strong>Attempt failed</strong>, with whether another try could work</td>
+            <td>None</td>
+            <td>The declined try is kept and visible on <code>A-10</code>, with the bank's own reason</td>
+          </tr>
+          <tr>
+            <td><strong>Shopper closes the tab right after paying</strong><br><span class="wf-mini">THE DANGEROUS CASE</span></td>
+            <td>Nothing. They are gone</td>
+            <td>Nothing. The page is gone too</td>
+            <td><strong>Paid</strong>, exactly as normal, once our chasing gets the answer. Usually seconds, at worst a few minutes</td>
+            <td>None, because nothing went wrong</td>
+            <td>Briefly on <code>A-11</code> as at risk, then Paid. The at-risk counter returning to zero by itself is the proof the safety net works</td>
+          </tr>
+          <tr>
+            <td><strong>Shopper closes the tab and comes back to the shop</strong></td>
+            <td>Whatever the business shows them. If the business checks their own order, it is already marked paid, because their server was notified</td>
+            <td>Nothing, it is a new page load</td>
+            <td>Already had <strong>Paid</strong></td>
+            <td>None</td>
+            <td>Normal Paid payment</td>
+          </tr>
+          <tr>
+            <td><strong>Shopper closes the tab mid bank code, never returns</strong></td>
+            <td>Nothing</td>
+            <td>Nothing</td>
+            <td>Either <strong>Paid</strong>, if the bank did take the money, or <strong>Expired</strong> if it did not. Never a guess</td>
+            <td>None</td>
+            <td>At risk while unknown, then resolved. If it stays unknown past its window, a person is paged</td>
+          </tr>
+          <tr>
+            <td><strong>Nobody pays, 30 minutes go by</strong></td>
+            <td>The expired panel if they come back to it <code>C-08</code></td>
+            <td>Nothing</td>
+            <td><strong>Expired</strong>, so they can release held stock</td>
+            <td>None</td>
+            <td>An ordinary expired payment. Not an alert</td>
+          </tr>
+          <tr>
+            <td><strong>Amount does not match</strong></td>
+            <td>A neutral "we are confirming this payment" panel, never a false success and never a false failure</td>
+            <td>Nothing conclusive</td>
+            <td><strong>On hold</strong>. Explicitly do not ship</td>
+            <td><strong>To us, immediately.</strong> To the business only after a person has looked</td>
+            <td><code>A-12</code>, at the top, and somebody is paged. This should be empty for months at a time</td>
+          </tr>
+          <tr>
+            <td><strong>The gateway is down</strong></td>
+            <td>An honest "payments are temporarily unavailable" with a reference code <code>C-09</code></td>
+            <td>A <em>failed</em> page message marked as temporary</td>
+            <td>Nothing. There is no payment to report</td>
+            <td>To us if the error rate crosses a threshold</td>
+            <td>The gateway error rate on the dashboard</td>
+          </tr>
+          <tr>
+            <td><strong>The box is on an address we do not allow</strong></td>
+            <td>A quiet "this payment form is not set up for this website" with a reference code</td>
+            <td>A <em>failed</em> page message naming a configuration problem</td>
+            <td>Nothing</td>
+            <td>To the business, because this is their mistake and they need to know</td>
+            <td>Counted per business, so repeated attempts are visible</td>
+          </tr>
+          <tr>
+            <td><strong>Their server is down when we notify</strong></td>
+            <td>Nothing. Their shopper is unaffected</td>
+            <td>The success message already arrived</td>
+            <td>Nothing yet. We retry for about two days</td>
+            <td>To the business after several failures, and again if we give up</td>
+            <td><code>A-13</code>, and the endpoint is disabled automatically if it stays dead</td>
+          </tr>
+          <tr>
+            <td><strong>Their server rejects our notification</strong><br><span class="wf-mini">SIGNATURE CHECK FAILS ON THEIR SIDE</span></td>
+            <td>Nothing</td>
+            <td>Nothing</td>
+            <td>Nothing they accepted. Their own error</td>
+            <td>To the business, because this is almost always a wrong secret after a rotation</td>
+            <td>Their response code on <code>A-13</code>, which usually makes the cause obvious</td>
+          </tr>
+          <tr>
+            <td><strong>A message we cannot match to any payment</strong></td>
+            <td>Not applicable</td>
+            <td>Not applicable</td>
+            <td>Nothing</td>
+            <td><strong>To us.</strong> This can mean a payment we do not know about</td>
+            <td><code>A-14</code>, flagged, never discarded</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin:42px 0 16px;">5.3 Every email, and why it exists</h3>
+    <p class="prose">Nothing in a payment depends on an email. They exist so a human learns about something a screen would only show if they happened to be looking.</p>
+
+    <div class="tw" style="margin-top:20px;">
+      <table>
+        <thead><tr><th style="width:26%">Email</th><th style="width:16%">Goes to</th><th style="width:20%">Triggered by</th><th>Why it is needed</th></tr></thead>
+        <tbody>
+          <tr><td><strong>You have been invited</strong></td><td>Their person</td><td>We invite them <code>A-05</code></td><td>The only way into the panel. Works once, expires in seven days</td></tr>
+          <tr><td><strong>Reset your password</strong></td><td>Either side</td><td>They ask</td><td>Standard, and required because there is no other way back in</td></tr>
+          <tr><td><strong>Go-live approved</strong></td><td>Their owner</td><td>We approve <code>A-06</code></td><td>They have been waiting on us. It says exactly what to change: swap the test key for the live key</td></tr>
+          <tr><td><strong>We need more before go-live</strong></td><td>Their owner</td><td>We decline the request</td><td>Tells them precisely which checklist item is not satisfied, so nobody has to chase</td></tr>
+          <tr><td><strong>Apple Pay is now working</strong></td><td>Their developer</td><td>Verification succeeds</td><td>Verification is not instant, so they should not have to sit and refresh</td></tr>
+          <tr><td><strong>Apple Pay verification failed</strong></td><td>Their developer</td><td>Verification fails</td><td>With the actual reason, usually a missing file or a redirect on that path</td></tr>
+          <tr><td><strong>We cannot reach your server</strong></td><td>Their developer</td><td>Several notification failures in a row</td><td>They are losing payment confirmations right now and may not know</td></tr>
+          <tr><td><strong>We have stopped trying</strong></td><td>Their owner and developer</td><td>Their endpoint is auto-disabled</td><td>The serious one. Nothing is lost, but they must act and then re-enable it</td></tr>
+          <tr><td><strong>A live key was created</strong></td><td>Their owner</td><td>Any live key is created</td><td>A security notice. If they did not do it, they need to know within minutes</td></tr>
+          <tr><td><strong>A live key was revoked</strong></td><td>Their owner</td><td>Any live key is revoked</td><td>Same reason, and it explains a sudden outage on their side</td></tr>
+          <tr><td><strong>A payment is on hold</strong></td><td>Our team, then them</td><td>Amounts do not match</td><td>To us at once. To them only once a person has decided, so we never alarm a business about something we have not understood yet</td></tr>
+          <tr><td><strong>Money may be at risk</strong></td><td>Our team, on call</td><td>The at-risk figure stays above zero</td><td>The one alert somebody is woken for</td></tr>
+          <tr><td><strong>A message could not be matched</strong></td><td>Our team</td><td>An unmatchable gateway message</td><td>Possibly a payment we have no record of, which is the worst thing that can silently happen</td></tr>
+          <tr><td><strong>A go-live request is waiting</strong></td><td>Our team</td><td>They request go-live <code>M-10</code></td><td>So a business is not left waiting on us without knowing it</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note is-flag" style="margin-top:26px;">
+      <span class="eyebrow">One deliberate absence</span>
+      <p><strong>We send the shopper nothing.</strong> No receipt, no confirmation, no email at all. The shopper bought from the business, not from us, and a message from a name they do not recognise would create support calls for both sides. The business sends the receipt, from their own system, as they already do today. This is a decision, and it is listed in &sect;15 so the client can overturn it if they want to.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PART 2 · THE JOURNEY ══════════ -->
+<section id="p06">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">06</div>
+      <div class="txt">
+        <span class="eyebrow">End to end</span>
+        <h2>A new business, from first contact to live payments</h2>
+        <p class="lede">Nine steps. Each one names who does it and which screen it happens on, so nothing sits in a gap between two people.</p>
+      </div>
+    </div>
+
+    <div class="track">
+      <div class="step"><span class="n">STEP 1 &middot; US</span><span class="h">Create the business</span><span class="d">We add the business in the Admin CMS with their legal details.<br><code>A-04</code></span></div>
+      <div class="step"><span class="n">STEP 2 &middot; US</span><span class="h">Create their first website</span><span class="d">Every website is a separate entry, because each one can sit on a different gateway.<br><code>A-06</code></span></div>
+      <div class="step"><span class="n">STEP 3 &middot; US</span><span class="h">Connect a gateway account</span><span class="d">We paste the gateway credentials, in test mode first.<br><code>A-07</code></span></div>
+      <div class="step is-accent"><span class="n">STEP 4 &middot; US</span><span class="h">Invite their developer</span><span class="d">One email. From here the business does the rest themselves.<br><code>A-05</code></span></div>
+    </div>
+    <div class="track" style="margin-top:14px;">
+      <div class="step"><span class="n">STEP 5 &middot; THEM</span><span class="h">Get keys and add their domain</span><span class="d">Test keys are created for them automatically. They add their website address.<br><code>M-03</code>, <code>M-04</code></span></div>
+      <div class="step is-flag"><span class="n">STEP 6 &middot; THEM</span><span class="h">Turn on the wallets</span><span class="d">One file to host on their site so Apple Pay works. Google Pay needs no file.<br><code>M-04</code></span></div>
+      <div class="step"><span class="n">STEP 7 &middot; THEM</span><span class="h">Paste the snippet, test</span><span class="d">They test with our dummy cards and watch the payments appear.<br><code>M-06</code>, <code>M-07</code></span></div>
+      <div class="step"><span class="n">STEP 8 &middot; THEM</span><span class="h">Pass the go-live checklist</span><span class="d">The system checks they are genuinely ready, item by item.<br><code>M-10</code></span></div>
+      <div class="step is-accent"><span class="n">STEP 9 &middot; US</span><span class="h">Approve and go live</span><span class="d">We flip the live gateway on. They swap one key. Done.<br><code>A-06</code>, <code>M-10</code></span></div>
+    </div>
+
+    <div class="cols" style="margin-top:34px;">
+      <div class="card">
+        <span class="eyebrow">How long it should take</span>
+        <p>Steps 1 to 4 are ours and take minutes. Steps 5 to 8 are theirs and should take under an hour with a developer available. Step 6 is the only one with an outside wait, because Apple has to check their file.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">What never happens</span>
+        <p>The business never sees the word <em>entity</em>, never sees a gateway name in an error message, and never has to contact the gateway. If a gateway question comes up, it comes to us.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">What we still do by hand</span>
+        <p>Getting them an account with the gateway itself. That is paperwork between them, us and the gateway, exactly as it works today. Everything after the credentials arrive is a screen in this document.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PART 3 · ADMIN CMS ══════════ -->
+<section id="p07">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">07</div>
+      <div class="txt">
+        <span class="eyebrow">Panel one</span>
+        <h2>Admin CMS: what our team sees</h2>
+        <p class="lede">A new internal panel. Sixteen screens. It exists so that nobody on our side ever has to open a database to answer a question or fix a payment.</p>
+      </div>
+    </div>
+
+    <div class="stack">
+
+      <!-- A-01 -->
+      <div class="screen" id="A-01">
+        <div class="s-txt">
+          <h3><span class="screen-id">A-01</span> Sign in</h3>
+          <p>Email and password, plus a second factor. Payments panels are a target, so two-factor is not optional here and there is no "remember this device for 30 days".</p>
+          <ul class="plain">
+            <li>Fields: email, password, 6-digit code from an authenticator app.</li>
+            <li>States: normal, wrong password, locked after repeated failures, code expired.</li>
+            <li>No public sign-up. Accounts are created by an existing admin only.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">admin.checkout.smoothpay.ai</span></div>
+            <div class="wf-body">
+              <div class="wf-block"><span class="wf-t">Smooth Checkout Admin</span><span class="wf-s">Sign in to continue</span></div>
+              <div class="wf-field">email</div>
+              <div class="wf-field">password</div>
+              <div class="wf-field">6-digit code</div>
+              <div class="wf-btn">Sign in</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A-02 -->
+      <div class="screen" id="A-02">
+        <div class="s-txt">
+          <h3><span class="screen-id">A-02</span> Dashboard</h3>
+          <p>The first screen after sign-in. It answers one question before any other: <strong>is any money at risk right now?</strong> Everything else on the page is secondary to that one number.</p>
+          <ul class="plain is-accent">
+            <li><strong>Money at risk</strong>: total value of payments we started and still do not know the outcome of. Should be zero. If it is not zero, it is clickable and goes straight to the queue.</li>
+            <li>Today: amount taken, number of payments, success rate.</li>
+            <li>Failed webhook deliveries in the last hour.</li>
+            <li>Held payments waiting for a human.</li>
+            <li>Businesses added this week, and how many are still in test mode.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Admin &middot; Dashboard</span></div>
+            <div class="wf-body">
+              <div class="wf-block is-alert"><span class="wf-t">Money at risk &middot; AED 0.00</span><span class="wf-s">0 payments with an unknown outcome. Target is always zero.</span></div>
+              <div class="wf-row">
+                <div class="wf-block" style="flex:1"><span class="wf-t">AED 48,210</span><span class="wf-s">Taken today</span></div>
+                <div class="wf-block" style="flex:1"><span class="wf-t">312</span><span class="wf-s">Payments</span></div>
+                <div class="wf-block" style="flex:1"><span class="wf-t">96.4%</span><span class="wf-s">Success rate</span></div>
+              </div>
+              <div class="wf-block is-flag"><span class="wf-t">2 held payments</span><span class="wf-s">Gateway reported a different amount. Needs a person.</span></div>
+              <div class="wf-block"><span class="wf-t">4 failed notifications</span><span class="wf-s">Across 2 businesses, retrying</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A-03 -->
+      <div class="screen" id="A-03">
+        <div class="s-txt">
+          <h3><span class="screen-id">A-03</span> Businesses list</h3>
+          <p>Every business we have on board. The columns are chosen so the common questions are answered without opening anything.</p>
+          <ul class="plain">
+            <li>Columns: business name, number of websites, live or test, gateway in use, payments in the last 30 days, amount in the last 30 days, status.</li>
+            <li>Filters: status, gateway, live or test, date added.</li>
+            <li>Search by business name or website address.</li>
+            <li>Primary action: <strong>Add business</strong>.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Admin &middot; Businesses</span></div>
+            <div class="wf-body">
+              <div class="wf-row"><span class="wf-mini">SEARCH / FILTERS</span><span class="wf-pill">+ Add business</span></div>
+              <div class="wf-tbl">
+                <div class="wf-tr h" style="grid-template-columns:1.4fr .8fr .9fr .7fr"><span>Business</span><span>Sites</span><span>Mode</span><span>30d</span></div>
+                <div class="wf-tr" style="grid-template-columns:1.4fr .8fr .9fr .7fr"><span>Acme Retail</span><span>2</span><span class="wf-pill ok">Live</span><span>AED 91k</span></div>
+                <div class="wf-tr" style="grid-template-columns:1.4fr .8fr .9fr .7fr"><span>Blue Cafe Online</span><span>1</span><span class="wf-pill warn">Test</span><span>&ndash;</span></div>
+                <div class="wf-tr" style="grid-template-columns:1.4fr .8fr .9fr .7fr"><span>Noor Fitness</span><span>1</span><span class="wf-pill ok">Live</span><span>AED 12k</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A-04 -->
+      <div class="screen" id="A-04">
+        <div class="s-txt">
+          <h3><span class="screen-id">A-04</span> Add a business</h3>
+          <p>Step 1 of the journey. A short form, because the heavy paperwork happens with the gateway outside this panel.</p>
+          <ul class="plain">
+            <li>Legal name, trading name, trade licence number, tax registration number.</li>
+            <li>Country, address, business category.</li>
+            <li>Primary contact: name, email, phone.</li>
+            <li>Notes field for anything the account manager needs recorded.</li>
+          </ul>
+          <p>On save, the business exists in <em>Draft</em>. Nothing can be charged yet, because there is no website and no gateway account attached.</p>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Admin &middot; Add business</span></div>
+            <div class="wf-body">
+              <span class="wf-mini">BUSINESS</span>
+              <div class="wf-field">legal name</div>
+              <div class="wf-field">trading name</div>
+              <div class="wf-row"><div class="wf-field" style="flex:1">trade licence no.</div><div class="wf-field" style="flex:1">TRN</div></div>
+              <span class="wf-mini">PRIMARY CONTACT</span>
+              <div class="wf-field">name</div>
+              <div class="wf-row"><div class="wf-field" style="flex:1">email</div><div class="wf-field" style="flex:1">phone</div></div>
+              <div class="wf-btn">Create business</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A-05 -->
+      <div class="screen" id="A-05">
+        <div class="s-txt">
+          <h3><span class="screen-id">A-05</span> Business detail</h3>
+          <p>One business, everything about it, in tabs. This is where our team spends most of its time.</p>
+          <ul class="plain">
+            <li><strong>Overview</strong>: status, contact, when added, payment totals.</li>
+            <li><strong>Websites</strong>: the list of their websites, each with its own mode and gateway. Add a new one from here.</li>
+            <li><strong>Gateway accounts</strong>: every gateway connection they have, active and retired.</li>
+            <li><strong>Payments</strong>: this business's payments only.</li>
+            <li><strong>Team</strong>: their users, and the <strong>Invite</strong> button that starts step 4.</li>
+            <li><strong>History</strong>: every change anyone made, with who and when.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Admin &middot; Acme Retail</span></div>
+            <div class="wf-body">
+              <div class="wf-tabs"><span class="wf-tab on">Overview</span><span class="wf-tab">Websites</span><span class="wf-tab">Gateway</span><span class="wf-tab">Payments</span><span class="wf-tab">Team</span><span class="wf-tab">History</span></div>
+              <div class="wf-block"><span class="wf-t">Acme Retail LLC</span><span class="wf-s">Live since 12 Aug 2026 &middot; 2 websites</span></div>
+              <dl class="wf-kv">
+                <dt>Contact</dt><dd>Sara N. &middot; sara@acme.example</dd>
+                <dt>30 days</dt><dd>AED 91,440 across 1,204 payments</dd>
+                <dt>Status</dt><dd><span class="wf-pill ok">Active</span></dd>
+              </dl>
+              <div class="wf-btn is-alt">Invite their developer</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A-06 -->
+      <div class="screen" id="A-06">
+        <div class="s-txt">
+          <h3><span class="screen-id">A-06</span> Website detail</h3>
+          <p>A <strong>website</strong> is the unit everything else hangs off: its own keys, its own allowed addresses, its own notification URL, and its own gateway. A business with two websites has two of these, and they can sit on different gateways.</p>
+          <ul class="plain is-accent">
+            <li><strong>Test gateway</strong> and <strong>Live gateway</strong> are two separate settings on this screen. A website can be live on one and still testing the other.</li>
+            <li><strong>Go live</strong> is the switch our team throws at step 9, and it is disabled until the checklist passes.</li>
+            <li><strong>Change gateway</strong> opens <code>A-08</code>.</li>
+            <li>Read-only mirror of what the business set themselves: domains, notification URL, keys (last four only).</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Admin &middot; acme.example</span></div>
+            <div class="wf-body">
+              <div class="wf-block"><span class="wf-t">Acme main site</span><span class="wf-s">acme.example &middot; created 12 Aug</span></div>
+              <div class="wf-block is-new"><span class="wf-t">Live gateway</span><span class="wf-s">AFS &middot; live &middot; active since 12 Aug<br>Card, Apple Pay, Google Pay all enabled</span></div>
+              <div class="wf-block"><span class="wf-t">Test gateway</span><span class="wf-s">AFS &middot; sandbox &middot; active</span></div>
+              <div class="wf-row"><div class="wf-btn is-alt" style="flex:1">Change gateway</div><div class="wf-btn" style="flex:1">Go live</div></div>
+              <div class="wf-block is-ghost"><span class="wf-s">Retired: none</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A-07 -->
+      <div class="screen" id="A-07">
+        <div class="s-txt">
+          <h3><span class="screen-id">A-07</span> Connect a gateway account</h3>
+          <p>Step 3. The only screen in the product where gateway credentials are typed. It is admin-only, every save is recorded in the history, and nothing typed here is ever shown again afterwards.</p>
+          <ul class="plain">
+            <li>Gateway: AFS (a dropdown, because more will come).</li>
+            <li>Mode: test or live. This decides which gateway environment we talk to.</li>
+            <li>Account owner: <strong>the business's own account</strong> or <strong>our account</strong>. Today it is always theirs. The field exists now so that the day we run our own account, it is a setting and not a rebuild.</li>
+            <li>Credentials: entity identifier and access token. Stored encrypted; after saving, only the last four characters are ever shown.</li>
+            <li>Wallet identifiers: Apple merchant identifier, Google merchant ID, Google merchant name.</li>
+            <li>Settlement references for reporting: MID, SID, TID.</li>
+            <li><strong>Test connection</strong> button: we make one harmless call to the gateway and show the result, so a typo is caught here rather than by a shopper.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Admin &middot; Connect gateway</span></div>
+            <div class="wf-body">
+              <div class="wf-row"><div class="wf-field" style="flex:1">gateway: AFS</div><div class="wf-field" style="flex:1">mode: test</div></div>
+              <div class="wf-field">account owner: the business</div>
+              <span class="wf-mini">CREDENTIALS &middot; WRITE ONCE</span>
+              <div class="wf-field">entity identifier</div>
+              <div class="wf-field">access token</div>
+              <span class="wf-mini">WALLETS</span>
+              <div class="wf-field">apple merchant identifier</div>
+              <div class="wf-row"><div class="wf-field" style="flex:1">google merchant id</div><div class="wf-field" style="flex:1">google name</div></div>
+              <span class="wf-mini">REPORTING ONLY</span>
+              <div class="wf-row"><div class="wf-field" style="flex:1">MID</div><div class="wf-field" style="flex:1">SID</div><div class="wf-field" style="flex:1">TID</div></div>
+              <div class="wf-row"><div class="wf-btn is-alt" style="flex:1">Test connection</div><div class="wf-btn" style="flex:1">Save</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A-08 -->
+      <div class="screen" id="A-08">
+        <div class="s-txt">
+          <h3><span class="screen-id">A-08</span> Change gateway</h3>
+          <p>The screen that makes the whole product worth building. It moves one website from one gateway to another. The business changes nothing.</p>
+          <p>It is deliberately a screen with warnings on it, not a dropdown, because three things are true and easy to forget:</p>
+          <ul class="plain is-flag">
+            <li>Payments already in progress <strong>finish on the old gateway</strong>. Nothing is interrupted, so there is no need to pick a quiet hour.</li>
+            <li>The old connection is <strong>switched off, never deleted</strong>. Refunds and monthly settlement checks for old payments still need it.</li>
+            <li>Saved cards, when we have them, <strong>do not move</strong>. This screen says so plainly, with the count of affected customers, before the switch is confirmed.</li>
+          </ul>
+          <p>The confirmation requires typing the website address, the same way a dangerous action should.</p>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Admin &middot; Change gateway</span></div>
+            <div class="wf-body">
+              <div class="wf-block"><span class="wf-t">acme.example</span><span class="wf-s">From: AFS (live) &rarr; To: (choose)</span></div>
+              <div class="wf-field">new gateway account</div>
+              <div class="wf-block is-flag"><span class="wf-t">Before you switch</span><span class="wf-s">14 payments are in progress. They will complete on the old gateway.<br>Old connection stays available for refunds and settlement.<br>0 saved cards affected.</span></div>
+              <div class="wf-field">type "acme.example" to confirm</div>
+              <div class="wf-btn">Switch gateway</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A-09 -->
+      <div class="screen" id="A-09">
+        <div class="s-txt">
+          <h3><span class="screen-id">A-09</span> Payments, all businesses</h3>
+          <p>One list across everyone. This is the screen support opens when anybody asks any question about any payment.</p>
+          <ul class="plain">
+            <li>Columns: time, business, website, amount, method, status, card last four, their order reference, our payment ID.</li>
+            <li>Filters: date range, business, website, status, method, mode (test or live), amount range.</li>
+            <li>Search by our ID, their reference, gateway reference, or card last four.</li>
+            <li>Export to Excel, with a clear note of which filters produced it.</li>
+            <li>Test payments are visually separated and never counted in totals.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Admin &middot; Payments</span></div>
+            <div class="wf-body">
+              <div class="wf-row"><span class="wf-mini">DATE &middot; BUSINESS &middot; STATUS &middot; METHOD</span><span class="wf-pill">Export</span></div>
+              <div class="wf-tbl">
+                <div class="wf-tr h" style="grid-template-columns:.8fr 1.1fr .8fr .8fr"><span>Time</span><span>Business</span><span>Amount</span><span>Status</span></div>
+                <div class="wf-tr" style="grid-template-columns:.8fr 1.1fr .8fr .8fr"><span>14:22</span><span>Acme Retail</span><span>AED 240.00</span><span class="wf-pill ok">Paid</span></div>
+                <div class="wf-tr" style="grid-template-columns:.8fr 1.1fr .8fr .8fr"><span>14:19</span><span>Noor Fitness</span><span>AED 99.00</span><span class="wf-pill bad">Declined</span></div>
+                <div class="wf-tr" style="grid-template-columns:.8fr 1.1fr .8fr .8fr"><span>14:11</span><span>Acme Retail</span><span>AED 55.00</span><span class="wf-pill warn">Checking</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A-10 -->
+      <div class="screen" id="A-10">
+        <div class="s-txt">
+          <h3><span class="screen-id">A-10</span> Payment detail</h3>
+          <p>Everything known about one payment, arranged as a story rather than a record. If this screen is good, almost no support question needs a developer.</p>
+          <ul class="plain">
+            <li><strong>Timeline</strong>: created, shown to the shopper, sent to the gateway, bank challenge started, bank answered, recorded, business notified. Each with an exact time.</li>
+            <li><strong>Attempts</strong>: a payment can have several tries. Each try is listed with its own result, including the declines.</li>
+            <li><strong>Money</strong>: what we asked for and what the gateway says it took, side by side. If they differ, that difference is the headline of the screen.</li>
+            <li><strong>Gateway references</strong>: every identifier the gateway gave us, which is what makes the monthly settlement check possible.</li>
+            <li><strong>Notifications</strong>: what we sent the business, when, and what they answered.</li>
+            <li><strong>Actions</strong>: ask the gateway again, resend the notification, and (for a held payment) settle or reject after a human has looked.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Admin &middot; pi_01J&hellip;</span></div>
+            <div class="wf-body">
+              <div class="wf-block is-new"><span class="wf-t">AED 240.00 &middot; Paid</span><span class="wf-s">Apple Pay &middot; Visa &bull;&bull;&bull;&bull; 4242 &middot; Acme Retail</span></div>
+              <span class="wf-mini">TIMELINE</span>
+              <div class="wf-block"><span class="wf-s">14:22:01 created &middot; 14:22:04 shown &middot; 14:22:19 sent to gateway<br>14:22:26 bank approved &middot; 14:22:26 recorded &middot; 14:22:27 business notified</span></div>
+              <span class="wf-mini">MONEY</span>
+              <div class="wf-row"><div class="wf-block" style="flex:1"><span class="wf-t">AED 240.00</span><span class="wf-s">We asked</span></div><div class="wf-block" style="flex:1"><span class="wf-t">AED 240.00</span><span class="wf-s">Gateway took</span></div></div>
+              <div class="wf-row"><div class="wf-btn is-alt" style="flex:1">Ask gateway again</div><div class="wf-btn is-alt" style="flex:1">Resend notification</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A-11 -->
+      <div class="screen" id="A-11">
+        <div class="s-txt">
+          <h3><span class="screen-id">A-11</span> Money at risk queue</h3>
+          <p>The most important screen in the panel, and the one we hope stays empty. It lists every payment we started where we still do not know the outcome.</p>
+          <p>The system chases these by itself every couple of minutes. This screen exists for the small number it cannot resolve on its own, and to prove the chasing is working.</p>
+          <ul class="plain is-alert">
+            <li>Columns: how long it has been unknown, amount, business, what we have tried, next automatic attempt.</li>
+            <li>Sorted by amount, largest first, because that is the order a human should work them.</li>
+            <li>Per row: ask the gateway now, or escalate with a note.</li>
+            <li>A payment leaves this queue only when the gateway gives a final answer, never by someone dismissing it.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Admin &middot; Money at risk</span></div>
+            <div class="wf-body">
+              <div class="wf-block is-alert"><span class="wf-t">AED 1,240.00 across 3 payments</span><span class="wf-s">Outcome unknown for longer than 10 minutes</span></div>
+              <div class="wf-tbl">
+                <div class="wf-tr h" style="grid-template-columns:.7fr .9fr 1fr .8fr"><span>Waiting</span><span>Amount</span><span>Tried</span><span>Next</span></div>
+                <div class="wf-tr" style="grid-template-columns:.7fr .9fr 1fr .8fr"><span>46 min</span><span>AED 890.00</span><span>9 checks</span><span>in 2 min</span></div>
+                <div class="wf-tr" style="grid-template-columns:.7fr .9fr 1fr .8fr"><span>22 min</span><span>AED 250.00</span><span>5 checks</span><span>in 2 min</span></div>
+              </div>
+              <div class="wf-btn is-alt">Ask gateway now</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A-12 -->
+      <div class="screen" id="A-12">
+        <div class="s-txt">
+          <h3><span class="screen-id">A-12</span> Held payments</h3>
+          <p>A separate, smaller queue with a different meaning. These are payments where the gateway reported an amount or a currency that does not match what we asked for.</p>
+          <p>We never guess on these. They are not marked paid and they are not marked failed. They wait for a person, and the business is not notified until that person decides. In a healthy system this queue has nothing in it for months at a time.</p>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Admin &middot; Held</span></div>
+            <div class="wf-body">
+              <div class="wf-block is-flag"><span class="wf-t">Amount does not match</span><span class="wf-s">We asked AED 240.00 &middot; gateway reports AED 24.00<br>Acme Retail &middot; 14:31 today</span></div>
+              <div class="wf-block"><span class="wf-s">No money recorded. Business not notified. Waiting for a decision.</span></div>
+              <div class="wf-row"><div class="wf-btn is-alt" style="flex:1">Reject</div><div class="wf-btn" style="flex:1">Accept as paid</div></div>
+              <span class="wf-mini">BOTH ACTIONS REQUIRE A WRITTEN REASON</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A-13 -->
+      <div class="screen" id="A-13">
+        <div class="s-txt">
+          <h3><span class="screen-id">A-13</span> Notifications we sent</h3>
+          <p>Every notification we sent to every business, whether it arrived, and what their server said back. Support opens this when a business says "we never got it".</p>
+          <ul class="plain">
+            <li>Columns: time, business, event type, their URL, response code, attempt number, next retry.</li>
+            <li>Filters: business, status, event type, date.</li>
+            <li>Action: resend one, or resend every failure for a business at once after they tell us their server is fixed.</li>
+            <li>If a business's endpoint fails continuously, it is disabled automatically and flagged here, so we stop hammering a dead server.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Admin &middot; Outgoing notifications</span></div>
+            <div class="wf-body">
+              <div class="wf-tbl">
+                <div class="wf-tr h" style="grid-template-columns:.7fr 1.1fr .9fr .7fr"><span>Time</span><span>Business</span><span>Event</span><span>Result</span></div>
+                <div class="wf-tr" style="grid-template-columns:.7fr 1.1fr .9fr .7fr"><span>14:22</span><span>Acme Retail</span><span>paid</span><span class="wf-pill ok">200</span></div>
+                <div class="wf-tr" style="grid-template-columns:.7fr 1.1fr .9fr .7fr"><span>14:20</span><span>Noor Fitness</span><span>paid</span><span class="wf-pill bad">timeout</span></div>
+                <div class="wf-tr" style="grid-template-columns:.7fr 1.1fr .9fr .7fr"><span>14:18</span><span>Noor Fitness</span><span>paid</span><span class="wf-pill warn">retry 3</span></div>
+              </div>
+              <div class="wf-btn is-alt">Resend all failures for this business</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A-14 -->
+      <div class="screen" id="A-14">
+        <div class="s-txt">
+          <h3><span class="screen-id">A-14</span> Messages from the gateway</h3>
+          <p>The other direction: everything the gateway sent us. Kept because when something strange happens, the raw message is the evidence.</p>
+          <ul class="plain">
+            <li>Columns: time, gateway, whether we could verify it came from them, whether we could match it to a payment, what we did with it.</li>
+            <li>Unmatched messages are highlighted, because a message we cannot match may be a payment we do not know about.</li>
+            <li>The message body is stored encrypted and is only visible to senior admins, with the view recorded in the history.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Admin &middot; Gateway messages</span></div>
+            <div class="wf-body">
+              <div class="wf-tbl">
+                <div class="wf-tr h" style="grid-template-columns:.7fr .8fr .9fr .9fr"><span>Time</span><span>From</span><span>Verified</span><span>Matched</span></div>
+                <div class="wf-tr" style="grid-template-columns:.7fr .8fr .9fr .9fr"><span>14:22</span><span>AFS</span><span class="wf-pill ok">Yes</span><span>pi_01J&hellip;</span></div>
+                <div class="wf-tr" style="grid-template-columns:.7fr .8fr .9fr .9fr"><span>14:09</span><span>AFS</span><span class="wf-pill ok">Yes</span><span class="wf-pill warn">No match</span></div>
+              </div>
+              <div class="wf-block is-flag"><span class="wf-s">1 unmatched message in the last hour. Unmatched can mean a payment we do not know about.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A-15 -->
+      <div class="screen" id="A-15">
+        <div class="s-txt">
+          <h3><span class="screen-id">A-15</span> History (audit)</h3>
+          <p>Who changed what, when, and from where. Every credential save, every gateway switch, every held payment decision, every key created or revoked, every time an encrypted message was viewed.</p>
+          <p>Nothing on this screen can be edited or deleted by anybody, including us. That is the point of it.</p>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Admin &middot; History</span></div>
+            <div class="wf-body">
+              <div class="wf-block"><span class="wf-s"><strong>14:31</strong> Faisal accepted held payment pi_01J&hellip;: reason recorded</span></div>
+              <div class="wf-block"><span class="wf-s"><strong>11:02</strong> Sara switched acme.example to AFS live</span></div>
+              <div class="wf-block"><span class="wf-s"><strong>10:58</strong> Sara saved gateway credentials for Acme Retail (live)</span></div>
+              <div class="wf-block"><span class="wf-s"><strong>09:40</strong> Acme Retail revoked a live secret key</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A-16 -->
+      <div class="screen" id="A-16">
+        <div class="s-txt">
+          <h3><span class="screen-id">A-16</span> Our own team and roles</h3>
+          <p>Three roles, because not everyone who answers support questions should be able to touch credentials.</p>
+          <ul class="plain">
+            <li><strong>Support</strong>: read everything, resend a notification, ask the gateway again. Cannot see credentials, cannot switch a gateway, cannot decide a held payment.</li>
+            <li><strong>Operator</strong>: everything Support can do, plus decide held payments and manage businesses and websites.</li>
+            <li><strong>Owner</strong>: everything, including gateway credentials, going live, and managing admins.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Admin &middot; Team</span></div>
+            <div class="wf-body">
+              <div class="wf-tbl">
+                <div class="wf-tr h" style="grid-template-columns:1.2fr .9fr .8fr"><span>Person</span><span>Role</span><span>2FA</span></div>
+                <div class="wf-tr" style="grid-template-columns:1.2fr .9fr .8fr"><span>Sara N.</span><span>Owner</span><span class="wf-pill ok">On</span></div>
+                <div class="wf-tr" style="grid-template-columns:1.2fr .9fr .8fr"><span>Faisal K.</span><span>Operator</span><span class="wf-pill ok">On</span></div>
+                <div class="wf-tr" style="grid-template-columns:1.2fr .9fr .8fr"><span>Ravi P.</span><span>Support</span><span class="wf-pill ok">On</span></div>
+              </div>
+              <div class="wf-btn is-alt">Invite admin</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PART 4 · MERCHANT CMS ══════════ -->
+<section id="p08">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">08</div>
+      <div class="txt">
+        <span class="eyebrow">Panel two</span>
+        <h2>Merchant CMS: what the business sees</h2>
+        <p class="lede">Twelve screens. The whole panel has one job: get their developer from invitation email to first live payment without them needing to talk to us.</p>
+      </div>
+    </div>
+
+    <div class="stack">
+
+      <!-- M-01 -->
+      <div class="screen" id="M-01">
+        <div class="s-txt">
+          <h3><span class="screen-id">M-01</span> Invitation and first sign-in</h3>
+          <p>They receive one email. It says who invited them, what the panel is for, and has one button. The link works once and expires after seven days.</p>
+          <ul class="plain">
+            <li>Set a password, set up two-factor. Two-factor is required, not suggested.</li>
+            <li>Straight into the home screen with the checklist already showing.</li>
+            <li>Expired or already-used link shows a clear page with a "send me a new one" button, not an error code.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Email &middot; invitation</span></div>
+            <div class="wf-body">
+              <div class="wf-block"><span class="wf-t">Sara at Smooth invited you</span><span class="wf-s">Set up payments for acme.example. The link works once and expires in 7 days.</span></div>
+              <div class="wf-btn">Accept invitation</div>
+              <span class="wf-mini">SENT TO DEV@ACME.EXAMPLE</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M-02 -->
+      <div class="screen" id="M-02">
+        <div class="s-txt">
+          <h3><span class="screen-id">M-02</span> Home, with the go-live checklist</h3>
+          <p>The home screen is the checklist. Not a dashboard with charts, because on day one they have no data and what they need is a path.</p>
+          <ul class="plain is-accent">
+            <li>A permanent, unmissable <strong>Test mode</strong> banner while they are not live.</li>
+            <li>Checklist, each item either done or with a button that takes them to the right screen: add your website address, verify it for Apple Pay, set your notification URL, paste the snippet, make one successful test payment, receive one notification successfully.</li>
+            <li>Once every item is green, the <strong>Request go-live</strong> button becomes active.</li>
+            <li>After go-live, this screen becomes an ordinary dashboard: today's takings, this month, recent payments, anything failing.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">merchant.checkout.smoothpay.ai</span></div>
+            <div class="wf-body">
+              <div class="wf-ribbon">TEST MODE &middot; no real money is moving</div>
+              <div class="wf-block"><span class="wf-t">Get ready to go live</span><span class="wf-s">4 of 6 done</span></div>
+              <div class="wf-block"><span class="wf-s">&#10003; Website address added<br>&#10003; Notification URL set<br>&#10003; Snippet installed<br>&#10003; Test payment succeeded</span></div>
+              <div class="wf-block is-flag"><span class="wf-t">Apple Pay file not yet verified</span><span class="wf-s">Host one file on your site, then press Verify.</span></div>
+              <div class="wf-block is-ghost"><span class="wf-s">Receive one notification successfully</span></div>
+              <div class="wf-btn is-alt">Request go-live</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M-03 -->
+      <div class="screen" id="M-03">
+        <div class="s-txt">
+          <h3><span class="screen-id">M-03</span> Keys</h3>
+          <p>Two clearly separated groups: test and live. Live keys do not even appear until the website is approved, so there is nothing to copy by mistake.</p>
+          <ul class="plain">
+            <li>Each key row: label, the visible part, last four characters, who created it, when, when it was last used, and a Revoke action.</li>
+            <li>The secret key is shown <strong>once</strong>, in a panel that makes it obvious this is the only time. After that only the last four are visible.</li>
+            <li><strong>Create another key</strong> is always available, so rotating a leaked key is: create the new one, change it on their side, revoke the old one. No downtime at any point.</li>
+            <li>Revoking asks for confirmation and states that any server still using it will stop working immediately.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Merchant &middot; Keys</span></div>
+            <div class="wf-body">
+              <div class="wf-tabs"><span class="wf-tab on">Test</span><span class="wf-tab">Live</span></div>
+              <div class="wf-block"><span class="wf-t">Publishable key</span><span class="wf-s wf-mini">pk_test_9fK2&hellip; &middot; safe to put in your web page</span></div>
+              <div class="wf-block"><span class="wf-t">Secret key</span><span class="wf-s wf-mini">sk_test_&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;3a91 &middot; created 2 Sep &middot; last used 4 min ago</span></div>
+              <div class="wf-row"><div class="wf-btn is-alt" style="flex:1">Create another</div><div class="wf-btn is-alt" style="flex:1">Revoke</div></div>
+              <div class="wf-block is-flag"><span class="wf-s">Your live keys appear here once your website is approved.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M-04 -->
+      <div class="screen" id="M-04">
+        <div class="s-txt">
+          <h3><span class="screen-id">M-04</span> Website addresses, and turning on the wallets</h3>
+          <p>This single screen carries the one genuinely fiddly part of the whole onboarding, so it has to be the clearest screen in the panel.</p>
+          <p><strong>The easy half.</strong> They add the addresses their checkout will run on. Anything not on the list is refused, which is what makes a stolen publishable key useless.</p>
+          <p><strong>The Apple Pay half.</strong> Apple will only allow the Apple Pay button on a website it has checked. Checking means the business puts one small file on their own server at a fixed address. The screen therefore gives them: the file to download, the exact path it must sit at, a <strong>Verify</strong> button, and a plain-English status.</p>
+          <ul class="plain is-flag">
+            <li>Status per address: not started, file issued, verified, failed with the reason.</li>
+            <li>Until it says verified, the <strong>Apple Pay button simply does not appear</strong> on their checkout. A shopper never sees a button that cannot work.</li>
+            <li>Google Pay needs no file. It becomes available as soon as the gateway account has a Google merchant ID.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Merchant &middot; Website addresses</span></div>
+            <div class="wf-body">
+              <div class="wf-tbl">
+                <div class="wf-tr h" style="grid-template-columns:1.3fr .9fr .9fr"><span>Address</span><span>Checkout</span><span>Apple Pay</span></div>
+                <div class="wf-tr" style="grid-template-columns:1.3fr .9fr .9fr"><span>acme.example</span><span class="wf-pill ok">Allowed</span><span class="wf-pill ok">Verified</span></div>
+                <div class="wf-tr" style="grid-template-columns:1.3fr .9fr .9fr"><span>shop.acme.example</span><span class="wf-pill ok">Allowed</span><span class="wf-pill warn">File issued</span></div>
+              </div>
+              <div class="wf-block is-flag">
+                <span class="wf-t">Finish Apple Pay for shop.acme.example</span>
+                <span class="wf-s">1. Download the file.<br>2. Put it at <code>/.well-known/apple-developer-merchantid-domain-association</code><br>3. Press Verify.</span>
+              </div>
+              <div class="wf-row"><div class="wf-btn is-alt" style="flex:1">Download file</div><div class="wf-btn" style="flex:1">Verify</div></div>
+              <div class="wf-field">+ add another address</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M-05 -->
+      <div class="screen" id="M-05">
+        <div class="s-txt">
+          <h3><span class="screen-id">M-05</span> Notification URL</h3>
+          <p>Where we tell their server that a payment succeeded. The screen says in one line that <strong>this, not the customer's screen, is the real confirmation of payment</strong>, because every integrator gets that wrong at least once.</p>
+          <ul class="plain">
+            <li>Separate URL for test and for live.</li>
+            <li>A signing secret we generate, shown once, with a Rotate action. When rotated, the old secret keeps working for 24 hours so nothing breaks mid-deployment.</li>
+            <li><strong>Send a test notification</strong> button: fires a sample at their URL right now and shows exactly what came back. This turns a half-day of guessing into thirty seconds.</li>
+            <li>A copyable example of the message we send and how to check the signature.</li>
+            <li>Their recent deliveries, with the same resend action our team has.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Merchant &middot; Notifications</span></div>
+            <div class="wf-body">
+              <div class="wf-block is-new"><span class="wf-t">This is your proof of payment</span><span class="wf-s">Release the goods when you receive this, not when the customer's screen says success.</span></div>
+              <div class="wf-field">https://acme.example/webhooks/smooth</div>
+              <div class="wf-block"><span class="wf-t">Signing secret</span><span class="wf-s wf-mini">whsec_&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;7c2d &middot; rotate</span></div>
+              <div class="wf-btn is-alt">Send a test notification</div>
+              <div class="wf-tbl">
+                <div class="wf-tr h" style="grid-template-columns:.8fr 1fr .8fr"><span>Time</span><span>Event</span><span>Result</span></div>
+                <div class="wf-tr" style="grid-template-columns:.8fr 1fr .8fr"><span>14:22</span><span>payment.paid</span><span class="wf-pill ok">200</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M-06 -->
+      <div class="screen" id="M-06">
+        <div class="s-txt">
+          <h3><span class="screen-id">M-06</span> Install (the snippet)</h3>
+          <p>The screen their developer actually works from. Everything already filled in with their real key, so there is nothing to look up.</p>
+          <ul class="plain">
+            <li>Step 1, their server: the exact request that creates a payment, with their amount and their order reference, in the language they choose from a small set.</li>
+            <li>Step 2, their page: the two lines of HTML and JavaScript to paste.</li>
+            <li>Step 3, their server again: how to read the notification and confirm the signature.</li>
+            <li>A prominent one-liner: <strong>the amount always comes from your server, never from the page</strong>. With a sentence on why, so they do not "improve" it later.</li>
+            <li>Every code block has a copy button, and a small live check that goes green once we see their first request arrive.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Merchant &middot; Install</span></div>
+            <div class="wf-body">
+              <span class="wf-mini">1 &middot; ON YOUR SERVER</span>
+              <div class="wf-block"><span class="wf-s wf-mini">POST /v1/payment-intents<br>Authorization: Bearer sk_test_&hellip;<br>{ amount, currency, reference }</span></div>
+              <span class="wf-mini">2 &middot; ON YOUR PAGE</span>
+              <div class="wf-block"><span class="wf-s wf-mini">&lt;script src="&hellip;/smooth.js"&gt;&lt;/script&gt;<br>SmoothCheckout.mount({ &hellip; })</span></div>
+              <span class="wf-mini">3 &middot; RECEIVE THE NOTIFICATION</span>
+              <div class="wf-block"><span class="wf-s wf-mini">verify signature &rarr; mark order paid</span></div>
+              <div class="wf-block is-new"><span class="wf-s">&#9679; Waiting for your first request&hellip;</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M-07 -->
+      <div class="screen" id="M-07">
+        <div class="s-txt">
+          <h3><span class="screen-id">M-07</span> Test cards</h3>
+          <p>A short, printable list of card numbers that produce a chosen result on purpose. Without this, the business tests with a real card and we get a support ticket.</p>
+          <ul class="plain">
+            <li>One card that always succeeds, one that always declines, one that always asks for a bank challenge, one that produces an unknown result so they can see the chasing behaviour.</li>
+            <li>How to test Apple Pay and Google Pay in test mode, and on which devices that is possible at all.</li>
+            <li>A note that test payments never appear in live reports and never move money.</li>
+          </ul>
+          <div class="note is-flag" style="margin-top:4px;">
+            <span class="eyebrow">Needs confirming with the gateway</span>
+            <p>The exact test card numbers, and whether the sandbox decides the result from the card or from the amount, must come from the gateway in writing. Our existing integration shows the sandbox is sensitive to the amount, so this list cannot be written from memory.</p>
+          </div>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Merchant &middot; Test cards</span></div>
+            <div class="wf-body">
+              <div class="wf-tbl">
+                <div class="wf-tr h" style="grid-template-columns:1.3fr 1fr"><span>Card</span><span>Result</span></div>
+                <div class="wf-tr" style="grid-template-columns:1.3fr 1fr"><span>4&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; 0001</span><span class="wf-pill ok">Succeeds</span></div>
+                <div class="wf-tr" style="grid-template-columns:1.3fr 1fr"><span>4&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; 0002</span><span class="wf-pill bad">Declines</span></div>
+                <div class="wf-tr" style="grid-template-columns:1.3fr 1fr"><span>4&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; 0003</span><span class="wf-pill warn">Bank challenge</span></div>
+              </div>
+              <div class="wf-block is-ghost"><span class="wf-s">Final numbers to be confirmed with the gateway.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M-08 -->
+      <div class="screen" id="M-08">
+        <div class="s-txt">
+          <h3><span class="screen-id">M-08</span> Their payments</h3>
+          <p>The same information our team sees in <code>A-09</code>, filtered to them, with nothing about other businesses and nothing about which gateway was used.</p>
+          <ul class="plain">
+            <li>Columns: time, amount, method, status, card last four, their own order reference.</li>
+            <li>Filters: date, status, method, amount range, and test or live.</li>
+            <li>Search by their own reference, which is the thing they actually know.</li>
+            <li>Export to Excel and CSV.</li>
+            <li>A clear switch at the top between test data and live data, so the two are never mixed up.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Merchant &middot; Payments</span></div>
+            <div class="wf-body">
+              <div class="wf-row"><div class="wf-tabs"><span class="wf-tab on">Test</span><span class="wf-tab">Live</span></div><span class="wf-pill">Export</span></div>
+              <div class="wf-tbl">
+                <div class="wf-tr h" style="grid-template-columns:.7fr .9fr .9fr .9fr"><span>Time</span><span>Amount</span><span>Method</span><span>Status</span></div>
+                <div class="wf-tr" style="grid-template-columns:.7fr .9fr .9fr .9fr"><span>14:22</span><span>AED 240.00</span><span>Apple Pay</span><span class="wf-pill ok">Paid</span></div>
+                <div class="wf-tr" style="grid-template-columns:.7fr .9fr .9fr .9fr"><span>14:05</span><span>AED 80.00</span><span>Card</span><span class="wf-pill bad">Declined</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M-09 -->
+      <div class="screen" id="M-09">
+        <div class="s-txt">
+          <h3><span class="screen-id">M-09</span> Payment detail (their view)</h3>
+          <p>One payment, in their language. No gateway names, no internal codes, no mention of an acquirer anywhere on the page.</p>
+          <ul class="plain">
+            <li>Amount, status, time, method, card brand and last four, their reference, and any extra data they attached when creating it.</li>
+            <li>A simple history: created, customer paid, we notified you at this time, you answered with this code.</li>
+            <li>If it failed: a plain-English reason, and whether trying again could work.</li>
+            <li>Resend notification, in case their own system missed it.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Merchant &middot; Payment</span></div>
+            <div class="wf-body">
+              <div class="wf-block is-new"><span class="wf-t">AED 240.00 &middot; Paid</span><span class="wf-s">Apple Pay &middot; Visa &bull;&bull;&bull;&bull; 4242 &middot; your ref ORD-7741</span></div>
+              <div class="wf-block"><span class="wf-s">14:22:01 created<br>14:22:26 customer paid<br>14:22:27 we notified you &middot; you answered 200</span></div>
+              <div class="wf-btn is-alt">Resend notification</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M-10 -->
+      <div class="screen" id="M-10">
+        <div class="s-txt">
+          <h3><span class="screen-id">M-10</span> Go live</h3>
+          <p>A short screen with a real gate on it. It shows the checklist again, now as pass or fail, and only lets them request approval when everything passes.</p>
+          <ul class="plain">
+            <li>Checks: at least one verified website address, a notification URL that answered our test, at least one successful test payment, at least one notification they accepted, and a live gateway account connected by our team.</li>
+            <li>On request, our team is notified. Approval happens in <code>A-06</code>.</li>
+            <li>After approval, a short page tells them exactly what to change: swap the test keys for the live keys, nothing else.</li>
+            <li>The test environment keeps working forever afterwards, so they can keep testing changes safely.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Merchant &middot; Go live</span></div>
+            <div class="wf-body">
+              <div class="wf-block"><span class="wf-s">&#10003; Website address verified<br>&#10003; Notification URL answered our test<br>&#10003; A test payment succeeded<br>&#10003; A notification was accepted<br>&#10003; Live gateway connected by Smooth</span></div>
+              <div class="wf-btn">Request go-live</div>
+              <div class="wf-block is-new"><span class="wf-t">After approval</span><span class="wf-s">Replace pk_test / sk_test with pk_live / sk_live. Nothing else changes.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M-11 -->
+      <div class="screen" id="M-11">
+        <div class="s-txt">
+          <h3><span class="screen-id">M-11</span> Their team</h3>
+          <p>The business invites its own people, so we are not in the middle of their staff changes.</p>
+          <ul class="plain">
+            <li><strong>Owner</strong>: everything, including keys and going live.</li>
+            <li><strong>Developer</strong>: keys, domains, notifications, install, test data. Cannot see live payment amounts if the business prefers that. (A setting, off by default.)</li>
+            <li><strong>Viewer</strong>: payments and reports only. No keys, ever.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Merchant &middot; Team</span></div>
+            <div class="wf-body">
+              <div class="wf-tbl">
+                <div class="wf-tr h" style="grid-template-columns:1.3fr .9fr .7fr"><span>Person</span><span>Role</span><span>2FA</span></div>
+                <div class="wf-tr" style="grid-template-columns:1.3fr .9fr .7fr"><span>Sara (owner)</span><span>Owner</span><span class="wf-pill ok">On</span></div>
+                <div class="wf-tr" style="grid-template-columns:1.3fr .9fr .7fr"><span>dev@acme</span><span>Developer</span><span class="wf-pill ok">On</span></div>
+              </div>
+              <div class="wf-btn is-alt">Invite</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M-12 -->
+      <div class="screen" id="M-12">
+        <div class="s-txt">
+          <h3><span class="screen-id">M-12</span> Settings and branding</h3>
+          <p>Small but worth having on day one, because it is what makes the checkout box feel like theirs.</p>
+          <ul class="plain">
+            <li>Business display name and logo, which appear inside the checkout box.</li>
+            <li>One accent colour and a light or dark preference. Nothing more, because free-form styling is a security hole and a support burden.</li>
+            <li>A live preview of the checkout box beside the settings, updating as they change them.</li>
+            <li>Email addresses that should receive alerts, for example when notifications start failing.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Merchant &middot; Settings</span></div>
+            <div class="wf-body">
+              <div class="wf-row"><div class="wf-field" style="flex:1">display name</div><div class="wf-field" style="flex:1">logo</div></div>
+              <div class="wf-row"><div class="wf-field" style="flex:1">accent colour</div><div class="wf-field" style="flex:1">light / dark</div></div>
+              <span class="wf-mini">LIVE PREVIEW</span>
+              <div class="wf-block is-new"><span class="wf-t">Acme Retail</span><span class="wf-s">AED 240.00 &middot; Pay</span></div>
+              <div class="wf-field">alert emails</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PART 5 · THE CHECKOUT ══════════ -->
+<section id="p09">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">09</div>
+      <div class="txt">
+        <span class="eyebrow">Panel three</span>
+        <h2>The checkout box, on their website</h2>
+        <p class="lede">Ten states of one small box. This is the only part of the product a shopper ever sees, and the only part where a bad second costs real money.</p>
+      </div>
+    </div>
+
+    <div class="note is-accent" style="margin-bottom:36px;">
+      <span class="eyebrow">The rule that shapes every screen below</span>
+      <p>The card fields are not ours. They are supplied by the gateway inside their own secure frame, and we wrap them in our design. That is what keeps card numbers away from both our servers and the business's servers. The designer can style everything around the fields, and the fields themselves only within what the gateway exposes: font, size, colour, spacing, placeholder text.</p>
+    </div>
+
+    <div class="stack">
+
+      <!-- C-01 -->
+      <div class="screen" id="C-01">
+        <div class="s-txt">
+          <h3><span class="screen-id">C-01</span> Where it sits</h3>
+          <p>The shopper is on the business's own checkout page. Our box appears in place, as part of their page. There is no redirect and no new window.</p>
+          <p>The business controls everything around the box: their header, their order summary, their trust badges. We control only what is inside it.</p>
+          <ul class="plain">
+            <li>Default width fills its container; minimum usable width is 300 pixels.</li>
+            <li>Height changes by itself as the content changes. The business does not have to guess a height.</li>
+            <li>Designers should assume the box sits on an unknown background and must look right on both light and dark pages.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">acme.example/checkout</span></div>
+            <div class="wf-body">
+              <div class="wf-block is-ghost"><span class="wf-t">Acme Retail</span><span class="wf-s">Their header, their design</span></div>
+              <div class="wf-block is-ghost"><span class="wf-t">Order summary</span><span class="wf-s">2 items &middot; AED 240.00</span></div>
+              <div class="wf-block is-new"><span class="wf-t">Smooth Checkout</span><span class="wf-s">Our box, inside their page</span></div>
+              <div class="wf-block is-ghost"><span class="wf-s">Their footer</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C-02 -->
+      <div class="screen" id="C-02">
+        <div class="s-txt">
+          <h3><span class="screen-id">C-02</span> Loading</h3>
+          <p>A skeleton in the exact shape of what is about to appear, so the page does not jump. It is on screen for well under a second in normal conditions.</p>
+          <ul class="plain">
+            <li>Never a spinner alone, and never a blank white rectangle.</li>
+            <li>If loading passes about eight seconds, it becomes <code>C-09</code> rather than spinning forever.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Checkout &middot; loading</span></div>
+            <div class="wf-body">
+              <div class="wf-block is-ghost"><span class="wf-s">&nbsp;</span></div>
+              <div class="wf-block is-ghost"><span class="wf-s">&nbsp;</span></div>
+              <div class="wf-block is-ghost"><span class="wf-s">&nbsp;</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C-03 -->
+      <div class="screen" id="C-03">
+        <div class="s-txt">
+          <h3><span class="screen-id">C-03</span> Ready, with wallets on top</h3>
+          <p>The default and most important state. <strong>Apple Pay and Google Pay go above the card form, not below it.</strong> Most shoppers on a phone will finish with one touch and never see a card field, which is both the fastest checkout and the safest one.</p>
+          <ul class="plain is-accent">
+            <li>Only the wallet the device actually supports is shown. An iPhone user sees Apple Pay. An Android Chrome user sees Google Pay. A desktop Firefox user sees neither, and the card form simply moves up.</li>
+            <li>A wallet button is shown only when the device supports it <strong>and</strong> the gateway account has the matching identifier <strong>and</strong> the website address is verified. If any of those is missing, the button is not rendered at all.</li>
+            <li>A quiet separator between the wallets and the card form, with the amount stated once and clearly.</li>
+            <li>The business's name and logo appear, so the shopper knows who they are paying.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Checkout &middot; ready</span></div>
+            <div class="wf-body">
+              <div class="wf-row"><span class="wf-t">Acme Retail</span><span class="wf-t">AED 240.00</span></div>
+              <div class="wf-btn is-apple">Apple&nbsp;Pay</div>
+              <div class="wf-btn is-gpay">Google&nbsp;Pay</div>
+              <div class="wf-mini" style="text-align:center">OR PAY BY CARD</div>
+              <div class="wf-field">card number</div>
+              <div class="wf-row"><div class="wf-field" style="flex:1">MM / YY</div><div class="wf-field" style="flex:1">CVC</div></div>
+              <div class="wf-field">name on card</div>
+              <div class="wf-btn">Pay AED 240.00</div>
+              <span class="wf-mini" style="text-align:center">SECURED BY SMOOTH</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C-04 -->
+      <div class="screen" id="C-04">
+        <div class="s-txt">
+          <h3><span class="screen-id">C-04</span> Card only</h3>
+          <p>What a desktop Firefox or Windows Chrome shopper sees. The same box with the wallet section absent entirely, not greyed out.</p>
+          <ul class="plain">
+            <li>Card brand marks appear under the number field and highlight as the shopper types.</li>
+            <li>Field-level errors appear under the field, in words, not as a red border alone.</li>
+            <li>The pay button shows the exact amount, so there is never a doubt about what is being charged.</li>
+            <li>While the payment is being sent, the button becomes a disabled progress state. It cannot be pressed twice.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Checkout &middot; card only</span></div>
+            <div class="wf-body">
+              <div class="wf-row"><span class="wf-t">Acme Retail</span><span class="wf-t">AED 240.00</span></div>
+              <div class="wf-field">card number</div>
+              <span class="wf-mini">VISA &middot; MASTERCARD</span>
+              <div class="wf-row"><div class="wf-field" style="flex:1">MM / YY</div><div class="wf-field" style="flex:1">CVC</div></div>
+              <div class="wf-block is-alert"><span class="wf-s">Check the expiry date</span></div>
+              <div class="wf-btn">Pay AED 240.00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C-05 -->
+      <div class="screen" id="C-05">
+        <div class="s-txt">
+          <h3><span class="screen-id">C-05</span> Bank challenge in progress</h3>
+          <p>Many UAE cards require the bank's own verification step. That page belongs to the bank and we cannot restyle it, so the job here is to make it feel like part of the same flow.</p>
+          <ul class="plain">
+            <li>Before: a short line saying the bank is being contacted.</li>
+            <li>During: the bank's own page appears. Where the bank allows it, inside our box. Where the bank refuses to be placed inside another page, the whole page moves to the bank and comes straight back after. The designer should assume both happen.</li>
+            <li>After: back in our box on a waiting state while we confirm with the gateway. Never a blank screen at this moment, because this is where a nervous shopper closes the tab.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Checkout &middot; bank check</span></div>
+            <div class="wf-body">
+              <div class="wf-block is-ghost"><span class="wf-t">Your bank is verifying this payment</span><span class="wf-s">Enter the code your bank sent you.</span></div>
+              <div class="wf-block"><span class="wf-s">(the bank's own page appears here)</span></div>
+              <div class="wf-block is-flag"><span class="wf-s">Please do not close this window.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C-06 -->
+      <div class="screen" id="C-06">
+        <div class="s-txt">
+          <h3><span class="screen-id">C-06</span> Success</h3>
+          <p>Short, calm, and honest about what happens next.</p>
+          <ul class="plain">
+            <li>Amount, the business's name, and the last four digits.</li>
+            <li>A reference the shopper can quote, which is the business's own order reference and not our internal one.</li>
+            <li>If the business gave a success address, the shopper is taken there after a short moment, with a visible link in case the automatic move is blocked.</li>
+            <li>If they gave none, the box simply stays on this state and the business's page can act on the event.</li>
+          </ul>
+          <div class="note is-flag" style="margin-top:4px;">
+            <span class="eyebrow">Designer note</span>
+            <p>This screen must never say "your order is confirmed". The order is the business's to confirm, and they do that when they receive our notification. The wording here is about the <em>payment</em> only.</p>
+          </div>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Checkout &middot; success</span></div>
+            <div class="wf-body">
+              <div class="wf-block is-new"><span class="wf-t">&#10003; Payment successful</span><span class="wf-s">AED 240.00 to Acme Retail<br>Visa &bull;&bull;&bull;&bull; 4242 &middot; reference ORD-7741</span></div>
+              <span class="wf-mini" style="text-align:center">RETURNING YOU TO ACME RETAIL&hellip;</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C-07 -->
+      <div class="screen" id="C-07">
+        <div class="s-txt">
+          <h3><span class="screen-id">C-07</span> Declined, and trying again</h3>
+          <p>A decline is not an error message, it is a fork in the road. The shopper needs to know whether trying again is worth it.</p>
+          <ul class="plain">
+            <li>Plain wording, no bank codes. "Your bank declined this payment." "There is not enough balance on this card." "This card has expired."</li>
+            <li>When another try could work, a <strong>Try another card</strong> button that clears the form and keeps the same amount.</li>
+            <li>When it cannot work, we say so, so they stop retrying the same card five times.</li>
+            <li>The shopper is never told which gateway was involved.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Checkout &middot; declined</span></div>
+            <div class="wf-body">
+              <div class="wf-block is-alert"><span class="wf-t">Your bank declined this payment</span><span class="wf-s">No money was taken. You can try a different card.</span></div>
+              <div class="wf-btn">Try another card</div>
+              <div class="wf-btn is-alt">Back to Acme Retail</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C-08 -->
+      <div class="screen" id="C-08">
+        <div class="s-txt">
+          <h3><span class="screen-id">C-08</span> Expired</h3>
+          <p>A payment page is only valid for a limited time, thirty minutes by default. After that the box refuses to start anything new.</p>
+          <ul class="plain">
+            <li>Clear wording that nothing was charged and what to do: go back and start the order again.</li>
+            <li>Important behaviour behind this screen: if the shopper actually completed a bank challenge just as the clock ran out and the money really was taken, the system still records the payment and still notifies the business. Expiry stops new attempts. It never throws away real money.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Checkout &middot; expired</span></div>
+            <div class="wf-body">
+              <div class="wf-block is-flag"><span class="wf-t">This payment page has expired</span><span class="wf-s">Nothing was charged. Please return to the shop and start again.</span></div>
+              <div class="wf-btn is-alt">Back to Acme Retail</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C-09 -->
+      <div class="screen" id="C-09">
+        <div class="s-txt">
+          <h3><span class="screen-id">C-09</span> Something is wrong on our side</h3>
+          <p>The state nobody designs and everybody eventually sees. It covers the gateway being unreachable, our own service being unavailable, or the box being placed on a website that is not on the allowed list.</p>
+          <ul class="plain">
+            <li>For the shopper: a short apology, the fact that nothing was charged, and a way back.</li>
+            <li>For the business's developer: a small reference code the box displays, which maps to a precise reason in our logs. This one detail removes most back-and-forth support.</li>
+            <li>A deliberately different, quieter message when the cause is an unapproved website address, because that is a configuration mistake rather than an outage.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Checkout &middot; unavailable</span></div>
+            <div class="wf-body">
+              <div class="wf-block is-alert"><span class="wf-t">Payments are temporarily unavailable</span><span class="wf-s">Nothing was charged. Please try again in a few minutes.</span></div>
+              <span class="wf-mini" style="text-align:center">REF 8F2C-1140</span>
+              <div class="wf-btn is-alt">Back to Acme Retail</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C-10 -->
+      <div class="screen" id="C-10">
+        <div class="s-txt">
+          <h3><span class="screen-id">C-10</span> On a phone, and in test mode</h3>
+          <p>Two variants the designer must draw explicitly rather than leave to chance.</p>
+          <ul class="plain">
+            <li><strong>Phone</strong>: the whole box at 320 to 390 pixels wide. Wallet buttons full width and large enough to tap. Card fields stacked. The pay button must remain reachable when the phone keyboard is open, which is where most mobile checkouts fall apart.</li>
+            <li><strong>Test mode</strong>: an unmissable ribbon saying no real money will move. It appears whenever the publishable key is a test key, and it cannot be turned off. A business that ships test keys to production should find out from this ribbon, not from an empty bank account.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="wf" style="max-width:270px;">
+            <div class="wf-bar"><div class="wf-dots"><i></i><i></i><i></i></div><span class="wf-name">Phone &middot; test mode</span></div>
+            <div class="wf-body">
+              <div class="wf-ribbon">TEST MODE &middot; NO REAL MONEY</div>
+              <div class="wf-row"><span class="wf-t">Acme</span><span class="wf-t">AED 240.00</span></div>
+              <div class="wf-btn is-apple">Apple&nbsp;Pay</div>
+              <div class="wf-mini" style="text-align:center">OR PAY BY CARD</div>
+              <div class="wf-field">card number</div>
+              <div class="wf-row"><div class="wf-field" style="flex:1">MM/YY</div><div class="wf-field" style="flex:1">CVC</div></div>
+              <div class="wf-btn">Pay AED 240.00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PART 6 · TEST AND LIVE ══════════ -->
+<section id="p10">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">10</div>
+      <div class="txt">
+        <span class="eyebrow">Running two worlds at once</span>
+        <h2>How test and live stay separate</h2>
+        <p class="lede">Every business is in both worlds at the same time, forever. This is one of the most common places a payment product goes wrong, so it is worth being explicit.</p>
+      </div>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead>
+          <tr><th style="width:24%">Thing</th><th style="width:38%">In test</th><th>In live</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Keys</strong></td><td>Start with <code>pk_test_</code> and <code>sk_test_</code></td><td>Start with <code>pk_live_</code> and <code>sk_live_</code>. The key itself says which world it is</td></tr>
+          <tr><td><strong>The web address</strong></td><td colspan="2">Identical. The business never changes a URL to go live, only the key. This is the single biggest thing that makes going live painless</td></tr>
+          <tr><td><strong>Gateway</strong></td><td>The gateway's sandbox</td><td>The gateway's real environment</td></tr>
+          <tr><td><strong>Money</strong></td><td>None ever moves</td><td>Real</td></tr>
+          <tr><td><strong>Notifications</strong></td><td>Sent to their test URL, signed with the test secret</td><td>Sent to their live URL, signed with the live secret</td></tr>
+          <tr><td><strong>Payment lists</strong></td><td colspan="2">Separated by a switch at the top of the screen. Test data never appears in a live total, an export, or any report</td></tr>
+          <tr><td><strong>The checkout box</strong></td><td>Shows a permanent test ribbon that cannot be hidden</td><td>No ribbon</td></tr>
+          <tr><td><strong>Apple Pay and Google Pay</strong></td><td>Available where the device and the gateway sandbox allow it. Some devices cannot test wallets at all, and the panel says so rather than looking broken</td><td>Available once the website address is verified</td></tr>
+          <tr><td><strong>After going live</strong></td><td colspan="2">Test keys keep working forever. A business testing a change should never have to risk a live payment</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note is-alert" style="margin-top:28px;">
+      <span class="eyebrow">A rule with no exceptions</span>
+      <p>A test key can never touch live data and a live key can never touch test data, at any layer. It is not a filter on a screen, it is part of how every record is stored and every request is authorised. A support person looking at a live total must be able to trust it completely.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PART 7 · WALLETS ══════════ -->
+<section id="p11">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">11</div>
+      <div class="txt">
+        <span class="eyebrow">Phase 1 addition</span>
+        <h2>Apple Pay and Google Pay: what it really takes</h2>
+        <p class="lede">These two were added to Phase 1 at the client's request. They are worth it, because on a phone they convert far better than a card form. But they are not a switch we can flip alone, and the product has to be honest about that.</p>
+      </div>
+    </div>
+
+    <div class="cols">
+      <div class="card">
+        <span class="eyebrow">Apple Pay</span>
+        <p>Apple only allows the Apple Pay button on a website it has checked in advance. Because our box sits inside the business's page, <strong>it is the business's own web address that Apple checks, not ours.</strong></p>
+        <p>So the business has to put one small file on their own server, at a fixed path, and we then ask Apple to verify it. Screen <code>M-04</code> exists entirely for this.</p>
+        <p>Until it is verified, we do not render the button.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Google Pay</span>
+        <p>No file to host, which makes it the easier of the two. It needs a Google merchant identifier on the gateway account, and for real payments the business has to be registered on Google's side.</p>
+        <p>It also needs the browser to allow payment inside our box, which our own snippet takes care of automatically.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">What we handle silently</span>
+        <p>Our snippet creates the box with the browser permission that both wallets require. The business does not need to know this exists, and cannot get it wrong, because they never write the box themselves.</p>
+        <p>If a business builds their own box by hand instead of using our snippet, wallets will not appear. The documentation says so in one line.</p>
+      </div>
+    </div>
+
+    <div class="note is-alert" style="margin-top:32px;">
+      <span class="eyebrow">Must be confirmed with the gateway before this part is built</span>
+      <p>Today each business has its own Apple merchant identifier through the gateway. Before we write the Apple Pay part of the onboarding screen, we need the gateway to tell us in writing <strong>who registers the business's web address with Apple</strong>: whether they do it for us through Apple's registration interface for payment providers, or whether each business has to be taken through Apple's own portal. The answer decides whether <code>M-04</code> is a one-click screen or a guided, slower process. The rest of Phase 1 does not depend on this answer, so it does not block the other work.</p>
+    </div>
+
+    <div class="tw" style="margin-top:28px;">
+      <table>
+        <thead>
+          <tr><th style="width:26%">Situation</th><th style="width:20%">Apple Pay</th><th style="width:20%">Google Pay</th><th>What the shopper sees</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>iPhone, Safari, address verified</td><td class="wf-pill ok">Shown</td><td>Not applicable</td><td>Apple Pay on top, card below</td></tr>
+          <tr><td>Android, Chrome</td><td>Not applicable</td><td class="wf-pill ok">Shown</td><td>Google Pay on top, card below</td></tr>
+          <tr><td>Desktop Chrome with a saved Google card</td><td>No</td><td class="wf-pill ok">Shown</td><td>Google Pay on top, card below</td></tr>
+          <tr><td>Desktop Firefox</td><td>No</td><td>No</td><td>Card form only, no empty space</td></tr>
+          <tr><td>Address not yet verified</td><td class="wf-pill bad">Hidden</td><td class="wf-pill ok">Shown</td><td>Card form, and Google Pay if available</td></tr>
+          <tr><td>Inside the Instagram or Facebook browser</td><td class="wf-pill warn">Usually hidden</td><td class="wf-pill warn">Usually hidden</td><td>Card form only. This still works and must look intentional, not broken</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ PART 11 · WHO SEES WHAT ══════════ -->
+<section id="p12">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">12</div>
+      <div class="txt">
+        <span class="eyebrow">Access</span>
+        <h2>Who sees what</h2>
+        <p class="lede">Six roles across two panels. Worth settling now, because a role added after the screens are built means revisiting every one of them.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-bottom:16px;">12.1 Our team</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:34%">Can do</th><th style="width:16%">Support</th><th style="width:16%">Operator</th><th>Owner</th></tr></thead>
+        <tbody>
+          <tr><td>See businesses, websites and payments</td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td>Ask the gateway again about a payment</td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td>Resend a notification to a business</td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td>Export payments</td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td>Create and edit a business or a website</td><td><span class="wf-pill">No</span></td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td>Invite the business's first user</td><td><span class="wf-pill">No</span></td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td>Decide a held payment</td><td><span class="wf-pill">No</span></td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td>Suspend a business</td><td><span class="wf-pill">No</span></td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td><strong>Enter or change gateway credentials</strong></td><td><span class="wf-pill">No</span></td><td><span class="wf-pill">No</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td><strong>Switch a website's gateway</strong></td><td><span class="wf-pill">No</span></td><td><span class="wf-pill">No</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td><strong>Approve go-live</strong></td><td><span class="wf-pill">No</span></td><td><span class="wf-pill">No</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td><strong>Read a decrypted gateway message</strong></td><td><span class="wf-pill">No</span></td><td><span class="wf-pill">No</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td>Manage admin accounts and roles</td><td><span class="wf-pill">No</span></td><td><span class="wf-pill">No</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:16px;" class="prose">The four rows in bold are the ones that decide the role split. Support answers questions all day and should never need credentials to do it. Everything an Owner can do that an Operator cannot is written to the history screen with a reason attached.</p>
+
+    <h3 style="margin:42px 0 16px;">12.2 The business's own team</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:34%">Can do</th><th style="width:16%">Viewer</th><th style="width:16%">Developer</th><th>Owner</th></tr></thead>
+        <tbody>
+          <tr><td>See their payments and export them</td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td>See the go-live checklist</td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td>Resend a notification for one payment</td><td><span class="wf-pill">No</span></td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td>See and create test keys</td><td><span class="wf-pill">No</span></td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td>Add or remove website addresses</td><td><span class="wf-pill">No</span></td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td>Set the notification URL, rotate its secret, send a test</td><td><span class="wf-pill">No</span></td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td>Start Apple Pay verification</td><td><span class="wf-pill">No</span></td><td><span class="wf-pill ok">Yes</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td><strong>See and create live keys</strong></td><td><span class="wf-pill">No</span></td><td><span class="wf-pill warn">Optional</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td><strong>Request go-live</strong></td><td><span class="wf-pill">No</span></td><td><span class="wf-pill">No</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td>Change branding and alert emails</td><td><span class="wf-pill">No</span></td><td><span class="wf-pill">No</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+          <tr><td>Invite and remove their own people</td><td><span class="wf-pill">No</span></td><td><span class="wf-pill">No</span></td><td><span class="wf-pill ok">Yes</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:16px;" class="prose"><strong>"Optional" needs a product decision.</strong> Some businesses are happy for their developer to hold the live key; others, especially larger ones, are not. Making it a setting the Owner controls, off by default, satisfies both without us guessing. It is one checkbox on <code>M-11</code>.</p>
+
+    <div class="cols" style="margin-top:34px;">
+      <div class="card">
+        <span class="eyebrow">Applies to both panels</span>
+        <p>Two-factor is required for everybody, in every role, with no "trust this device" option. A payments panel is worth attacking, and a viewer account is still a way in.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">What a role can never grant</span>
+        <p>Nobody, in any role, in either panel, can see a full card number, a gateway credential, or a secret key after the moment it was created. Those are not permissions that exist to be given.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">For the designer</span>
+        <p>Every screen needs a "you do not have access to this" state, and it should explain who to ask rather than simply refusing. A hidden menu item is better than a dead end, so the navigation is filtered by role as well.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PART 8 · WHAT WE ALSO NEED ══════════ -->
+<section id="p13">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">13</div>
+      <div class="txt">
+        <span class="eyebrow">Not in the original list</span>
+        <h2>Things Phase 1 needs that nobody had written down</h2>
+        <p class="lede">These came out of walking through the screens one by one. Each is small. Each is the kind of thing that, if left out, turns into a support problem in week one.</p>
+      </div>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead>
+          <tr><th style="width:26%">Missing piece</th><th style="width:37%">Why it matters</th><th>Where it lands</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Sign-in and roles for two panels</strong></td><td>This is a brand new product, so there is no existing login to reuse. Both panels need accounts, invitations, two-factor and roles from day one</td><td><code>A-01</code>, <code>A-16</code>, <code>M-01</code>, <code>M-11</code></td></tr>
+          <tr><td><strong>The go-live checklist as a real gate</strong></td><td>Otherwise a business goes live having never received a single notification, and discovers it with real customers</td><td><code>M-02</code>, <code>M-10</code></td></tr>
+          <tr><td><strong>Send a test notification</strong></td><td>Removes the most common integration dead end, where nothing is arriving and nobody can tell whose fault it is</td><td><code>M-05</code></td></tr>
+          <tr><td><strong>Test card list</strong></td><td>Without it a business tests with a real card, then asks us for a refund we cannot do in Phase 1</td><td><code>M-07</code></td></tr>
+          <tr><td><strong>The held payments queue</strong></td><td>There has to be somewhere for a payment to wait when the amount does not match. A payment product with no such place will guess, and guessing is how money is lost</td><td><code>A-12</code></td></tr>
+          <tr><td><strong>Unmatched gateway messages</strong></td><td>A message we cannot match to a payment may be a payment we never knew about. It needs a visible home, not a log line</td><td><code>A-14</code></td></tr>
+          <tr><td><strong>Error reference on the checkout box</strong></td><td>Turns "it doesn't work" into a one-minute lookup</td><td><code>C-09</code></td></tr>
+          <tr><td><strong>Branding settings</strong></td><td>Without them, every business asks for custom styling one at a time, which is a support burden and a security hole</td><td><code>M-12</code></td></tr>
+          <tr><td><strong>A written statement of who is responsible for what</strong></td><td>Businesses that take card payments have a yearly compliance form. Whether they can use the short version depends on us confirming, in writing, what protections our box carries. Giving them that statement makes us easier to buy</td><td>Document, not a screen. Owned by us, given at onboarding</td></tr>
+          <tr><td><strong>Automatic disabling of a dead notification URL</strong></td><td>Prevents us hammering a business's broken server for days and being blocked as a result</td><td><code>A-13</code>, <code>M-05</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PART 9 · SCREEN INVENTORY ══════════ -->
+<section id="p14">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">14</div>
+      <div class="txt">
+        <span class="eyebrow">For the designer</span>
+        <h2>Complete screen inventory</h2>
+        <p class="lede">Thirty-eight screens, five email templates and two shared states. Priority 1 is needed for the first working end-to-end run. Priority 2 is needed before a real business is let in. Nothing here is optional for Phase 1.</p>
+      </div>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead>
+          <tr><th style="width:9%">ID</th><th style="width:34%">Screen or template</th><th style="width:13%">Priority</th><th>States to draw</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><a class="inv-link" href="#A-01">A-01</a></td><td>Admin sign-in</td><td>1</td><td>Normal, wrong password, locked, code expired</td></tr>
+          <tr><td><a class="inv-link" href="#A-02">A-02</a></td><td>Admin dashboard</td><td>2</td><td>Healthy, money at risk, empty (first day)</td></tr>
+          <tr><td><a class="inv-link" href="#A-03">A-03</a></td><td>Businesses list</td><td>1</td><td>Populated, empty, filtered, loading</td></tr>
+          <tr><td><a class="inv-link" href="#A-04">A-04</a></td><td>Add a business</td><td>1</td><td>Empty, validation errors, saving</td></tr>
+          <tr><td><a class="inv-link" href="#A-05">A-05</a></td><td>Business detail, 6 tabs</td><td>1</td><td>Each tab, plus empty states for each</td></tr>
+          <tr><td><a class="inv-link" href="#A-06">A-06</a></td><td>Website detail</td><td>1</td><td>Test only, live, go-live disabled with reasons</td></tr>
+          <tr><td><a class="inv-link" href="#A-07">A-07</a></td><td>Connect a gateway account</td><td>1</td><td>Empty, filled, test passed, test failed, saved (masked)</td></tr>
+          <tr><td><a class="inv-link" href="#A-08">A-08</a></td><td>Change gateway</td><td>2</td><td>Warnings, confirmation, in progress, done</td></tr>
+          <tr><td><a class="inv-link" href="#A-09">A-09</a></td><td>Payments, all businesses</td><td>1</td><td>Populated, filtered, empty, exporting</td></tr>
+          <tr><td><a class="inv-link" href="#A-10">A-10</a></td><td>Payment detail</td><td>1</td><td>Paid, declined, unknown, held, several attempts</td></tr>
+          <tr><td><a class="inv-link" href="#A-11">A-11</a></td><td>Money at risk queue</td><td>1</td><td>Empty (the good state), populated</td></tr>
+          <tr><td><a class="inv-link" href="#A-12">A-12</a></td><td>Held payments</td><td>2</td><td>Empty, populated, decision dialog</td></tr>
+          <tr><td><a class="inv-link" href="#A-13">A-13</a></td><td>Notifications we sent</td><td>2</td><td>Populated, failures, endpoint auto-disabled</td></tr>
+          <tr><td><a class="inv-link" href="#A-14">A-14</a></td><td>Messages from the gateway</td><td>2</td><td>Matched, unmatched, verification failed</td></tr>
+          <tr><td><a class="inv-link" href="#A-15">A-15</a></td><td>History (audit)</td><td>2</td><td>Populated, filtered</td></tr>
+          <tr><td><a class="inv-link" href="#A-16">A-16</a></td><td>Admin team and roles</td><td>2</td><td>List, invite, role change confirmation</td></tr>
+          <tr><td><a class="inv-link" href="#M-01">M-01</a></td><td>Invitation and first sign-in</td><td>1</td><td>Email, accept, expired link, already used</td></tr>
+          <tr><td><a class="inv-link" href="#M-02">M-02</a></td><td>Merchant home and checklist</td><td>1</td><td>Fresh, partly done, all done, after go-live</td></tr>
+          <tr><td><a class="inv-link" href="#M-03">M-03</a></td><td>Keys</td><td>1</td><td>Test only, live visible, secret shown once, revoke</td></tr>
+          <tr><td><a class="inv-link" href="#M-04">M-04</a></td><td>Addresses and wallet setup</td><td>1</td><td>Empty, added, file issued, verified, verify failed</td></tr>
+          <tr><td><a class="inv-link" href="#M-05">M-05</a></td><td>Notification URL</td><td>1</td><td>Empty, set, test sent, test failed, rotating secret</td></tr>
+          <tr><td><a class="inv-link" href="#M-06">M-06</a></td><td>Install (the snippet)</td><td>1</td><td>Waiting for first request, first request seen</td></tr>
+          <tr><td><a class="inv-link" href="#M-07">M-07</a></td><td>Test cards</td><td>2</td><td>Single state</td></tr>
+          <tr><td><a class="inv-link" href="#M-08">M-08</a></td><td>Their payments</td><td>1</td><td>Test, live, empty, filtered</td></tr>
+          <tr><td><a class="inv-link" href="#M-09">M-09</a></td><td>Payment detail, their view</td><td>1</td><td>Paid, declined, pending</td></tr>
+          <tr><td><a class="inv-link" href="#M-10">M-10</a></td><td>Go live</td><td>1</td><td>Blocked with reasons, ready, requested, approved</td></tr>
+          <tr><td><a class="inv-link" href="#M-11">M-11</a></td><td>Their team</td><td>2</td><td>List, invite, roles</td></tr>
+          <tr><td><a class="inv-link" href="#M-12">M-12</a></td><td>Settings and branding</td><td>2</td><td>Default, customised, live preview</td></tr>
+          <tr><td><a class="inv-link" href="#C-01">C-01</a></td><td>The box in place on their page</td><td>1</td><td>Light page, dark page, narrow container</td></tr>
+          <tr><td><a class="inv-link" href="#C-02">C-02</a></td><td>Loading</td><td>1</td><td>Skeleton</td></tr>
+          <tr><td><a class="inv-link" href="#C-03">C-03</a></td><td>Ready with wallets</td><td>1</td><td>Apple only, Google only, both, neither</td></tr>
+          <tr><td><a class="inv-link" href="#C-04">C-04</a></td><td>Card form</td><td>1</td><td>Empty, typing, field error, submitting</td></tr>
+          <tr><td><a class="inv-link" href="#C-05">C-05</a></td><td>Bank challenge</td><td>1</td><td>Before, during (inside and full page), after</td></tr>
+          <tr><td><a class="inv-link" href="#C-06">C-06</a></td><td>Success</td><td>1</td><td>With redirect, without redirect</td></tr>
+          <tr><td><a class="inv-link" href="#C-07">C-07</a></td><td>Declined</td><td>1</td><td>Retryable, not retryable</td></tr>
+          <tr><td><a class="inv-link" href="#C-08">C-08</a></td><td>Expired</td><td>2</td><td>Single state</td></tr>
+          <tr><td><a class="inv-link" href="#C-09">C-09</a></td><td>Unavailable</td><td>2</td><td>Outage, address not allowed</td></tr>
+          <tr><td><a class="inv-link" href="#C-10">C-10</a></td><td>Phone and test mode</td><td>1</td><td>Every C screen at 320 to 390 pixels, plus the test ribbon</td></tr>
+          <tr><td><code>E-01</code></td><td>Email: you have been invited</td><td>1</td><td>Single state. The only way into the merchant panel</td></tr>
+          <tr><td><code>E-02</code></td><td>Email: we cannot reach your server</td><td>1</td><td>Two: failing, and we have stopped trying</td></tr>
+          <tr><td><code>E-03</code></td><td>Email: go-live decision</td><td>2</td><td>Two: approved with what to change, and not yet with the reason</td></tr>
+          <tr><td><code>E-04</code></td><td>Email: security notice</td><td>2</td><td>Two: a live key was created, a live key was revoked</td></tr>
+          <tr><td><code>E-05</code></td><td>Email: Apple Pay result</td><td>2</td><td>Two: verified, and failed with the reason</td></tr>
+          <tr><td><code>X-01</code></td><td>No access to this screen</td><td>2</td><td>One per panel. Says who to ask, never a dead end</td></tr>
+          <tr><td><code>X-02</code></td><td>Panel empty states</td><td>2</td><td>First day with no businesses, no websites, no payments</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cols" style="margin-top:34px;">
+      <div class="card">
+        <span class="eyebrow">Also needed from design</span>
+        <p>The five email templates are listed above as <code>E-01</code> to <code>E-05</code>, with their variants. Beyond the table: the small error-reference style used inside the checkout box, and a favicon and sign-in mark for each of the two panels.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Two things to design early</span>
+        <p><code>C-03</code> and <code>M-04</code>. The checkout box is the product's face, and the address and wallet screen is where onboarding either feels easy or feels like work. Everything else can follow those two.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Design constraints to respect</span>
+        <p>The card fields come from the gateway, so only font, size, colour, spacing and placeholder text can be set on them. Everything around them is free. The box must work on an unknown background, at 300 pixels wide, and in both light and dark.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PART 10 · BEFORE WE START ══════════ -->
+<section id="p15">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">15</div>
+      <div class="txt">
+        <span class="eyebrow">Gate</span>
+        <h2>To be settled before design and code begin</h2>
+        <p class="lede">Nothing in this document is guesswork, and these are the points where guessing would be easy and expensive. Each one names who answers it and what it blocks.</p>
+      </div>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead>
+          <tr><th style="width:6%">#</th><th style="width:36%">Question</th><th style="width:16%">Who answers</th><th>What it blocks</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Who registers a business's web address with Apple: the gateway on our behalf, or each business through Apple's own portal?</td><td>The gateway, in writing</td><td>The shape of <code>M-04</code>. Not the rest of Phase 1</td></tr>
+          <tr><td>2</td><td>Are Apple Pay and Google Pay enabled on our sandbox, so this can be tested before going live?</td><td>The gateway</td><td>Testing the wallet work at all</td></tr>
+          <tr><td>3</td><td>What are the sandbox test card numbers, and does the sandbox decide the result from the card or from the amount?</td><td>The gateway</td><td><code>M-07</code> and the whole test-mode promise</td></tr>
+          <tr><td>4</td><td>Can a separate notification address be set for the sandbox and for live, on the same account?</td><td>The gateway</td><td>Keeping test and live cleanly apart</td></tr>
+          <tr><td>5</td><td>Does the gateway ever encrypt the messages it sends us, and is that a per-account setting?</td><td>The gateway</td><td>How we read incoming messages</td></tr>
+          <tr><td>6</td><td>One business with two websites: two separate businesses in our system, or one business with two websites under it?</td><td>Us and the client</td><td>The whole data model. This is the biggest one</td></tr>
+          <tr><td>7</td><td>Does the business keep its own gateway account, as today, on every deal?</td><td>The client</td><td>Whether the account owner setting in <code>A-07</code> has a second value in Phase 1</td></tr>
+          <tr><td>8</td><td>Who signs off the written compliance statement we hand to businesses?</td><td>Us, with advice</td><td>Onboarding a business that asks for it, which they will</td></tr>
+          <tr><td>9</td><td>Do we send the shopper a receipt, or is that the business's job?</td><td>The client</td><td>Whether a receipt email and template exist in Phase 1. Recommendation: the business's job</td></tr>
+          <tr><td>10</td><td>How long is a payment page valid? Thirty minutes is proposed</td><td>The client</td><td><code>C-08</code> and the chasing schedule</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note is-accent" style="margin-top:30px;">
+      <span class="eyebrow">What is not blocked</span>
+      <p>With the recommendations in &sect;15.1 applied, <strong>only question 6 stops work starting</strong>, and it needs a yes rather than research. The gateway questions affect one screen and one week of work, placed late in Phase 1 for exactly that reason. Design can start on <code>C-03</code> and the admin screens immediately.</p>
+    </div>
+    <h3 style="margin:46px 0 16px;">15.1 What we recommend on each, so nobody has to guess</h3>
+    <p class="prose">The questions above are ours to raise. The answers below are ours to propose. <strong>Nobody needs to research a payment gateway to move this forward: read our recommendation, and either say yes or tell us where you disagree.</strong> Where the answer has to come from the gateway rather than from us, we have designed so that waiting for it does not stop the work.</p>
+
+    <div class="tw" style="margin-top:20px;">
+      <table>
+        <thead><tr><th style="width:6%">#</th><th style="width:26%">We recommend</th><th style="width:36%">Why this one</th><th>What happens while we wait</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>1</strong></td>
+            <td><strong>Build for the harder case: the business hosts one file on their own site, and we verify it.</strong></td>
+            <td>Apple checks the file on the business's own website whichever route we take, so that step exists either way. If the gateway turns out to register domains for us, our screen simply becomes one click instead of three steps. Designing for the easier case first would mean rebuilding the screen if the answer is the harder one.</td>
+            <td>Nothing stops. Screen <code>M-04</code> is built as the guided version, and the registration call itself is one small piece that is switched on when the gateway answers.</td>
+          </tr>
+          <tr>
+            <td><strong>2</strong></td>
+            <td><strong>Ask, but do not depend on it.</strong> Test the wallets against our own simulator, and do the real device test with one small live payment on our own account.</td>
+            <td>Sandboxes are frequently missing wallet support, and finding that out in week six would be expensive. The platform already uses a small live test payment for gateway approval, so the practice exists.</td>
+            <td>Nothing stops. The wallet work is placed late in the schedule for exactly this reason.</td>
+          </tr>
+          <tr>
+            <td><strong>3</strong></td>
+            <td><strong>Do not let our tests depend on the gateway's sandbox at all.</strong> Build our own simulator that can be told to succeed, decline, ask for a bank code, or go silent.</td>
+            <td>This is the single most useful decision on this list. Our automated tests then run in seconds, always, whether the sandbox is up, down or behaving differently this week. The real sandbox is used only for the final manual check.</td>
+            <td>Nothing stops. Only the printed list of test card numbers on <code>M-07</code> waits for the gateway, and that is a text change on one screen.</td>
+          </tr>
+          <tr>
+            <td><strong>4</strong></td>
+            <td><strong>Design so that one address works for both test and live.</strong> Our system works out which is which from the message itself.</td>
+            <td>Every payment we create carries our own reference, and that reference tells us the business, the website and whether it was test or live. So we do not need the gateway to keep them apart for us. If it turns out it can, we use that as an extra layer rather than as a requirement.</td>
+            <td>Nothing stops, and a real weakness in the current platform is avoided, where gateway messages sometimes arrive at the wrong endpoint and are silently dropped.</td>
+          </tr>
+          <tr>
+            <td><strong>5</strong></td>
+            <td><strong>Do not ask. Handle both.</strong> Read every incoming message as plain text first, decrypt it if it is encrypted, and carry on.</td>
+            <td>Half a day of work, and the existing platform already has the decryption code to copy. After that, the answer to the question genuinely does not matter, which is better than a confident answer.</td>
+            <td>Nothing stops.</td>
+          </tr>
+          <tr>
+            <td><strong>6</strong></td>
+            <td><strong>One business, with its websites underneath it.</strong> Not a separate business per website.</td>
+            <td>This is the only question that truly needs a decision from your side, and here is why it matters in plain terms. If each website is its own business in our system, then a company with two shops gets two logins, two dashboards, two sets of paperwork, and can never see their total money in one place. If instead the websites sit under one business, all of that is solved, and a company with only one website never even sees the extra level, because we hide it.<br><br>And the cost of being wrong runs one way only. Adding a grouping level later means moving live payment records under a new parent, which is the kind of change nobody wants to make on real money. Having the level and not needing it costs nothing.</td>
+            <td><strong>This one we would like answered first.</strong> Six tables and every access check are shaped by it.</td>
+          </tr>
+          <tr>
+            <td><strong>7</strong></td>
+            <td><strong>Yes, exactly as today: each business keeps its own gateway account and the money goes straight to them.</strong></td>
+            <td>It is what you have already confirmed, it needs no licence, and it is the model the whole design assumes. We have also built the setting that will one day let the money come to us instead, and we recommend <strong>deliberately blocking that setting in code</strong> until the Central Bank licence is actually in hand. That way nobody can switch it on by accident before we are allowed to operate that way.</td>
+            <td>Nothing stops. This is the status quo.</td>
+          </tr>
+          <tr>
+            <td><strong>8</strong></td>
+            <td><strong>We write the statement, and have it checked by someone qualified before the first business asks for it.</strong></td>
+            <td>Any business taking card payments has a yearly compliance form to fill in. Whether they can use the short, easy version depends on us confirming, in writing, what protections our payment box carries. Handing them that statement at onboarding turns a difficult conversation into a formality, and makes us noticeably easier to buy from than a gateway that leaves them to work it out.</td>
+            <td>Nothing stops. It is needed before the first real business signs, not before code starts.</td>
+          </tr>
+          <tr>
+            <td><strong>9</strong></td>
+            <td><strong>No. The business sends the receipt, from their own system, as they do today.</strong></td>
+            <td>The shopper bought from the business, not from us. An email arriving from a name they do not recognise produces "who has charged me?" support calls for both sides, and at worst gets reported as a scam. The business also knows what was actually ordered, where we only know an amount.<br><br>If a business later asks us to send it, we can offer that in a later phase, sent under <em>their</em> name and with <em>their</em> reply address, never ours.</td>
+            <td>Nothing stops, and it removes a whole module from the first version.</td>
+          </tr>
+          <tr>
+            <td><strong>10</strong></td>
+            <td><strong>Thirty minutes, and adjustable per website.</strong></td>
+            <td>Shorter than about fifteen minutes and we start losing real sales: a shopper who walks off to find their wallet, or whose bank code is slow to arrive, comes back to a dead page. Much longer and the business is holding stock for a sale that will never happen. Thirty minutes comfortably covers a bank verification step and is what most gateways settle on.<br><br>Worth knowing: a shorter window is not a money risk, only a sales one. If the bank really did take the money at the last second, we still record the payment. Expiry stops new attempts; it never throws away real money.</td>
+            <td>Nothing stops. It is one number, and a business selling something with tight stock can be given a shorter one.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note is-accent" style="margin-top:30px;">
+      <span class="eyebrow">The point of the table above</span>
+      <p>With these recommendations in place, <strong>only question 6 actually needs a decision before work starts</strong>, and that decision is a yes or a correction, not research. Everything else is either already answered by us, or has been designed so that waiting on the gateway costs us nothing. That is deliberate: a plan that stalls every time an outside party is slow to reply is not a plan.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════ FOOTER ══════════ -->
+<footer class="foot">
+  <div class="shell">
+    <hr class="rule" style="margin-bottom:26px;">
+    <div class="r">
+      <span>Smooth Checkout &mdash; Product Walkthrough</span>
+      <span>&middot;</span>
+      <span>Phase 1</span>
+      <span>&middot;</span>
+      <span>September 2026</span>
+      <span>&middot;</span>
+      <a href="../smooth-checkout-technical-design/">Companion: Technical Design &rarr;</a>
+    </div>
+  </div>
+</footer>
+<style>
+  .theme-toggle{
+    position:fixed; right:16px; bottom:16px; z-index:50;
+    display:inline-flex; align-items:center; gap:7px;
+    padding:9px 13px; border-radius:9px; cursor:pointer;
+    background:var(--raise); color:var(--ink);
+    border:1px solid var(--line-2);
+    font-family:var(--mono); font-size:0.68rem; font-weight:600;
+    letter-spacing:0.11em; text-transform:uppercase;
+    box-shadow:0 2px 14px rgba(0,0,0,0.10);
+  }
+  .theme-toggle:hover{ border-color:var(--accent); color:var(--accent); }
+  @media print{ .theme-toggle{ display:none; } }
+</style>
+
+<button class="theme-toggle" type="button" id="themeToggle" aria-label="Switch colour theme">
+  <span id="themeLabel">Dark</span>
+</button>
+
+<script>
+(function () {
+  var KEY = 'ss-docs-theme';
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  var label = document.getElementById('themeLabel');
+
+  function current() {
+    return root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+  function apply(theme) {
+    root.setAttribute('data-theme', theme);
+    label.textContent = theme === 'dark' ? 'Light' : 'Dark';
+  }
+  function stored() {
+    try { return localStorage.getItem(KEY) === 'dark' ? 'dark' : 'light'; }
+    catch (e) { return current(); }
+  }
+
+  apply(current());
+
+  btn.addEventListener('click', function () {
+    var next = current() === 'dark' ? 'light' : 'dark';
+    apply(next);
+    try { localStorage.setItem(KEY, next); } catch (e) {}
+  });
+
+  /* Toggled on another document of this site, in another tab. */
+  window.addEventListener('storage', function (e) {
+    if (e.key === KEY) apply(stored());
+  });
+  /* Restored from the back/forward cache, where the head script never reruns. */
+  window.addEventListener('pageshow', function (e) {
+    if (e.persisted) apply(stored());
+  });
+})();
+</script>
+</body>
+</html>

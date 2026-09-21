@@ -1,0 +1,2340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex, nofollow">
+<title>Smooth Checkout &mdash; Technical Design</title>
+<meta name="description" content="The complete Phase 1 build specification: every table and column, every endpoint, the wallet mechanics, webhooks in and out, idempotency, security, jobs and the acceptance tests. Plus the list of answers required before a line of code is written.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#9881;</text></svg>">
+
+<!-- Theme, applied before first paint. Light unless this browser chose dark
+     on any page of the site; the key is shared by every document. -->
+<script>
+(function () {
+  var saved;
+  try { saved = localStorage.getItem('ss-docs-theme'); } catch (e) {}
+  document.documentElement.setAttribute('data-theme', saved === 'dark' ? 'dark' : 'light');
+})();
+</script>
+
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  img,svg{max-width:100%;height:auto}
+  body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+</style>
+</head>
+<body>
+
+<div style="border-bottom:1px solid var(--line);background:var(--surface);">
+  <div style="max-width:1120px;margin-inline:auto;padding:11px clamp(18px,4vw,48px);">
+    <a href="../" style="font-family:var(--mono);font-size:0.68rem;font-weight:600;letter-spacing:0.13em;text-transform:uppercase;color:var(--slate);text-decoration:none;">&#8592;&nbsp;&nbsp;Shivam Singh &middot; Documents</a>
+  </div>
+</div>
+<style>
+/* ────────────────────────────────────────────────
+   TOKENS
+   ──────────────────────────────────────────────── */
+:root{
+  color-scheme:light;
+  --paper:#FCFCFB; --surface:#F3F6F4; --raise:#FFFFFF;
+  --ink:#0D1512; --ink-2:#39473F; --slate:#61706A;
+  --line:#E1E7E3; --line-2:#CBD5D0;
+  --accent:#088F58; --accent-strong:#0AB971; --accent-bg:#E8F7F0;
+  --tabby:#0B8E71; --tabby-bg:#E2FAF2;
+  --flag:#9C5C0C; --flag-bg:#FBF1E1;
+  --alert:#A93028; --alert-bg:#FBEAE8;
+  --sans:ui-sans-serif,"Segoe UI Variable Text","SF Pro Text",-apple-system,"Segoe UI",system-ui,"Helvetica Neue",sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","Segoe UI Mono",Consolas,"Liberation Mono",monospace;
+  --shell:1120px; --prose:69ch;
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#0A100D; --surface:#101815; --raise:#131D19;
+  --ink:#ECF2EF; --ink-2:#BDCAC4; --slate:#84968E;
+  --line:#1E2C26; --line-2:#2C3D36;
+  --accent:#2ED68F; --accent-strong:#3FE39C; --accent-bg:#0D2A1F;
+  --tabby:#3EEDBF; --tabby-bg:#082A22;
+  --flag:#E3AC5C; --flag-bg:#2A2013;
+  --alert:#EC7A70; --alert-bg:#2B1512;
+}
+:root[data-theme="light"]{
+  --paper:#FCFCFB; --surface:#F3F6F4; --raise:#FFFFFF;
+  --ink:#0D1512; --ink-2:#39473F; --slate:#61706A;
+  --line:#E1E7E3; --line-2:#CBD5D0;
+  --accent:#088F58; --accent-strong:#0AB971; --accent-bg:#E8F7F0;
+  --tabby:#0B8E71; --tabby-bg:#E2FAF2;
+  --flag:#9C5C0C; --flag-bg:#FBF1E1;
+  --alert:#A93028; --alert-bg:#FBEAE8;
+}
+
+/* ────────────────────────────────────────────────
+   BASE
+   ──────────────────────────────────────────────── */
+html{ -webkit-text-size-adjust:100%; }
+body{ background:var(--paper); color:var(--ink); font-family:var(--sans); font-size:16.5px; line-height:1.62; letter-spacing:-0.005em; overflow-x:hidden; }
+*,*::before,*::after{ box-sizing:border-box; }
+.shell{ max-width:var(--shell); margin-inline:auto; padding-inline:clamp(18px,4vw,48px); }
+.prose{ max-width:var(--prose); }
+p{ margin:0 0 1.05em; color:var(--ink-2); }
+p:last-child{ margin-bottom:0; }
+strong{ color:var(--ink); font-weight:650; }
+a{ color:var(--accent); text-decoration-thickness:1px; text-underline-offset:2px; }
+a:focus-visible,button:focus-visible{ outline:2px solid var(--accent-strong); outline-offset:3px; border-radius:3px; }
+h1,h2,h3,h4{ color:var(--ink); text-wrap:balance; margin:0; }
+h1{ font-size:clamp(2.5rem,6vw,4.1rem); font-weight:760; letter-spacing:-0.038em; line-height:1.02; }
+h2{ font-size:clamp(1.6rem,3.2vw,2.3rem); font-weight:720; letter-spacing:-0.028em; line-height:1.12; }
+h3{ font-size:1.19rem; font-weight:680; letter-spacing:-0.018em; line-height:1.28; }
+h4{ font-size:1rem; font-weight:670; letter-spacing:-0.01em; }
+.eyebrow{ font-family:var(--mono); font-size:0.685rem; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--slate); }
+.lede{ font-size:1.16rem; line-height:1.55; color:var(--ink-2); }
+code,.mono{ font-family:var(--mono); font-size:0.86em; letter-spacing:-0.01em; }
+code{ background:var(--surface); border:1px solid var(--line); border-radius:4px; padding:0.08em 0.36em; color:var(--ink); overflow-wrap:anywhere; }
+hr.rule{ border:0; border-top:1px solid var(--line); margin:0; }
+
+/* ────────────────────────────────────────────────
+   COVER
+   ──────────────────────────────────────────────── */
+.cover{ padding-block:clamp(56px,9vw,104px) clamp(40px,6vw,64px); border-bottom:1px solid var(--line); }
+.cover .kicker{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:26px; }
+.cover h1{ margin-bottom:22px; }
+.cover .sub{ font-size:clamp(1.1rem,2vw,1.32rem); line-height:1.5; color:var(--slate); max-width:62ch; }
+.meta-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(178px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-top:44px; }
+.meta-grid > div{ background:var(--paper); padding:16px 18px; }
+.meta-grid dt{ font-family:var(--mono); font-size:0.66rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--slate); margin-bottom:6px; }
+.meta-grid dd{ margin:0; font-size:0.94rem; font-weight:600; color:var(--ink); }
+
+/* ────────────────────────────────────────────────
+   CHIPS
+   ──────────────────────────────────────────────── */
+.chip{ display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:0.66rem; font-weight:600; letter-spacing:0.09em; text-transform:uppercase; padding:4px 9px; border-radius:5px; border:1px solid var(--line-2); color:var(--slate); background:var(--surface); white-space:nowrap; }
+.chip.is-accent{ color:var(--accent); border-color:color-mix(in srgb,var(--accent) 34%,transparent); background:var(--accent-bg); }
+.chip.is-tabby{ color:var(--tabby); border-color:color-mix(in srgb,var(--tabby) 36%,transparent); background:var(--tabby-bg); }
+.chip.is-flag{ color:var(--flag); border-color:color-mix(in srgb,var(--flag) 34%,transparent); background:var(--flag-bg); }
+.chip.is-alert{ color:var(--alert); border-color:color-mix(in srgb,var(--alert) 34%,transparent); background:var(--alert-bg); }
+
+/* ────────────────────────────────────────────────
+   SECTIONS
+   ──────────────────────────────────────────────── */
+section{ padding-block:clamp(48px,7vw,86px); border-bottom:1px solid var(--line); }
+section:last-of-type{ border-bottom:0; }
+.sec-head{ display:flex; flex-direction:column; gap:14px; margin-bottom:38px; max-width:var(--prose); }
+.part-head{ display:grid; grid-template-columns:auto 1fr; gap:clamp(18px,3vw,34px); align-items:start; margin-bottom:42px; }
+.part-num{ font-family:var(--mono); font-size:clamp(2.6rem,6vw,4.2rem); font-weight:600; line-height:0.82; color:var(--line-2); letter-spacing:-0.05em; }
+.part-head .txt{ display:flex; flex-direction:column; gap:12px; max-width:var(--prose); }
+.stack{ display:flex; flex-direction:column; gap:clamp(20px,3vw,32px); }
+.stack-sm{ display:flex; flex-direction:column; gap:14px; }
+.cols{ display:grid; gap:clamp(16px,2.4vw,26px); grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); }
+
+/* ────────────────────────────────────────────────
+   CARDS
+   ──────────────────────────────────────────────── */
+.card{ background:var(--raise); border:1px solid var(--line); border-radius:12px; padding:clamp(18px,2.6vw,26px); display:flex; flex-direction:column; gap:13px; }
+.card > .eyebrow{ margin-bottom:-4px; }
+.card p{ font-size:0.955rem; }
+.note{ border:1px solid var(--line); border-radius:10px; padding:16px 18px; background:var(--surface); display:flex; flex-direction:column; gap:8px; }
+.note.is-flag{ background:var(--flag-bg); border-color:color-mix(in srgb,var(--flag) 26%,transparent); }
+.note.is-alert{ background:var(--alert-bg); border-color:color-mix(in srgb,var(--alert) 26%,transparent); }
+.note.is-accent{ background:var(--accent-bg); border-color:color-mix(in srgb,var(--accent) 26%,transparent); }
+.note p{ margin:0; font-size:0.93rem; }
+.note .eyebrow{ color:inherit; opacity:0.85; }
+.note.is-flag .eyebrow{ color:var(--flag); }
+.note.is-alert .eyebrow{ color:var(--alert); }
+.note.is-accent .eyebrow{ color:var(--accent); }
+
+/* ────────────────────────────────────────────────
+   CONTENTS
+   ──────────────────────────────────────────────── */
+.toc{ display:grid; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:12px; overflow:hidden; grid-template-columns:repeat(auto-fit,minmax(248px,1fr)); }
+.toc a{ background:var(--raise); padding:13px 16px; text-decoration:none; color:var(--ink); display:flex; gap:11px; align-items:baseline; }
+.toc a:hover{ background:var(--accent-bg); }
+.toc a .n{ font-family:var(--mono); font-size:0.68rem; color:var(--slate); font-weight:600; flex:none; }
+.toc a .t{ font-size:0.93rem; font-weight:620; letter-spacing:-0.012em; line-height:1.35; }
+.toc a .s{ display:block; font-size:0.8rem; color:var(--slate); font-weight:400; margin-top:2px; }
+[id]{ scroll-margin-top:22px; }
+
+/* ────────────────────────────────────────────────
+   CODE BLOCK
+   ──────────────────────────────────────────────── */
+pre{
+  margin:0; overflow-x:auto; background:var(--surface);
+  border:1px solid var(--line); border-radius:11px;
+  padding:16px 18px; font-family:var(--mono); font-size:0.805rem;
+  line-height:1.62; color:var(--ink-2); letter-spacing:-0.005em;
+}
+pre b{ color:var(--ink); font-weight:650; }
+pre i{ color:var(--slate); font-style:normal; }
+pre em{ color:var(--accent); font-style:normal; font-weight:600; }
+.pre-label{ font-family:var(--mono); font-size:0.66rem; letter-spacing:0.13em; text-transform:uppercase; color:var(--slate); margin-bottom:8px; display:block; }
+
+/* ────────────────────────────────────────────────
+   TABLES
+   ──────────────────────────────────────────────── */
+.tw{ overflow-x:auto; border:1px solid var(--line); border-radius:11px; background:var(--raise); }
+table{ border-collapse:collapse; width:100%; min-width:560px; font-size:0.9rem; }
+th,td{ text-align:left; padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:top; }
+thead th{ font-family:var(--mono); font-size:0.64rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--slate); font-weight:600; background:var(--surface); white-space:nowrap; }
+tbody tr:last-child td{ border-bottom:0; }
+td strong{ font-weight:640; }
+td code{ font-size:0.8rem; white-space:nowrap; }
+.num{ font-variant-numeric:tabular-nums; }
+table.fields{ min-width:720px; }
+table.fields td:first-child{ white-space:nowrap; }
+
+/* ────────────────────────────────────────────────
+   TRACK
+   ──────────────────────────────────────────────── */
+.track{ display:grid; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:12px; overflow:hidden; grid-template-columns:repeat(auto-fit,minmax(186px,1fr)); }
+.track .step{ background:var(--raise); padding:17px 18px 20px; display:flex; flex-direction:column; gap:7px; }
+.track .step .n{ font-family:var(--mono); font-size:0.68rem; letter-spacing:0.12em; color:var(--slate); }
+.track .step .h{ font-weight:660; font-size:0.97rem; letter-spacing:-0.012em; }
+.track .step .d{ font-size:0.87rem; color:var(--slate); line-height:1.5; }
+.track .step.is-accent{ background:var(--accent-bg); }
+.track .step.is-flag{ background:var(--flag-bg); }
+
+/* ────────────────────────────────────────────────
+   LISTS
+   ──────────────────────────────────────────────── */
+ul.plain{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:9px; }
+ul.plain li{ position:relative; padding-left:19px; font-size:0.955rem; color:var(--ink-2); line-height:1.55; }
+ul.plain li::before{ content:""; position:absolute; left:2px; top:0.62em; width:6px; height:6px; border-radius:1.5px; background:var(--line-2); }
+ul.plain.is-accent li::before{ background:var(--accent); }
+ul.plain.is-alert li::before{ background:var(--alert); }
+ul.plain.is-flag li::before{ background:var(--flag); }
+
+/* ────────────────────────────────────────────────
+   TABLE SPEC BLOCK
+   ──────────────────────────────────────────────── */
+.tbl-spec{ border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--raise); }
+.tbl-spec > header{ padding:14px 18px; background:var(--surface); border-bottom:1px solid var(--line); display:flex; flex-wrap:wrap; gap:10px; align-items:baseline; justify-content:space-between; }
+.tbl-spec > header .nm{ font-family:var(--mono); font-size:0.94rem; font-weight:650; color:var(--ink); }
+.tbl-spec > header .ds{ font-size:0.87rem; color:var(--slate); }
+.tbl-spec .tw{ border:0; border-radius:0; }
+.tbl-spec table{ min-width:660px; }
+.tbl-spec .keys{ padding:13px 18px; border-top:1px solid var(--line); background:var(--surface); font-size:0.85rem; color:var(--ink-2); }
+.tbl-spec .keys b{ font-family:var(--mono); font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--slate); display:block; margin-bottom:5px; font-weight:600; }
+
+/* ────────────────────────────────────────────────
+   FOOT
+   ──────────────────────────────────────────────── */
+.foot{ padding-block:44px 66px; color:var(--slate); font-size:0.88rem; }
+.foot .r{ display:flex; flex-wrap:wrap; gap:10px 22px; align-items:center; }
+
+@media (prefers-reduced-motion:reduce){ *{ animation:none !important; transition:none !important; } }
+</style>
+
+<!-- ══════════ COVER ══════════ -->
+<section class="cover">
+  <div class="shell">
+    <div class="kicker">
+      <span class="chip is-accent">Technical design</span>
+      <span class="chip">Phase 1</span>
+      <span class="chip">Build specification</span>
+      <span class="chip">September 2026</span>
+    </div>
+
+    <h1>Smooth Checkout<br>Technical Design</h1>
+
+    <p class="sub">Everything needed to build Phase 1 and nothing that belongs to a later phase. Every table and column, every endpoint, the exact wallet mechanics, webhooks in both directions, idempotency, security, background jobs and the tests that decide when it is done.</p>
+
+    <dl class="meta-grid">
+      <div><dt>Service</dt><dd>One new NestJS app, own database</dd></div>
+      <div><dt>Tables</dt><dd>20, all specified in &sect;5</dd></div>
+      <div><dt>Gateway</dt><dd>AFS (ACI OPP) behind an interface</dd></div>
+      <div><dt>Methods</dt><dd>Card, Apple Pay, Google Pay</dd></div>
+    </dl>
+  </div>
+</section>
+
+<!-- ══════════ LEGEND ══════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">How to trust this document</span>
+      <h2>Every claim is labelled</h2>
+      <p>Nothing here is written from memory. Three labels appear throughout, and anything not carrying one is a design decision made in this document and defended where it appears.</p>
+    </div>
+
+    <div class="cols">
+      <div class="card">
+        <span class="chip is-accent">Verified</span>
+        <p>Read directly from Smooth Pay's own production code, which has been live on this gateway for months, or from the vendor's published documentation. The exact file or source is named.</p>
+      </div>
+      <div class="card">
+        <span class="chip is-flag">Confirm</span>
+        <p>Needs a written answer from the gateway or a decision from us before the related code is written. Every one of these is collected in &sect;2 with what it blocks.</p>
+      </div>
+      <div class="card">
+        <span class="chip">Decision</span>
+        <p>A choice made here, with the reasoning stated so it can be argued with. If a reviewer disagrees, the place to disagree is at the decision, not after it is built.</p>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:30px;">
+      <span class="eyebrow">Scope</span>
+      <p><strong>In Phase 1:</strong> card, Apple Pay and Google Pay, AED only, AFS only, website integration only, test and live keys, admin panel, merchant panel, the checkout box, notifications to the merchant, and full recovery of unknown outcomes. <strong>Not in Phase 1:</strong> refunds, mobile apps, saved cards, BNPL, a second gateway, chargebacks, other currencies, settlement import. Tables and states for the deferred items are created now and left unused, for the reasons given in &sect;5.9.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ CONTENTS ══════════ -->
+<section id="contents">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">Contents</span>
+      <h2>Seventeen parts</h2>
+      <p>Read 2 first: it is the list of things that must be answered before any of the rest is built. Then 4 and 5 for the model, and 6 to 11 for the behaviour.</p>
+    </div>
+    <div class="toc">
+      <a href="#t01"><span class="n">01</span><span class="t">Architecture<span class="s">What gets deployed, why one service, and the enforced module boundaries</span></span></a>
+      <a href="#t02"><span class="n">02</span><span class="t">Answers required before code starts<span class="s">Ten questions, our recommendation on each, and only one real gate</span></span></a>
+      <a href="#t03"><span class="n">03</span><span class="t">Stack and configuration<span class="s">Choices, version constraints, every environment value</span></span></a>
+      <a href="#t04"><span class="n">04</span><span class="t">The seven nouns, and how they relate<span class="s">The model, and a map of every table</span></span></a>
+      <a href="#t05"><span class="n">05</span><span class="t">Every table, every column<span class="s">Twenty tables with constraints and indexes</span></span></a>
+      <a href="#t06"><span class="n">06</span><span class="t">States and transitions<span class="s">Intent, attempt, failure codes, resolving a hold</span></span></a>
+      <a href="#t07"><span class="n">07</span><span class="t">The API<span class="s">Endpoints, errors, panel surface, conventions</span></span></a>
+      <a href="#t08"><span class="n">08</span><span class="t">Loader, iframe, wallets<span class="s">Page messages, the status channel, method resolution</span></span></a>
+      <a href="#t09"><span class="n">09</span><span class="t">Notifications both ways<span class="s">Inbound as hints, outbound events, email rules</span></span></a>
+      <a href="#t10"><span class="n">10</span><span class="t">Idempotency<span class="s">Four database-backed layers, and the settlement transaction</span></span></a>
+      <a href="#t11"><span class="n">11</span><span class="t">Background jobs<span class="s">The recovery sweep and six others</span></span></a>
+      <a href="#t12"><span class="n">12</span><span class="t">Security<span class="s">Controls, threat model, rate limits with numbers</span></span></a>
+      <a href="#t13"><span class="n">13</span><span class="t">Observability<span class="s">The one metric somebody is woken for</span></span></a>
+      <a href="#t14"><span class="n">14</span><span class="t">Failure matrix<span class="s">Twenty-three things that will happen</span></span></a>
+      <a href="#t15"><span class="n">15</span><span class="t">Tests that decide it is done<span class="s">Money, concurrency, security, adapter, end to end</span></span></a>
+      <a href="#t16"><span class="n">16</span><span class="t">Build order<span class="s">Nine weeks, sequenced by risk</span></span></a>
+      <a href="#t17"><span class="n">17</span><span class="t">Where each claim came from<span class="s">Every source, and what was not available</span></span></a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PART 1 · ARCHITECTURE ══════════ -->
+<section id="t01">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">01</div>
+      <div class="txt">
+        <span class="eyebrow">Shape</span>
+        <h2>Architecture</h2>
+        <p class="lede">One service, one database, three running pieces. What gets deployed, why it is one service rather than several, and the boundaries inside it that the build enforces.</p>
+      </div>
+    </div>
+
+    <span class="pre-label">Runtime</span>
+    <pre>
+<b>checkout-api</b>            NestJS, HTTP. The only thing with a public port.
+                        Modules: intents, checkout(public), notifications(inbound),
+                        admin, merchant, auth. Stateless: no memory between requests.
+
+<b>checkout-worker</b>         Same codebase, started with a different entry point.
+                        Runs the queues and the crons. No public port.
+                        Separated so a notification retry storm can never slow
+                        down a shopper who is trying to pay.
+
+<b>checkout-web</b>            Vite + React. Two builds from one repo:
+                        /pay/*   the payment page, a real URL, iframe-able
+                        /panel/* the admin and merchant panels
+                        <i>smooth.js</i> the loader, plain TypeScript, no framework
+
+<b>Postgres</b>                Its own database, its own role, connection pool capped.
+<b>Redis</b>                   Queues (BullMQ) and rate-limit counters only. Never a
+                        source of truth for money.
+    </pre>
+
+    <div class="cols" style="margin-top:32px;">
+      <div class="card">
+        <span class="eyebrow">Origins</span>
+        <p><code>api.checkout.smoothpay.ai</code> for the API, <code>pay.checkout.smoothpay.ai</code> for the payment page, <code>admin.checkout.smoothpay.ai</code> and <code>merchant.checkout.smoothpay.ai</code> for the panels.</p>
+        <p><span class="chip">Decision</span> The payment page gets its own origin, separate from the panels. A cross-site scripting bug in a panel must not be able to reach the page that frames the gateway's card fields.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Isolation</span>
+        <p>Own container with CPU and memory limits. Own Postgres role with <code>connection_limit</code> set below the cluster's spare capacity, so a traffic spike exhausts this service's pool and nothing else's.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Stateless by rule</span>
+        <p>No in-memory caches of anything that decides money, no sticky sessions, no local file writes. Running a second copy of the service must require no change, because that is how the product scales.</p>
+      </div>
+    </div>
+    <h3 style="margin:42px 0 16px;">1.1 Why one service, and the conditions under which we would split it</h3>
+    <p class="prose">Recorded here rather than only in the planning notes, because whoever builds this will eventually be asked the question and should not have to reconstruct the answer.</p>
+
+    <div class="note is-accent" style="margin-bottom:24px;">
+      <span class="eyebrow">The argument that actually decides it</span>
+      <p>When the gateway confirms a payment, three rows have to be written <strong>in one database transaction</strong>: the attempt becomes succeeded, the intent becomes succeeded with its captured amount, and the outbound event is created. Keeping those three together makes two states structurally impossible: a payment recorded with no notification queued, and a notification sent for a payment that was rolled back. Split the event into another service and that transaction has to be replaced with an outbox or a compensating saga. That is buildable, but it is precisely the place where money goes missing, and there is no benefit here to pay for it.</p>
+    </div>
+
+    <p class="prose" style="margin-bottom:22px;">So the rule is narrower and more useful than "monolith rather than microservices": <strong>the payment core, meaning intent, attempt and outbound event, lives in one service. Everything around it could be split, and there is currently no reason to.</strong></p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:26%">Concern</th><th style="width:34%">How it is already addressed</th><th>What splitting further would add</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Third-party traffic must not affect the restaurant platform</strong></td>
+            <td>This is a separate service with its own container, its own database and its own database role with a capped pool. The original requirement is met by the product existing at all.</td>
+            <td>Nothing.</td>
+          </tr>
+          <tr>
+            <td><strong>Background work must not slow a paying shopper</strong></td>
+            <td><code>checkout-worker</code> is already a separate process with no public port. A retry storm or a sweeper backlog cannot touch the request path.</td>
+            <td>Nothing, at the cost of a network hop and a distributed transaction.</td>
+          </tr>
+          <tr>
+            <td><strong>A panel flaw must not reach the card frame</strong></td>
+            <td>The payment page is served from its own origin, separate from both panels, and is a static build.</td>
+            <td>Nothing.</td>
+          </tr>
+          <tr>
+            <td><strong>Throughput</strong></td>
+            <td>Payments are low volume by the standards of any web workload. One process on Postgres handles far more than this product will see for a long time, and a second copy can be run without any change because nothing is held in memory.</td>
+            <td>Nothing until the numbers in the table below are reached.</td>
+          </tr>
+          <tr>
+            <td><strong>Answering "what happened to this payment"</strong></td>
+            <td>One trace, one log stream, one database.</td>
+            <td>The same question spanning four services, four log streams and clock skew between them.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4 style="margin:30px 0 14px;">When we would split, and what we would split first</h4>
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:34%">Trigger</th><th style="width:26%">First move</th><th>Not the first move</th></tr></thead>
+        <tbody>
+          <tr><td>Sustained volume above roughly 50 payments per second</td><td>Tune Postgres, add read replicas for the panels, run more copies of the same service</td><td>Splitting the payment core. It is the last thing to split, not the first</td></tr>
+          <tr><td>A need to isolate outbound calls to merchant URLs more strictly</td><td><strong>Lift the webhook dispatcher out.</strong> It is the one component that makes requests to addresses we do not control, so isolating it is a security argument rather than a scaling one. It owns no payment state, so it can leave cleanly</td><td>Splitting anything that writes payment state</td></tr>
+          <tr><td>Heavy reporting on the admin panel starting to affect the payment path</td><td>A read replica, and move the panel queries to it</td><td>A separate reporting service</td></tr>
+          <tr><td>More than two teams needing independent release cadence</td><td>Revisit this whole section with the team structure in hand</td><td>Pre-emptive splitting now, on the assumption that those teams will exist</td></tr>
+          <tr><td>A module genuinely needing another language or runtime</td><td>That module becomes a service. Nothing in Phase 1 is a candidate</td><td>Rewriting anything that already works</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin:42px 0 16px;">1.2 The modules, and the boundaries the build enforces</h3>
+    <div class="note is-alert" style="margin-bottom:24px;">
+      <span class="eyebrow">The real risk of this choice, stated plainly</span>
+      <p>A modular monolith fails by erosion, not by design. Boundaries that exist only as a convention get crossed under deadline pressure, one import at a time, and in eight months the result is indistinguishable from the 4,312-line service this product was meant to improve on. <strong>The boundaries below are therefore enforced by the build, not by code review.</strong> A forbidden import fails continuous integration in the same way a type error does.</p>
+    </div>
+
+    <span class="pre-label">Layout</span>
+    <pre>
+src/
+  <b>domain/</b>                  no framework, no database, no network. Pure logic
+    payment/               intent, attempt, the state machine, forbidden transitions
+    money/                 minor units, parsing, formatting at the edges
+    errors/                the published failure taxonomy
+  <b>application/</b>             orchestration. <em>The only writer of payment state</em>
+    orchestrator/          create, attempt, settle, hold
+    idempotency/
+    routing/               resolves the provider account, once, per attempt
+    recovery/              the sweeper
+    notifications/         outbound events and their delivery
+    accounts/              merchants, applications, keys, domains, go-live
+  <b>infrastructure/</b>
+    providers/afs/         <em>ALL gateway knowledge lives here and nowhere else</em>
+    providers/provider.port.ts
+    persistence/           Prisma, repositories, tenant scoping, row-level security
+    crypto/                AES-256-GCM, key versions
+    messaging/             queues and workers
+    mail/
+    observability/         redacting logger, metrics
+  <b>interfaces/</b>
+    http/merchant-api/     the sk_ endpoints
+    http/public/           the pk_ endpoints the browser calls
+    http/admin/            admin panel
+    http/panel/            merchant panel
+    webhooks/              one controller per provider
+  <b>config/</b>                  validated at boot, no defaults for secrets
+    </pre>
+
+    <div class="tw" style="margin-top:26px;">
+      <table>
+        <thead><tr><th style="width:38%">Rule the build enforces</th><th style="width:20%">Checked by</th><th>Why this one exists</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>domain/</code> may not import from <code>application/</code>, <code>infrastructure/</code> or <code>interfaces/</code>, and may not import Prisma, Nest, Express or any HTTP client</td>
+            <td>Dependency rules in continuous integration</td>
+            <td>The state machine and the money rules stay testable in milliseconds with no database. If this rule holds, the most important tests in the product run in a second and nobody skips them</td>
+          </tr>
+          <tr>
+            <td>No gateway vocabulary outside <code>infrastructure/providers/afs/</code>: the entity identifier, the access token, checkout ids, resource paths, result codes, payment type letters, the widget's option names, the gateway's hostname</td>
+            <td>Dependency rules plus a literal grep over the rest of the tree</td>
+            <td>This is the single rule the entire product's value rests on. If a gateway field name reaches a controller, a response or a merchant, then changing gateway is no longer free, and the reason for building this service has quietly evaporated</td>
+          </tr>
+          <tr>
+            <td><code>interfaces/</code> may not import <code>infrastructure/providers/</code> directly</td>
+            <td>Dependency rules</td>
+            <td>Forces every gateway interaction through the orchestrator, so there is no side door that skips idempotency, the amount assertion or the audit trail</td>
+          </tr>
+          <tr>
+            <td>Only <code>application/orchestrator/</code> may write <code>payment_intent</code>, <code>payment_attempt</code> or <code>outbound_event</code></td>
+            <td>A lint rule banning those repository write calls outside that directory</td>
+            <td>The one-writer rule, made mechanical. Without this check it is a sentence in a document that a job or a controller will eventually ignore</td>
+          </tr>
+          <tr>
+            <td><code>infrastructure/providers/</code> may not import <code>persistence/</code></td>
+            <td>Dependency rules</td>
+            <td>Adapters stay pure translators: a domain command in, a domain result or a typed error out. An adapter that can reach the database will grow business rules inside it</td>
+          </tr>
+          <tr>
+            <td>No module may import another module's internals, only its entry point</td>
+            <td>Dependency rules</td>
+            <td>Keeps each boundary small enough that lifting a module out later is a contained piece of work rather than an archaeology exercise</td>
+          </tr>
+          <tr>
+            <td>No raw provider response object may be passed to a logger, and no <code>any</code> may cross a module boundary</td>
+            <td>Lint rule plus the grep already described in &sect;12</td>
+            <td>One of these is a compliance control and the other is how a weakly typed value becomes a runtime surprise in a money path</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cols" style="margin-top:28px;">
+      <div class="card">
+        <span class="eyebrow">How this is set up</span>
+        <p>A dependency rules configuration committed in the repository, run in continuous integration alongside the type check, plus two or three narrow lint rules for the write-path and logging restrictions. It is roughly half a day to set up in week one, and it is the cheapest architectural insurance available on this project.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">What it is not</span>
+        <p>It is not a style preference and it is not there to slow anybody down. Every rule above maps to a specific failure: an untestable domain, a leaked gateway, a bypassed idempotency check, a second writer, a business rule buried in an adapter, or a card field in a log.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">The test of whether it worked</span>
+        <p>Adding the second gateway in a later phase should require one new directory under <code>providers/</code>, a capability declaration and a set of fixtures, and <strong>no change to the domain, the API, or any caller</strong>. If that turns out not to be true, the boundaries were not enforced, and this section is where to look first.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════ PART 2 · BLOCKERS ══════════ -->
+<section id="t02">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">02</div>
+      <div class="txt">
+        <span class="eyebrow">Gate</span>
+        <h2>Answers required before code starts</h2>
+        <p class="lede">Ten questions, each with our own recommended answer in &sect;2.1. With those applied, only the first is a real gate; the other nine are confined behind a configuration value or a single function, so a late reply costs nothing.</p>
+      </div>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead>
+          <tr><th style="width:5%">#</th><th style="width:34%">Question</th><th style="width:13%">Asked of</th><th style="width:13%">Blocks</th><th>Why we cannot just decide it ourselves</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>B1</strong></td>
+            <td>One business with several websites: one merchant record with many applications under it, or a separate merchant record per website?</td>
+            <td>Client</td>
+            <td><span class="chip is-alert">Everything</span></td>
+            <td>It decides the shape of six tables and every tenancy check. Changing it later is a migration on live financial rows.</td>
+          </tr>
+          <tr>
+            <td><strong>B2</strong></td>
+            <td>Sandbox test cards, and whether the sandbox decides the outcome from the card number or from the amount.</td>
+            <td>Gateway</td>
+            <td><span class="chip is-flag">Sandbox tests only</span><br><span class="chip">see &sect;2.1</span></td>
+            <td>Smooth Pay's existing code carries a sandbox helper that rewrites amounts to whole AED because the test gateway reads the fils as a result selector. Guessing here means a test suite that proves nothing.</td>
+          </tr>
+          <tr>
+            <td><strong>B3</strong></td>
+            <td>Who registers a merchant's web domain with Apple: the gateway on our behalf through Apple's provider registration interface, or each merchant through Apple's own portal?</td>
+            <td>Gateway</td>
+            <td>Wallet module</td>
+            <td>Apple only allows the button on a domain it has checked, and for an embedded box the checked domain is the merchant's, not ours. The answer changes onboarding from one click to a guided process.</td>
+          </tr>
+          <tr>
+            <td><strong>B4</strong></td>
+            <td>Are Apple Pay and Google Pay enabled on our sandbox entity?</td>
+            <td>Gateway</td>
+            <td>Wallet module</td>
+            <td>Without it the wallet path can only be tested in production, which is not acceptable for a money path.</td>
+          </tr>
+          <tr>
+            <td><strong>B5</strong></td>
+            <td>Can the notification URL be set per entity, and separately for sandbox and live?</td>
+            <td>Gateway</td>
+            <td>Inbound notifications</td>
+            <td>Smooth Pay's existing integration shows notification URLs are per entity and that some already point at other endpoints. If test and live cannot be separated, the design needs a routing rule instead.</td>
+          </tr>
+          <tr>
+            <td><strong>B6</strong></td>
+            <td>Are the gateway's notifications encrypted, and is that configurable per entity?</td>
+            <td>Gateway</td>
+            <td>Inbound notifications</td>
+            <td>Smooth Pay's billing integration decrypts AES-256-GCM notifications today while its dine-in endpoint does not read those headers at all. We must know which shape to expect rather than discovering it in production.</td>
+          </tr>
+          <tr>
+            <td><strong>B7</strong></td>
+            <td>Are there published rate limits on the gateway API?</td>
+            <td>Gateway</td>
+            <td>Sweeper tuning</td>
+            <td>The recovery job re-queries the gateway on a schedule. Without a known limit the schedule is a guess that could get us throttled at the worst moment.</td>
+          </tr>
+          <tr>
+            <td><strong>B8</strong></td>
+            <td>Does every merchant keep their own gateway account in Phase 1, as today?</td>
+            <td>Client</td>
+            <td>One column's values</td>
+            <td>The <code>owner</code> column exists either way. The question is only whether it has a second value on day one.</td>
+          </tr>
+          <tr>
+            <td><strong>B9</strong></td>
+            <td>Payment page validity: 30 minutes proposed.</td>
+            <td>Client</td>
+            <td>One default</td>
+            <td>It sets the expiry default and the sweeper's grace window. Cheap to change, but should be a decision rather than a leftover.</td>
+          </tr>
+          <tr>
+            <td><strong>B10</strong></td>
+            <td>Do we email the shopper a receipt, or is that the merchant's job?</td>
+            <td>Client</td>
+            <td>One module</td>
+            <td>Recommendation: the merchant's job. We are not the merchant of record and a receipt from us would confuse the shopper about who they bought from.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note is-alert" style="margin-top:30px;">
+      <span class="eyebrow">The rule this table exists to enforce</span>
+      <p>No part of this system is built on an assumption about the gateway. Where the answer is not known, either the code is not written yet, or the unknown is isolated behind one function whose behaviour is switched by configuration once the answer arrives. There is no third option, because a wrong assumption in a payment path is discovered by a customer, not by a test.</p>
+    </div>
+    <h3 style="margin:46px 0 16px;">2.1 Our answer to each, and how the unknown is isolated</h3>
+    <p class="prose">A question list on its own transfers the problem rather than solving it, and most of these cannot reasonably be answered by whoever is asked. So each one below carries <strong>our recommendation</strong>, the reasoning a reviewer can argue with, and <strong>what we build so that a late answer costs nothing</strong>. That last column is the important one: it is how nine of the ten stop being blockers.</p>
+
+    <div class="tw" style="margin-top:20px;">
+      <table>
+        <thead><tr><th style="width:5%">#</th><th style="width:24%">Recommendation</th><th style="width:34%">Reasoning</th><th>How the unknown is isolated</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>B1</strong></td>
+            <td><strong>One merchant, many applications.</strong> Not a merchant per website</td>
+            <td>Both shapes can bind a gateway per website, so capability does not decide it. The asymmetry of being wrong does. Choosing a merchant per website and later needing to group them means re-parenting live financial rows, which is a migration nobody wants to perform on real money. Choosing the extra level and never needing it costs an auto-created row and a selector the panel hides when a merchant has one application. There is also a product consequence: separate merchants cannot share a login, a dashboard, an invoice or a combined figure, and a business with a main site and an outlet will ask for all four</td>
+            <td><span class="chip is-alert">It is not.</span> This is the one genuine blocker. Six tables and every tenancy check derive from it, and no amount of design can defer it. It needs a yes or a correction, not research</td>
+          </tr>
+          <tr>
+            <td><strong>B2</strong></td>
+            <td><strong>Build a simulated provider and make the test suite depend on it, not on the gateway's sandbox.</strong> Assume amount-driven results until told otherwise</td>
+            <td>The existing platform carries a helper that rewrites a charge to whole units on the sandbox, double-gated on test mode, which is strong evidence the sandbox reads the minor units as a result selector. That is a guess, though, and a test suite built on a guess proves nothing. A simulator we control can be told to succeed, decline, require a challenge, return no result code, or go silent, which is more than any sandbox will do for us anyway</td>
+            <td>The gateway port already exists as an interface. A second implementation of it, backed by fixtures, is roughly two days and makes the automated suite run in seconds, offline, deterministically. The real sandbox is then used only for the manual smoke test, and the printed card list on one merchant screen is the only thing still waiting</td>
+          </tr>
+          <tr>
+            <td><strong>B3</strong></td>
+            <td><strong>Build the longer path: issue the association file, the merchant hosts it, we fetch it to verify, then register.</strong></td>
+            <td>Apple validates the file on the domain hosting the payment page, and for an embedded box that is the merchant's domain, not ours. So the hosting step exists under every possible answer. If the gateway can register domains on our behalf through Apple's provider interface, our screen collapses to one button and the work already done still applies. Designing for that easier case first would mean rebuilding the screen if the answer goes the other way</td>
+            <td>The registration call sits behind one function with two implementations, selected by configuration: <em>we call the gateway's registration endpoint</em>, or <em>an operator completes it and marks it done from the admin panel</em>. Verification, state machine, daily re-check and the button-hiding rule are identical either way</td>
+          </tr>
+          <tr>
+            <td><strong>B4</strong></td>
+            <td><strong>Ask, but plan the acceptance test as one small live payment on our own account.</strong></td>
+            <td>Sandboxes commonly lack wallet support, and discovering that in the week the wallets are due would move the date. The platform already performs a low-value live transaction as part of gateway approval, so both the practice and the precedent exist</td>
+            <td>Wallet work is scheduled deliberately late. Until then the simulator covers the wallet code paths, and the device test is a manual step on a real account for a trivial amount, documented as such rather than pretended to be a sandbox test</td>
+          </tr>
+          <tr>
+            <td><strong>B5</strong></td>
+            <td><strong>Assume one notification address serves both modes, and resolve mode and tenant from the message itself.</strong></td>
+            <td>Our attempt reference is deterministic and derived from the intent, and the intent carries the application and the mode. So an incoming message that echoes our reference tells us everything we need without the gateway keeping environments apart on our behalf. If it turns out separate addresses are possible, we use them as a second layer rather than as a dependency. This also avoids the failure the current platform has, where per-entity notification addresses point at the wrong endpoint and messages are dropped while we answer 200</td>
+            <td>Fully isolated. The inbound handler never reads a mode or a tenant from configuration. A message whose reference cannot be parsed is stored, flagged as unmatched and surfaced, never discarded</td>
+          </tr>
+          <tr>
+            <td><strong>B6</strong></td>
+            <td><strong>Do not wait for the answer. Support both shapes unconditionally.</strong></td>
+            <td>Read the body as text, decrypt when the two encryption headers are present, parse as plain otherwise. The billing rail already contains a working implementation of exactly this, so it is a port rather than new work. A confident answer today could also change later per entity, whereas handling both is permanently correct</td>
+            <td>Fully isolated, for roughly half a day. This is the clearest case on the list where handling both beats knowing which</td>
+          </tr>
+          <tr>
+            <td><strong>B7</strong></td>
+            <td><strong>Impose our own budget rather than discovering theirs.</strong> A token bucket per provider account, plus automatic backoff on any 429 or 5xx</td>
+            <td>The sweeper is the component that could hammer the gateway, and it runs hardest at exactly the wrong moment, during an incident when many attempts are unresolved. A self-imposed ceiling means an unknown limit cannot hurt us, and a discovered limit is a configuration change rather than a redesign</td>
+            <td>Fully isolated. Starting values: a small number of queries per second per account and a bounded concurrency overall, both in configuration. Any 429 halves the rate for a cooling period and the sweeper reschedules rather than retrying immediately</td>
+          </tr>
+          <tr>
+            <td><strong>B8</strong></td>
+            <td><strong>Merchant-owned accounts only in Phase 1, and the platform-owned value blocked in code.</strong></td>
+            <td>It is the confirmed position, it needs no licence, and the whole design already assumes it. The stronger half of this recommendation is the guard: the column accepts <code>PLATFORM</code> so the future model needs no migration, and a startup assertion refuses to run with any such row until a licence flag is deliberately set. Making an unlicensed configuration impossible to enable by accident is worth one line</td>
+            <td>Fully isolated. Nothing in Phase 1 reads the value except that guard</td>
+          </tr>
+          <tr>
+            <td><strong>B9</strong></td>
+            <td><strong>1800 seconds, configurable per application between 300 and 3600.</strong></td>
+            <td>Below roughly fifteen minutes and genuine sales are lost to a shopper fetching a card or waiting on a slow bank code. Above an hour and a merchant holds stock against a payment that will not arrive, while stale pages accumulate. Thirty minutes covers a challenge comfortably and matches common practice. It is also a low-risk number because expiry gates initiation and never evidence: a late confirmed capture still settles, so a shorter window costs conversion rather than money</td>
+            <td>Fully isolated. One default and one per-application override, both already in the schema</td>
+          </tr>
+          <tr>
+            <td><strong>B10</strong></td>
+            <td><strong>No shopper email at all. The merchant sends the receipt.</strong></td>
+            <td>The shopper transacted with the merchant, and a message from an unfamiliar sender produces support load on both sides and at worst is reported as phishing. The merchant also holds the order contents; we hold an amount. There is a further reason to prefer this: an email to a shopper makes us a party they will contact about a purchase we know nothing about. If a merchant later wants us to send it, the right shape is a template sent under their name with their reply address, which is a Phase 2 feature rather than a Phase 1 module</td>
+            <td>Fully isolated, and it removes a module, a template set and a deliverability concern from Phase 1. No shopper address exists in any template and no code path could send to one</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note is-accent" style="margin-top:30px;">
+      <span class="eyebrow">What this section is really for</span>
+      <p>Two things. First, whoever has to answer these should not need to understand a payment gateway to do it: they read a recommendation and either agree or correct it. Second, and more important for the schedule, <strong>nine of the ten are structured so that a late answer changes a configuration value or switches one function implementation, never a design.</strong> Only <span class="chip is-alert">B1</span> is a real gate, because tenancy cannot be deferred behind an interface.</p>
+    </div>
+
+    <div class="note is-flag" style="margin-top:16px;">
+      <span class="eyebrow">The discipline this replaces</span>
+      <p>The alternative to this section is the pattern that produced the problems recorded against the current platform: an unknown gets a plausible assumption, the assumption gets built on, and a customer discovers it eighteen months later. Every row above either states an answer we are prepared to defend, or names the single function behind which the unknown is confined. There is no third category, and no row is left as "we will find out during development".</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════ PART 3 · TECH STACK ══════════ -->
+<section id="t03">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">03</div>
+      <div class="txt">
+        <span class="eyebrow">Choices</span>
+        <h2>Stack, with the version constraints that matter</h2>
+      </div>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:20%">Layer</th><th style="width:26%">Choice</th><th>Notes that affect the build</th></tr></thead>
+        <tbody>
+          <tr><td>Runtime</td><td>Node 22 LTS, TypeScript strict</td><td><code>strict</code>, <code>noUncheckedIndexedAccess</code> and <code>exactOptionalPropertyTypes</code> all on. No <code>any</code> passes review in this service.</td></tr>
+          <tr><td>Framework</td><td>NestJS 11</td><td>Global validation pipe with <code>whitelist</code> and <code>forbidNonWhitelisted</code>, so an unknown field in a payment request is a 400 and never silently ignored.</td></tr>
+          <tr><td>Database</td><td>PostgreSQL 16, own database and role</td><td>Schema <code>checkout</code>. The application role gets no <code>DELETE</code> on <code>audit_event</code> and no <code>UPDATE</code> on it either.</td></tr>
+          <tr><td>Data access</td><td>Prisma 6</td><td>All money columns as <code>BigInt</code>. Prisma's <code>$transaction</code> with <code>Serializable</code> only where stated; the settlement path is the one place it is required.</td></tr>
+          <tr><td>Ids</td><td>UUID v7 rendered with a prefix</td><td>Primary keys are text, shaped <code>pi_</code>, <code>pa_</code>, <code>evt_</code> plus base62 of a UUID v7. Time-ordered, so they index well and sort naturally, and the prefix makes a stray id in a log self-explaining.</td></tr>
+          <tr><td>Money</td><td><code>bigint</code> minor units</td><td>No decimals anywhere in the service. <code>decimal.js</code> only if a percentage is ever introduced, which Phase 1 does not have. The string <code>"240.00"</code> exists only at the gateway boundary and in API responses.</td></tr>
+          <tr><td>Queues and crons</td><td>BullMQ on Redis, plus <code>@nestjs/schedule</code></td><td>Every job is idempotent and safe to run twice, because it will be.</td></tr>
+          <tr><td>Front end</td><td>Vite 6, React 19, Tailwind</td><td>The payment page ships as a standalone route with no panel code in its bundle.</td></tr>
+          <tr><td>Loader</td><td>Plain TypeScript, no dependencies</td><td>Budget: under 12 KB compressed. It runs on websites we do not control, so it must touch nothing global except one namespace.</td></tr>
+          <tr><td>Crypto</td><td>Node <code>crypto</code>, AES-256-GCM</td><td>Same algorithm and same <code>iv:tag:ciphertext</code> layout Smooth Pay already uses. <span class="chip is-accent">Verified</span> from <code>afs.service.ts</code>.</td></tr>
+          <tr><td>Passwords</td><td>Argon2id</td><td>Two panels with real money behind them. Not bcrypt, not a work factor chosen in 2015.</td></tr>
+          <tr><td>API description</td><td>OpenAPI 3.1, generated from the code</td><td>Client libraries are generated from it. If the spec and the code disagree, the build fails.</td></tr>
+          <tr><td>Config</td><td>Joi-validated at boot</td><td><span class="chip">Decision</span> <strong>No secret has a working default.</strong> A missing encryption key fails the boot. Smooth Pay's existing service falls back to a hardcoded session secret, which is recorded as a known issue there and is not repeated here.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3 style="margin:38px 0 16px;">3.1 Configuration, and the rule about defaults</h3>
+    <p class="prose">Every value below is validated at boot. <strong>No secret has a fallback.</strong> A missing key stops the process rather than producing a working but guessable value, which is the mistake recorded against the existing platform and the reason it is called out here.</p>
+
+    <span class="pre-label" style="margin-top:16px;">Required. The service will not start without these</span>
+    <pre>
+<b>DATABASE_URL</b>                  own database, own role, with a connection cap in the string
+<b>REDIS_URL</b>                     queues and rate-limit counters only
+<b>APP_ENCRYPTION_KEY</b>            64 hex characters. Encrypts gateway credentials, webhook
+                                secrets and stored notification bodies
+<b>APP_ENCRYPTION_KEY_VERSION</b>    integer. Written onto every row it encrypts, so keys roll
+<b>JWT_ACCESS_SECRET</b>             panel access tokens, short lived
+<b>JWT_REFRESH_SECRET</b>            panel refresh tokens, separate secret on purpose
+<b>PUBLIC_API_ORIGIN</b>             https. Appears in signatures and in issued URLs
+<b>PAY_PAGE_ORIGIN</b>               https. The payment page's own origin, kept separate from
+                                the panels so a panel flaw cannot reach the card frame
+<b>SMTP_URL</b> / <b>MAIL_FROM</b>           outbound email
+<b>AFS_BASE_URL_TEST</b>             the gateway's sandbox host
+<b>AFS_BASE_URL_LIVE</b>             the gateway's production host
+
+<i>Per-merchant gateway credentials are NOT configuration. They live encrypted in
+provider_account and are decrypted into a local variable at call time.</i>
+    </pre>
+
+    <span class="pre-label" style="margin-top:22px;">Tunable, with the default the service ships with</span>
+    <pre>
+INTENT_TTL_SECONDS            1800   <i>overridable per application</i>   <span class="chip is-flag">Confirm B9</span>
+SWEEP_GRACE_HOURS             24     <i>how long after expiry we keep chasing</i>
+SWEEP_BATCH                   50
+WEBHOOK_TIMEOUT_MS            5000
+WEBHOOK_MAX_ATTEMPTS          9      <i>spread across roughly 48 hours</i>
+WEBHOOK_DISABLE_AFTER         20     <i>consecutive failures before auto-disable</i>
+WEBHOOK_SIGNATURE_TOLERANCE   300    <i>seconds. Older timestamps are rejected</i>
+SECRET_ROTATION_WINDOW_HOURS  24     <i>how long the previous webhook secret still verifies</i>
+IDEMPOTENCY_TTL_HOURS         24
+RAW_EVENT_RETENTION_DAYS      90
+REQUEST_LOG_RETENTION_DAYS    30
+APPLE_DOMAIN_RECHECK_HOURS    24
+STATUS_POLL_MIN_INTERVAL_MS   1500   <i>the floor the box is allowed to poll at</i>
+    </pre>
+
+    <div class="note is-flag" style="margin-top:22px;">
+      <span class="eyebrow">Sandbox safety, carried over deliberately</span>
+      <p>The existing platform has a switch that rewrites a charge amount to whole units on the gateway's sandbox, because that sandbox reads the minor units as a result selector. It is double-gated on both a flag and the account being in test mode, so a rewritten amount is structurally incapable of reaching production. If <span class="chip is-flag">B2</span> confirms the same sandbox behaviour here, that same double gate is ported exactly rather than re-invented.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════ PART 4 · DOMAIN ══════════ -->
+<section id="t04">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">04</div>
+      <div class="txt">
+        <span class="eyebrow">Model</span>
+        <h2>The seven nouns</h2>
+        <p class="lede">Everything in the database is one of these or a record about one of these.</p>
+      </div>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:18%">Noun</th><th style="width:34%">Means</th><th>Lifetime</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Merchant</strong></td><td>The business. The tenancy boundary for data.</td><td>Permanent.</td></tr>
+          <tr><td><strong>Application</strong></td><td>One website. Owns its keys, its allowed domains, its notification URL and <em>its gateway binding</em>. This is the integration unit.</td><td>Permanent.</td></tr>
+          <tr><td><strong>Provider account</strong></td><td>One set of gateway credentials, in one mode, owned either by the merchant or by us. <strong>Never deleted, only deactivated.</strong></td><td>Permanent.</td></tr>
+          <tr><td><strong>Payment intent</strong></td><td>"This much money is owed." Created by the merchant's server. The object the merchant knows about.</td><td>Created to terminal, then permanent.</td></tr>
+          <tr><td><strong>Payment attempt</strong></td><td>One try at collecting an intent. A decline, a retry and a reopened page are each a new attempt. <strong>Carries the provider account it ran on, forever.</strong></td><td>One gateway interaction.</td></tr>
+          <tr><td><strong>Provider event</strong></td><td>One raw message received from the gateway, stored before anything is believed about it.</td><td>90 days raw, then hints only.</td></tr>
+          <tr><td><strong>Outbound event</strong></td><td>One thing we tell the merchant, delivered at least once to each of their endpoints.</td><td>Permanent.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin:40px 0 16px;">4.1 Three decisions inside this model</h3>
+    <div class="cols">
+      <div class="card">
+        <span class="eyebrow">Why intent and attempt are separate</span>
+        <p>In Smooth Pay today the ledger row is created only on success, so a decline leaves no record and per-attempt state lives in a shared JSON column on the order. That column is overwritten when two people pay the same bill at once, which is recorded there as a known issue.</p>
+        <p>Splitting them fixes that class of problem before it exists here, makes declines measurable, and gives a retry somewhere to live.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Why there is no separate session table</span>
+        <p><span class="chip">Decision</span> The earlier checkout plan proposed a session object between the intent and the browser. Here the intent carries the <code>client_secret</code> and the expiry directly, and each browser initialisation creates an attempt.</p>
+        <p>One fewer object, one fewer API call for the integrator, and the same guarantees. It matches how Stripe exposes a PaymentIntent, which is the model the client asked us to learn from. If several concurrent browser handles per intent are ever needed, a session table is additive.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Why the provider account is locked on the attempt</span>
+        <p>Because a payment taken on one gateway can only be queried, reconciled and later refunded on that same gateway. Storing the binding on the attempt is what lets us move a website to a new gateway at any moment without waiting for a quiet hour and without stranding anything in flight.</p>
+      </div>
+    </div>
+    <h3 style="margin:42px 0 16px;">4.2 How the tables relate</h3>
+    <p class="prose">Read this before &sect;5. Every table in the schema is one of these boxes or a record attached to one.</p>
+
+    <span class="pre-label" style="margin-top:16px;">The map</span>
+    <pre>
+  <b>merchant</b>
+     │ 1
+     ├──── n <b>merchant_user</b>            <i>their staff, their roles</i>
+     │
+     ├──── n <b>provider_account</b>          <i>one per gateway per mode. NEVER deleted</i>
+     │            │                      <i>application_id NULL = merchant-wide default</i>
+     │            │
+     ├──── n <b>application</b>  <i>(a website)</i>
+     │            │ 1
+     │            ├──── n <b>api_key</b>              <i>pk / sk, per mode</i>
+     │            ├──── n <b>application_domain</b>   <i>per mode, carries Apple state</i>
+     │            ├──── n <b>merchant_webhook_endpoint</b>
+     │            ├──── n <b>idempotency_key</b>
+     │            ├──── n <b>api_request_log</b>
+     │            └──── n <b>payment_intent</b>
+     │                       │ 1
+     │                       ├──── n <b>payment_attempt</b>
+     │                       │           │ n
+     │                       │           └──── 1 <b>provider_account</b>  <em>&#9664; locked here</em>
+     │                       │           │
+     │                       │           ├──── n <b>provider_event</b>   <i>matched inbound messages</i>
+     │                       │           ├──── n <b>payment_fee</b>      <i>phase 4, empty now</i>
+     │                       │           └──── n <b>dispute</b>          <i>phase 3, empty now</i>
+     │                       │
+     │                       ├──── n <b>refund</b>                       <i>phase 2, empty now</i>
+     │                       └──── n <b>outbound_event</b>
+     │                                   │ 1
+     │                                   └──── n <b>webhook_delivery</b>  <i>one row per attempt</i>
+     │
+     └──── n <b>audit_event</b>              <i>append only, also covers admin actions</i>
+
+  <b>admin_user</b> ──── n <b>auth_session</b> ──── n <b>merchant_user</b>
+                    <i>one session table serves both panels, distinguished by user_type</i>
+    </pre>
+
+    <div class="cols" style="margin-top:30px;">
+      <div class="card">
+        <span class="eyebrow">The three lines that carry the design</span>
+        <p><strong>provider_account hangs off the merchant, not the application.</strong> So one gateway account can serve several websites, and an application-level row overrides it when a website needs its own.</p>
+        <p><strong>payment_attempt points at exactly one provider_account.</strong> That is the arrow marked above, and it is why a gateway switch is safe.</p>
+        <p><strong>payment_intent hangs off the application.</strong> So tenancy, keys, domains and payments all resolve from the same parent, and a cross-tenant read has to break the same single join everywhere.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Where a query starts</span>
+        <p>Every merchant-facing read starts from an <code>application_id</code> derived from the key or the session. Every admin read starts from a <code>merchant_id</code>. No read ever starts from a payment id alone, which is what makes a guessed id useless rather than merely unlikely to be guessed.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Deletes</span>
+        <p>There are none on financial rows. Foreign keys are <code>ON DELETE RESTRICT</code> throughout. A business that leaves is suspended, and its records stay, because an acquirer settlement query can arrive months later and must still resolve.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ══════════ PART 5 · SCHEMA ══════════ -->
+<section id="t05">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">05</div>
+      <div class="txt">
+        <span class="eyebrow">Data</span>
+        <h2>Every table, every column</h2>
+        <p class="lede">Twenty tables. All timestamps are <code>timestamptz</code>. Every table has <code>created_at</code> and, where it can change, <code>updated_at</code>; these are not repeated in the lists below.</p>
+      </div>
+    </div>
+
+    <div class="stack">
+
+      <!-- 5.1 merchant -->
+      <div class="tbl-spec">
+        <header><span class="nm">merchant</span><span class="ds">The business. Tenancy boundary.</span></header>
+        <div class="tw"><table class="fields">
+          <thead><tr><th style="width:26%">Column</th><th style="width:22%">Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>text PK</td><td><code>mrc_</code> + base62 UUID v7</td></tr>
+            <tr><td><code>legal_name</code></td><td>text NOT NULL</td><td>As on the trade licence</td></tr>
+            <tr><td><code>trading_name</code></td><td>text NOT NULL</td><td>What the shopper would recognise</td></tr>
+            <tr><td><code>trade_licence_no</code></td><td>text NULL</td><td></td></tr>
+            <tr><td><code>tax_registration_no</code></td><td>text NULL</td><td></td></tr>
+            <tr><td><code>country</code></td><td>char(2) NOT NULL</td><td>ISO 3166-1 alpha-2, default <code>AE</code></td></tr>
+            <tr><td><code>address</code></td><td>jsonb NULL</td><td>Free shape, never queried on</td></tr>
+            <tr><td><code>category</code></td><td>text NULL</td><td>Business category for reporting</td></tr>
+            <tr><td><code>contact_name / _email / _phone</code></td><td>text / citext / text</td><td>Primary contact</td></tr>
+            <tr><td><code>status</code></td><td>enum</td><td><code>DRAFT | ACTIVE | SUSPENDED</code></td></tr>
+            <tr><td><code>notes</code></td><td>text NULL</td><td>Internal only, never exposed to the merchant</td></tr>
+            <tr><td><code>created_by_admin_id</code></td><td>text FK</td><td></td></tr>
+          </tbody>
+        </table></div>
+        <div class="keys"><b>Indexes</b> <code>(status)</code>, <code>(trading_name text_pattern_ops)</code> for search</div>
+      </div>
+
+      <!-- 5.2 application -->
+      <div class="tbl-spec">
+        <header><span class="nm">application</span><span class="ds">One website. The integration unit.</span></header>
+        <div class="tw"><table class="fields">
+          <thead><tr><th style="width:26%">Column</th><th style="width:22%">Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>text PK</td><td><code>app_</code> + base62</td></tr>
+            <tr><td><code>merchant_id</code></td><td>text FK NOT NULL</td><td>ON DELETE RESTRICT. Financial records are never cascaded away</td></tr>
+            <tr><td><code>name</code></td><td>text NOT NULL</td><td>Internal label, e.g. "Acme main site"</td></tr>
+            <tr><td><code>platform</code></td><td>enum</td><td><code>WEB</code> in Phase 1. <code>IOS | ANDROID</code> reserved</td></tr>
+            <tr><td><code>status</code></td><td>enum</td><td><code>DRAFT | TEST | GOLIVE_REQUESTED | LIVE | SUSPENDED</code>. <code>GOLIVE_REQUESTED</code> exists because the merchant's request on <code>M-10</code> has to be a durable state an admin can see and act on, not an email</td></tr>
+            <tr><td><code>golive_requested_at</code></td><td>timestamptz NULL</td><td>Set by the merchant. The checklist is re-evaluated at this moment and the result stored, so an admin approves against what was true when asked</td></tr>
+            <tr><td><code>golive_requested_by</code></td><td>text NULL</td><td>Which merchant user asked</td></tr>
+            <tr><td><code>golive_checklist</code></td><td>jsonb NULL</td><td>The snapshot of each check and its result at request time</td></tr>
+            <tr><td><code>live_enabled_at / live_enabled_by</code></td><td>timestamptz / text NULL</td><td>Set when an admin approves go-live. Both written to the audit table</td></tr>
+            <tr><td><code>display_name</code></td><td>text NOT NULL</td><td>Shown inside the checkout box to the shopper</td></tr>
+            <tr><td><code>logo_url</code></td><td>text NULL</td><td>Stored by us, served from our origin. Never a merchant-supplied remote URL, which would be an outbound request we do not control</td></tr>
+            <tr><td><code>accent_color</code></td><td>char(7) NULL</td><td>Validated as <code>#rrggbb</code>. Anything else is rejected, so no CSS can be injected through it</td></tr>
+            <tr><td><code>theme</code></td><td>enum</td><td><code>LIGHT | DARK | AUTO</code></td></tr>
+            <tr><td><code>intent_ttl_seconds</code></td><td>int NOT NULL</td><td>Default 1800. Range 300 to 3600. <span class="chip is-flag">Confirm B9</span></td></tr>
+          </tbody>
+        </table></div>
+        <div class="keys"><b>Keys</b> <code>UNIQUE(merchant_id, name)</code> &middot; index <code>(merchant_id)</code></div>
+      </div>
+
+      <!-- 5.3 application_domain -->
+      <div class="tbl-spec">
+        <header><span class="nm">application_domain</span><span class="ds">Where the box may be embedded, and Apple Pay verification state.</span></header>
+        <div class="tw"><table class="fields">
+          <thead><tr><th style="width:26%">Column</th><th style="width:22%">Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>text PK</td><td></td></tr>
+            <tr><td><code>application_id</code></td><td>text FK NOT NULL</td><td></td></tr>
+            <tr><td><code>host</code></td><td>text NOT NULL</td><td>Lowercase, punycode, host and optional port only. No scheme, no path. Stored exactly as it will be compared against the <code>Origin</code> header</td></tr>
+            <tr><td><code>mode</code></td><td>enum</td><td><code>TEST | LIVE</code>. A domain allowed in both has two rows</td></tr>
+            <tr><td><code>apple_pay_state</code></td><td>enum</td><td><code>NOT_STARTED | FILE_ISSUED | VERIFIED | FAILED</code></td></tr>
+            <tr><td><code>apple_pay_file_token</code></td><td>text NULL</td><td>The association content we issued for this host</td></tr>
+            <tr><td><code>apple_pay_verified_at</code></td><td>timestamptz NULL</td><td></td></tr>
+            <tr><td><code>apple_pay_last_error</code></td><td>text NULL</td><td>Plain language, shown to the merchant on <code>M-04</code></td></tr>
+            <tr><td><code>apple_pay_last_checked_at</code></td><td>timestamptz NULL</td><td>A daily job re-checks verified hosts, because a merchant can remove the file at any time</td></tr>
+          </tbody>
+        </table></div>
+        <div class="keys"><b>Keys</b> <code>UNIQUE(application_id, host, mode)</code> &middot; index <code>(host)</code> for the origin lookup on every init</div>
+      </div>
+
+      <!-- 5.4 api_key -->
+      <div class="tbl-spec">
+        <header><span class="nm">api_key</span><span class="ds">Publishable and secret keys, per application per mode.</span></header>
+        <div class="tw"><table class="fields">
+          <thead><tr><th style="width:26%">Column</th><th style="width:22%">Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>text PK</td><td></td></tr>
+            <tr><td><code>application_id</code></td><td>text FK NOT NULL</td><td></td></tr>
+            <tr><td><code>mode</code></td><td>enum</td><td><code>TEST | LIVE</code></td></tr>
+            <tr><td><code>kind</code></td><td>enum</td><td><code>PUBLISHABLE | SECRET</code></td></tr>
+            <tr><td><code>key_plain</code></td><td>text NULL</td><td>Publishable only. <code>pk_test_</code> or <code>pk_live_</code> plus 24 base62 characters. Stored as-is because it is not a secret</td></tr>
+            <tr><td><code>key_hash</code></td><td>char(64) NULL</td><td>Secret only. SHA-256 of the whole key. Safe as a deterministic hash because the key is 32 random base62 characters, roughly 190 bits</td></tr>
+            <tr><td><code>last4</code></td><td>char(4) NOT NULL</td><td>For display after creation</td></tr>
+            <tr><td><code>label</code></td><td>text NULL</td><td>Merchant's own note, e.g. "staging server"</td></tr>
+            <tr><td><code>created_by</code></td><td>text</td><td>Admin or merchant user</td></tr>
+            <tr><td><code>last_used_at</code></td><td>timestamptz NULL</td><td>Written at most once a minute per key, to avoid a write on every request</td></tr>
+            <tr><td><code>revoked_at / revoked_by</code></td><td>timestamptz / text</td><td>Revocation is immediate and permanent. Rows are never deleted</td></tr>
+          </tbody>
+        </table></div>
+        <div class="keys">
+          <b>Keys</b>
+          <code>UNIQUE(key_plain) WHERE key_plain IS NOT NULL</code> &middot;
+          <code>UNIQUE(key_hash) WHERE key_hash IS NOT NULL</code> &middot;
+          <code>CHECK</code> exactly one of the two is set, matching <code>kind</code> &middot;
+          index <code>(application_id, mode, kind) WHERE revoked_at IS NULL</code>
+        </div>
+      </div>
+
+      <!-- 5.5 provider_account -->
+      <div class="tbl-spec">
+        <header><span class="nm">provider_account</span><span class="ds">Gateway credentials and capabilities. The switch that makes migration possible.</span></header>
+        <div class="tw"><table class="fields">
+          <thead><tr><th style="width:26%">Column</th><th style="width:22%">Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>text PK</td><td><code>pac_</code> + base62</td></tr>
+            <tr><td><code>merchant_id</code></td><td>text FK NOT NULL</td><td></td></tr>
+            <tr><td><code>application_id</code></td><td>text FK NULL</td><td>Null means it is the merchant-wide default. A row with an application set overrides it for that website</td></tr>
+            <tr><td><code>provider</code></td><td>enum</td><td><code>AFS</code> in Phase 1. Extending the enum is the only schema change a new gateway needs</td></tr>
+            <tr><td><code>mode</code></td><td>enum</td><td><code>TEST | LIVE</code></td></tr>
+            <tr><td><code>owner</code></td><td>enum</td><td><code>MERCHANT | PLATFORM</code>. Always <code>MERCHANT</code> today. The column exists now so the post-licence model is a setting rather than a rewrite. <span class="chip is-flag">Confirm B8</span></td></tr>
+            <tr><td><code>credentials_encrypted</code></td><td>bytea NOT NULL</td><td>AES-256-GCM over a JSON blob. For AFS: the entity identifier and access token. Shape is per provider and never read outside the adapter</td></tr>
+            <tr><td><code>credentials_key_version</code></td><td>smallint NOT NULL</td><td>Enables rolling re-encryption without downtime</td></tr>
+            <tr><td><code>capabilities</code></td><td>jsonb NOT NULL</td><td>Derived, not typed by hand: <code>{card, apple_pay, google_pay, refund, reverse, deferred_capture}</code>. Recomputed whenever credentials or wallet identifiers change</td></tr>
+            <tr><td><code>apple_merchant_identifier</code></td><td>text NULL</td><td>Without it, Apple Pay is not offerable on this account, whatever any flag says</td></tr>
+            <tr><td><code>google_merchant_id</code></td><td>text NULL</td><td>Required for live Google Pay</td></tr>
+            <tr><td><code>google_merchant_name</code></td><td>text NULL</td><td>Shown in the Google sheet</td></tr>
+            <tr><td><code>external_mid / _sid / _tid</code></td><td>text NULL</td><td>Settlement references. Never sent to the gateway; used only to match the monthly report</td></tr>
+            <tr><td><code>status</code></td><td>enum</td><td><code>ACTIVE | INACTIVE</code>. <strong>There is no delete.</strong> Old payments still need it</td></tr>
+            <tr><td><code>activated_at / deactivated_at / deactivated_by</code></td><td></td><td>The switch history, which is also written to the audit table</td></tr>
+            <tr><td><code>last_verified_at / last_verify_error</code></td><td></td><td>Result of the Test connection button on <code>A-07</code></td></tr>
+          </tbody>
+        </table></div>
+        <div class="keys">
+          <b>Keys</b>
+          <code>UNIQUE(application_id, provider, mode) WHERE status='ACTIVE' AND application_id IS NOT NULL</code> &middot;
+          <code>UNIQUE(merchant_id, provider, mode) WHERE status='ACTIVE' AND application_id IS NULL</code> &middot;
+          index <code>(merchant_id)</code>, <code>(status)</code>
+          <br><br>
+          <b>Resolution order at attempt creation</b>
+          application-specific active account for this provider and mode, else the merchant-wide active account. Resolved <strong>once</strong>, written onto the attempt, and never resolved again for that attempt.
+        </div>
+      </div>
+
+      <!-- 5.6 payment_intent -->
+      <div class="tbl-spec">
+        <header><span class="nm">payment_intent</span><span class="ds">The money owed. What the merchant's server creates and polls.</span></header>
+        <div class="tw"><table class="fields">
+          <thead><tr><th style="width:26%">Column</th><th style="width:22%">Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>text PK</td><td><code>pi_</code> + base62 UUID v7</td></tr>
+            <tr><td><code>merchant_id / application_id</code></td><td>text FK NOT NULL</td><td>Merchant denormalised onto the row so every tenancy filter is a single-column index hit</td></tr>
+            <tr><td><code>mode</code></td><td>enum NOT NULL</td><td>Taken from the key that created it. Never from the body</td></tr>
+            <tr><td><code>amount_minor</code></td><td>bigint NOT NULL</td><td><code>CHECK (amount_minor &gt; 0)</code>. Fils</td></tr>
+            <tr><td><code>currency</code></td><td>char(3) NOT NULL</td><td><code>CHECK (currency = 'AED')</code> in Phase 1. The check is dropped when multi-currency ships; the column does not change</td></tr>
+            <tr><td><code>reference</code></td><td>text NULL</td><td>The merchant's own order id. Indexed, deliberately not unique, because their reference semantics are theirs. Duplicate protection is the idempotency key</td></tr>
+            <tr><td><code>description</code></td><td>text NULL</td><td>Max 300 characters</td></tr>
+            <tr><td><code>status</code></td><td>enum NOT NULL</td><td>See &sect;6</td></tr>
+            <tr><td><code>allowed_methods</code></td><td>text[] NOT NULL</td><td>What the merchant asked for. What is actually offered is this list intersected with the provider account's real capabilities and the device's</td></tr>
+            <tr><td><code>amount_captured_minor</code></td><td>bigint NOT NULL DEFAULT 0</td><td></td></tr>
+            <tr><td><code>amount_refunded_minor</code></td><td>bigint NOT NULL DEFAULT 0</td><td><code>CHECK (amount_refunded_minor &lt;= amount_captured_minor)</code>. Stays zero in Phase 1</td></tr>
+            <tr><td><code>customer_ref / _email / _name / _phone</code></td><td>text / citext / text / text</td><td>All optional. Used for the gateway's risk signals and for the merchant's own lookup</td></tr>
+            <tr><td><code>metadata</code></td><td>jsonb NOT NULL DEFAULT '{}'</td><td>Max 20 keys, 8 KB total, values are strings. Never interpreted, never priced from, returned verbatim</td></tr>
+            <tr><td><code>return_url / cancel_url</code></td><td>text NULL</td><td>HTTPS only, host must be an allowed domain for this application. Validated at creation, not at redirect time, so a bad value fails on the merchant's server rather than in front of a shopper</td></tr>
+            <tr><td><code>client_secret_hash</code></td><td>char(64) NOT NULL</td><td>SHA-256 of a 32-byte random value. The plaintext is returned exactly once, in the creation response</td></tr>
+            <tr><td><code>expires_at</code></td><td>timestamptz NOT NULL</td><td><code>created_at + application.intent_ttl_seconds</code></td></tr>
+            <tr><td><code>succeeded_at / canceled_at</code></td><td>timestamptz NULL</td><td></td></tr>
+            <tr><td><code>held_reason</code></td><td>text NULL</td><td>Set with status <code>held</code>. Human readable, shown on <code>A-12</code></td></tr>
+          </tbody>
+        </table></div>
+        <div class="keys">
+          <b>Indexes</b>
+          <code>(merchant_id, created_at DESC)</code> &middot;
+          <code>(application_id, created_at DESC)</code> &middot;
+          <code>(application_id, reference)</code> &middot;
+          <code>(status, expires_at) WHERE status IN ('requires_payment_method','processing','requires_action')</code> for the expiry job
+        </div>
+      </div>
+
+      <!-- 5.7 payment_attempt -->
+      <div class="tbl-spec">
+        <header><span class="nm">payment_attempt</span><span class="ds">One try. The row that carries everything the gateway told us.</span></header>
+        <div class="tw"><table class="fields">
+          <thead><tr><th style="width:26%">Column</th><th style="width:22%">Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>text PK</td><td><code>pa_</code> + base62</td></tr>
+            <tr><td><code>payment_intent_id</code></td><td>text FK NOT NULL</td><td></td></tr>
+            <tr><td><code>provider_account_id</code></td><td>text FK NOT NULL</td><td><strong>Locked here at creation and never changed.</strong> This single column is what makes gateway migration safe</td></tr>
+            <tr><td><code>provider</code></td><td>enum NOT NULL</td><td>Denormalised from the account so the uniqueness indexes below can exist</td></tr>
+            <tr><td><code>attempt_number</code></td><td>int NOT NULL</td><td>1, 2, 3 within the intent</td></tr>
+            <tr><td><code>attempt_reference</code></td><td>text NOT NULL</td><td>Deterministic: the intent id without its prefix, a hyphen, the attempt number. Max 64 characters, <code>[A-Za-z0-9-]</code> only. Sent to the gateway as its merchant transaction reference and parsed back out of any message that echoes it</td></tr>
+            <tr><td><code>status</code></td><td>enum NOT NULL</td><td>See &sect;6</td></tr>
+            <tr><td><code>method</code></td><td>enum NOT NULL</td><td><code>CARD | APPLE_PAY | GOOGLE_PAY</code></td></tr>
+            <tr><td><code>provider_ref</code></td><td>text NULL</td><td>The gateway's checkout identifier</td></tr>
+            <tr><td><code>provider_payment_id</code></td><td>text NULL</td><td>The gateway's own payment identifier, present on the result</td></tr>
+            <tr><td><code>provider_auth_code</code></td><td>text NULL</td><td>Acquirer authorisation code</td></tr>
+            <tr><td><code>provider_rrn</code></td><td>text NULL</td><td>Retrieval reference number, where the gateway supplies it</td></tr>
+            <tr><td><code>provider_connector_ids</code></td><td>jsonb NULL</td><td>The acquirer-side references the gateway returns on every result. <strong>Persisted deliberately.</strong> Smooth Pay's existing integration only logs these, which is why its settlement reconciliation has to match on merchant, amount and time instead of on a key. That is recorded as a known issue there and is not repeated here</td></tr>
+            <tr><td><code>result_code / result_description</code></td><td>text NULL</td><td>Raw from the gateway. Never shown to a merchant or a shopper</td></tr>
+            <tr><td><code>merchant_advice_code</code></td><td>text NULL</td><td>Scheme guidance on whether a retry can ever succeed. Read case-insensitively, as the existing billing code does</td></tr>
+            <tr><td><code>failure_code</code></td><td>enum NULL</td><td>Our taxonomy, &sect;6.3. This is what leaves the service</td></tr>
+            <tr><td><code>failure_message</code></td><td>text NULL</td><td>Our wording, not the gateway's</td></tr>
+            <tr><td><code>amount_minor</code></td><td>bigint NOT NULL</td><td>What we asked the gateway for</td></tr>
+            <tr><td><code>reported_amount_minor</code></td><td>bigint NULL</td><td>What the gateway says it took. Compared as integers, never as decimals</td></tr>
+            <tr><td><code>reported_currency</code></td><td>char(3) NULL</td><td>Any value other than the intent's currency holds the payment</td></tr>
+            <tr><td><code>card_brand / card_bin6 / card_last4</code></td><td>text / char(6) / char(4)</td><td>BIN and last four are stored separately and never logged on the same line</td></tr>
+            <tr><td><code>card_exp_month / card_exp_year</code></td><td>smallint NULL</td><td>For the merchant's own dispute handling</td></tr>
+            <tr><td><code>three_ds_outcome</code></td><td>text NULL</td><td>Derived from the result family, for reporting on challenge rates</td></tr>
+            <tr><td><code>origin</code></td><td>text NULL</td><td>The embedding origin recorded at initialisation. Evidence, not authorisation</td></tr>
+            <tr><td><code>ip_hash / user_agent_hash</code></td><td>char(64) NULL</td><td>Hashed with a rotating salt. Enough to spot a pattern, not enough to profile a person</td></tr>
+            <tr><td><code>sweep_count / next_sweep_at / last_sweep_at</code></td><td>int / timestamptz</td><td>Recovery scheduling, &sect;11</td></tr>
+            <tr><td><code>diagnostics</code></td><td>jsonb NULL</td><td>Allow-listed fields only. A raw gateway body never lands here</td></tr>
+            <tr><td><code>settled_at / failed_at</code></td><td>timestamptz NULL</td><td></td></tr>
+          </tbody>
+        </table></div>
+        <div class="keys">
+          <b>Keys, and what each one prevents</b>
+          <code>UNIQUE(payment_intent_id, attempt_number)</code> two attempts numbered the same &middot;
+          <code>UNIQUE(provider_account_id, attempt_reference)</code> the same reference sent twice to one gateway account &middot;
+          <code>UNIQUE(provider, provider_ref) WHERE provider_ref IS NOT NULL</code> two of our attempts claiming one gateway checkout &middot;
+          <code>UNIQUE(provider, provider_payment_id) WHERE provider_payment_id IS NOT NULL</code> the same gateway payment recorded twice, which is the constraint that makes a duplicate notification harmless &middot;
+          <code>UNIQUE(payment_intent_id) WHERE status IN ('pending','processing','requires_action')</code> two browser tabs opening two live attempts on one intent
+          <br><br>
+          <b>Indexes</b>
+          <code>(status, next_sweep_at) WHERE next_sweep_at IS NOT NULL</code> &middot;
+          <code>(provider_rrn)</code> &middot;
+          <code>(payment_intent_id, attempt_number DESC)</code> &middot;
+          <code>(created_at DESC)</code>
+        </div>
+      </div>
+
+      <!-- 5.8 remaining tables, compact -->
+      <div class="tbl-spec">
+        <header><span class="nm">idempotency_key</span><span class="ds">Answers "have I already answered this exact request?"</span></header>
+        <div class="tw"><table class="fields">
+          <thead><tr><th style="width:26%">Column</th><th style="width:22%">Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>application_id</code></td><td>text FK</td><td>Scoped per application, never global</td></tr>
+            <tr><td><code>endpoint</code></td><td>text</td><td>The same key on a different endpoint is a different thing</td></tr>
+            <tr><td><code>key</code></td><td>text</td><td>Merchant-supplied. Max 255 characters</td></tr>
+            <tr><td><code>request_hash</code></td><td>char(64)</td><td>SHA-256 of the canonical body. A reused key with a different body is a <code>422</code>, not a silent replay of the wrong answer</td></tr>
+            <tr><td><code>state</code></td><td>enum</td><td><code>IN_FLIGHT | COMPLETED</code>. In flight returns <code>409</code> with <code>Retry-After</code></td></tr>
+            <tr><td><code>response_status / response_body</code></td><td>int / jsonb</td><td>Replayed byte for byte, including the id</td></tr>
+            <tr><td><code>resource_id</code></td><td>text NULL</td><td>The intent created, for the admin view</td></tr>
+            <tr><td><code>expires_at</code></td><td>timestamptz</td><td>24 hours. Purged daily</td></tr>
+          </tbody>
+        </table></div>
+        <div class="keys"><b>Keys</b> <code>UNIQUE(application_id, endpoint, key)</code> &middot; index <code>(expires_at)</code></div>
+      </div>
+
+      <div class="tbl-spec">
+        <header><span class="nm">provider_event</span><span class="ds">Every raw message the gateway sent us, stored before it is believed.</span></header>
+        <div class="tw"><table class="fields">
+          <thead><tr><th style="width:26%">Column</th><th style="width:22%">Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>provider</code></td><td>enum</td><td></td></tr>
+            <tr><td><code>provider_event_id</code></td><td>text NULL</td><td>Where the gateway supplies one</td></tr>
+            <tr><td><code>dedupe_hash</code></td><td>char(64) NOT NULL</td><td>SHA-256 over provider, raw body and an allow-listed header subset. This is what makes a redelivery a no-op even when the gateway gives no event id</td></tr>
+            <tr><td><code>source_ip</code></td><td>inet</td><td>Recorded. Not used to authorise, because behind a proxy it is not reliable and treating it as authorisation has cost real money in the existing platform</td></tr>
+            <tr><td><code>verification</code></td><td>enum</td><td><code>VERIFIED | UNVERIFIED | FAILED</code></td></tr>
+            <tr><td><code>was_encrypted</code></td><td>boolean</td><td></td></tr>
+            <tr><td><code>raw_encrypted</code></td><td>bytea NOT NULL</td><td>The body as received, encrypted at rest with its own key version</td></tr>
+            <tr><td><code>headers</code></td><td>jsonb</td><td>Allow-listed keys only</td></tr>
+            <tr><td><code>hints</code></td><td>jsonb</td><td>What we extracted: a reference, a checkout id. Never a status we act on</td></tr>
+            <tr><td><code>matched_attempt_id</code></td><td>text FK NULL</td><td>Null is meaningful: it may be a payment we do not know about</td></tr>
+            <tr><td><code>processed_at / outcome / error</code></td><td></td><td><code>SETTLED | NO_CHANGE | UNMATCHED | HELD | ERROR</code></td></tr>
+            <tr><td><code>retention_until</code></td><td>timestamptz</td><td>90 days, then the raw body is deleted and the row kept</td></tr>
+          </tbody>
+        </table></div>
+        <div class="keys"><b>Keys</b> <code>UNIQUE(provider, dedupe_hash)</code> &middot; index <code>(processed_at) WHERE processed_at IS NULL</code>, <code>(received_at DESC)</code>, <code>(matched_attempt_id)</code></div>
+      </div>
+
+      <div class="tbl-spec">
+        <header><span class="nm">merchant_webhook_endpoint</span><span class="ds">Where we send notifications. One per mode in the Phase 1 interface, several allowed by the schema.</span></header>
+        <div class="tw"><table class="fields">
+          <thead><tr><th style="width:26%">Column</th><th style="width:22%">Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>application_id / mode</code></td><td>text FK / enum</td><td>No unique constraint on the pair, so Phase 2 adds more endpoints with no migration</td></tr>
+            <tr><td><code>url</code></td><td>text NOT NULL</td><td>HTTPS only. Re-validated against the egress rules at every send, not only when saved</td></tr>
+            <tr><td><code>secret_encrypted / secret_key_version</code></td><td>bytea / smallint</td><td>Generated by us, revealed once</td></tr>
+            <tr><td><code>previous_secret_encrypted</code></td><td>bytea NULL</td><td>Dual-secret rotation</td></tr>
+            <tr><td><code>previous_secret_expires_at</code></td><td>timestamptz NULL</td><td>24 hours. Both signatures are sent during the window, so a merchant can deploy at their own pace</td></tr>
+            <tr><td><code>subscribed_events</code></td><td>text[]</td><td>Default <code>{*}</code></td></tr>
+            <tr><td><code>status / disabled_reason / disabled_at</code></td><td>enum / text / timestamptz</td><td>Auto-disabled after sustained failure, &sect;11</td></tr>
+            <tr><td><code>consecutive_failures</code></td><td>int</td><td>Reset on any success</td></tr>
+          </tbody>
+        </table></div>
+        <div class="keys"><b>Indexes</b> <code>(application_id, mode) WHERE status='ACTIVE'</code></div>
+      </div>
+
+      <div class="tbl-spec">
+        <header><span class="nm">outbound_event</span> &middot; <span class="nm">webhook_delivery</span><span class="ds">What we said, and every attempt to say it.</span></header>
+        <div class="tw"><table class="fields">
+          <thead><tr><th style="width:26%">Column</th><th style="width:22%">Table</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>outbound_event</td><td><code>evt_</code> + base62. The merchant deduplicates on this</td></tr>
+            <tr><td><code>type</code></td><td>outbound_event</td><td><code>payment.succeeded</code>, <code>payment.failed</code>, <code>payment.expired</code>, <code>payment.canceled</code>, <code>payment.held</code></td></tr>
+            <tr><td><code>dedupe_key</code></td><td>outbound_event</td><td><code>UNIQUE(application_id, dedupe_key)</code>, for example <code>pi_x:succeeded</code>. This is what guarantees one success event per intent no matter how many code paths reach the same conclusion</td></tr>
+            <tr><td><code>api_version</code></td><td>outbound_event</td><td>Pinned per application, so a future payload change cannot break an existing integration</td></tr>
+            <tr><td><code>payload</code></td><td>outbound_event</td><td>Exactly the public shape of the intent. No internal ids, no gateway fields</td></tr>
+            <tr><td><code>attempt_no / status</code></td><td>webhook_delivery</td><td><code>PENDING | DELIVERED | FAILED | EXHAUSTED</code></td></tr>
+            <tr><td><code>response_status</code></td><td>webhook_delivery</td><td>2xx is success. Everything else retries</td></tr>
+            <tr><td><code>response_body_snippet</code></td><td>webhook_delivery</td><td>First 512 bytes, for the merchant's own debugging</td></tr>
+            <tr><td><code>duration_ms / error / next_retry_at</code></td><td>webhook_delivery</td><td></td></tr>
+          </tbody>
+        </table></div>
+        <div class="keys"><b>Keys</b> <code>UNIQUE(outbound_event_id, endpoint_id, attempt_no)</code> &middot; index <code>(status, next_retry_at) WHERE status='PENDING'</code>, <code>(endpoint_id, created_at DESC)</code></div>
+      </div>
+
+      <div class="tbl-spec">
+        <header><span class="nm">audit_event</span><span class="ds">Append only. The application role has no UPDATE or DELETE on this table.</span></header>
+        <div class="tw"><table class="fields">
+          <thead><tr><th style="width:26%">Column</th><th style="width:22%">Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>actor_type / actor_id / actor_label</code></td><td>enum / text / text</td><td><code>ADMIN | MERCHANT_USER | API_KEY | SYSTEM</code></td></tr>
+            <tr><td><code>action</code></td><td>text</td><td>Dotted, e.g. <code>provider_account.deactivated</code></td></tr>
+            <tr><td><code>subject_type / subject_id</code></td><td>text / text</td><td></td></tr>
+            <tr><td><code>merchant_id / application_id</code></td><td>text NULL</td><td>For filtering by tenant</td></tr>
+            <tr><td><code>before / after</code></td><td>jsonb</td><td>Allow-listed fields only. A credential value never appears, only the fact that it changed</td></tr>
+            <tr><td><code>ip / user_agent / request_id</code></td><td>inet / text / uuid</td><td></td></tr>
+          </tbody>
+        </table></div>
+        <div class="keys"><b>Written for</b> credential save, gateway switch, key create and revoke, domain add and verify, held-payment decision, go-live, role change, and any view of a decrypted gateway message</div>
+      </div>
+
+      <div class="tbl-spec">
+        <header><span class="nm">Remaining tables</span><span class="ds">Specified in full in the repository migration; summarised here.</span></header>
+        <div class="tw"><table class="fields">
+          <thead><tr><th style="width:24%">Table</th><th style="width:16%">Phase</th><th>Purpose and key columns</th></tr></thead>
+          <tbody>
+            <tr><td><code>admin_user</code></td><td>1</td><td>Our staff. Argon2id hash, encrypted TOTP secret, role <code>SUPPORT | OPERATOR | OWNER</code>, lockout counters.</td></tr>
+            <tr><td><code>merchant_user</code></td><td>1</td><td>Their staff. Role <code>OWNER | DEVELOPER | VIEWER</code>, invite token hash and expiry, <code>UNIQUE(merchant_id, email)</code>.</td></tr>
+            <tr><td><code>auth_session</code></td><td>1</td><td>Refresh tokens for both panels. Hash only, with device and IP, revocable individually and in bulk.</td></tr>
+            <tr><td><code>api_request_log</code></td><td>1 (written), 2 (shown)</td><td>Method, path, status, duration, key id, request id, error code. 30-day retention. This is what makes the merchant's API activity screen possible later without adding instrumentation then.</td></tr>
+            <tr><td><code>refund</code></td><td>2</td><td>Created empty in Phase 1. <code>UNIQUE(payment_intent_id, refund_reference)</code>, status machine, amount in minor units. Adding it now avoids a schema change on a live financial table later.</td></tr>
+            <tr><td><code>dispute</code></td><td>3</td><td>Same reasoning. Attempt reference, amount, reason code, opened and due dates.</td></tr>
+            <tr><td><code>payment_fee</code></td><td>4</td><td>Same reasoning. Scope <code>PROVIDER_COST | SMOOTH_REVENUE</code>, <code>estimated_minor</code> and <code>actual_minor</code> side by side, because a provider fee is only ever an estimate until settlement confirms it.</td></tr>
+          </tbody>
+        </table></div>
+        <div class="keys" id="s59">
+          <b>5.9 &middot; Why unused tables are created now</b>
+          Three of the tables above hold no rows in Phase 1. They are created anyway because each one would otherwise require altering a table that by then holds live payment records, under load, with money moving through it. A migration that adds an empty table is free today and genuinely risky in eight months. Settlement import tables are the exception and are deliberately deferred to Phase 4, because they are additive and touch nothing that exists.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PART 6 · STATE ══════════ -->
+<section id="t06">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">06</div>
+      <div class="txt">
+        <span class="eyebrow">Lifecycle</span>
+        <h2>States, transitions, and who may cause them</h2>
+      </div>
+    </div>
+
+    <h3 style="margin-bottom:14px;">6.1 Intent</h3>
+    <span class="pre-label">payment_intent.status</span>
+    <pre>
+<b>requires_payment_method</b>   created, or the last attempt failed and another may be made
+<b>processing</b>                an attempt is with the gateway
+<b>requires_action</b>           the shopper is in a bank challenge
+<b>succeeded</b>                 terminal. Money confirmed by the gateway
+<b>canceled</b>                  terminal. The merchant cancelled it
+<b>expired</b>                   past its time with no evidence of payment
+<b>held</b>                       something does not add up. A human must decide
+
+   requires_payment_method ──▶ processing ──▶ succeeded
+              ▲                    │  │
+              └── attempt failed ──┘  ├──▶ requires_action ──▶ processing
+                                      ├──▶ held
+                                      └──▶ expired ──▶ <em>succeeded</em>  (the one exception)
+    </pre>
+
+    <div class="note is-accent" style="margin-top:22px;">
+      <span class="eyebrow">The expiry exception, stated once</span>
+      <p><strong>Expiry gates starting. Evidence gates money.</strong> A shopper who enters a bank challenge at minute 29 and finishes at minute 31 has been charged. An expired intent must refuse new attempts and must still accept a gateway-confirmed capture. The alternative is money taken and never recorded, which is the worst state a payment system can be in. This is the only transition in the product that moves backwards, and it exists for that reason alone.</p>
+    </div>
+
+    <h3 style="margin:34px 0 14px;">6.2 Attempt</h3>
+    <span class="pre-label">payment_attempt.status</span>
+    <pre>
+<b>pending</b>          created by the browser initialising. Nothing sent to the gateway yet
+<b>processing</b>       handed to the gateway. The outcome is not yet known
+<b>requires_action</b>  the shopper is inside a bank challenge
+<b>succeeded</b>        terminal. The gateway confirmed it, and the assertions passed
+<b>failed</b>           terminal for this attempt. The intent may be retried
+<b>expired</b>          terminal by time, with no evidence. A later confirmation still settles it
+<b>held</b>             terminal until a human decides. No money recorded, no event sent
+
+<i>The three non-terminal values are exactly the set in the one-open-attempt index,
+so the constraint and the state machine can never drift apart.</i>
+    </pre>
+    <div class="tw" style="margin-top:22px;">
+      <table>
+        <thead><tr><th style="width:22%">Transition</th><th style="width:26%">Trigger</th><th style="width:16%">Who may cause it</th><th>Rule</th></tr></thead>
+        <tbody>
+          <tr><td><code>&rarr; pending</code></td><td>Browser initialises</td><td>Public init endpoint</td><td>Refused if an open attempt already exists on the intent</td></tr>
+          <tr><td><code>pending &rarr; processing</code></td><td>Gateway checkout created</td><td>Orchestrator only</td><td>Provider account is fixed at this moment</td></tr>
+          <tr><td><code>processing &rarr; requires_action</code></td><td>Result in the pending or challenge family</td><td>Gateway status only</td><td>Never from a browser message</td></tr>
+          <tr><td><code>&rarr; succeeded</code></td><td>Gateway status says success</td><td>Gateway status only</td><td>Only after the amount and currency assertion passes</td></tr>
+          <tr><td><code>&rarr; failed</code></td><td>A decline code that is neither success nor pending</td><td>Gateway status only</td><td>The intent returns to <code>requires_payment_method</code></td></tr>
+          <tr><td><code>&rarr; held</code></td><td>Amount or currency mismatch, or the gateway echoes a reference that is not ours</td><td>Orchestrator</td><td>No money recorded, no notification sent</td></tr>
+          <tr><td><code>&rarr; expired</code></td><td>Past the intent's expiry with no evidence</td><td>Expiry job</td><td>A later confirmation still settles it</td></tr>
+          <tr><td>Any terminal <code>&rarr;</code> anything</td><td><strong>Forbidden</strong></td><td>Nobody</td><td>A late contradicting message is logged and discarded, never applied</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note is-flag" style="margin-top:24px;">
+      <span class="eyebrow">Unknown is not failure</span>
+      <p>A timeout, a 5xx with no body, or a body with no result code means we <em>do not know</em>. Those become or remain <code>processing</code> and the recovery job owns them. Mapping unknown to failed is how a charged customer is told their payment failed, and then pays twice.</p>
+    </div>
+
+    <h3 style="margin:34px 0 14px;">6.3 Failure codes we publish</h3>
+    <span class="pre-label">The only failure values that ever leave the service</span>
+    <pre>
+card_declined          insufficient_funds      expired_card         invalid_card
+authentication_required authentication_failed  risk_declined        limit_exceeded
+duplicate_payment      processing_error        provider_unavailable provider_timeout
+configuration_error    amount_mismatch         payment_expired      payment_canceled
+    </pre>
+    <p style="margin-top:14px;" class="prose">Gateway result codes are mapped onto these in one file inside the adapter, and that mapping is the only place a gateway code appears. A merchant integrating against <code>card_declined</code> keeps working on the day we change gateway, which is the whole point.</p>
+
+    <h3 style="margin:38px 0 14px;">6.4 How a held payment is resolved</h3>
+    <p class="prose">A hold is the only state that requires a human, so its exit has to be specified rather than improvised.</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:20%">Step</th><th style="width:20%">Who</th><th>What happens</th></tr></thead>
+        <tbody>
+          <tr><td>Hold created</td><td>The service</td><td>The attempt and the intent both become <code>held</code>. <strong>No money is recorded and no event is emitted to the merchant.</strong> A <code>payment.held</code> event is created but withheld from delivery until a decision is made, so nothing is lost if the process restarts. Our team is alerted at once.</td></tr>
+          <tr><td>Investigation</td><td>Owner role</td><td>The admin screen shows what we asked for beside what the gateway reported, plus every raw message received. The gateway can be re-queried from the screen, which resolves most holds on its own.</td></tr>
+          <tr><td><strong>Accept</strong></td><td>Owner role</td><td>Requires a written reason. Settles at <strong>the amount the gateway actually reported</strong>, never at the amount we asked for, because the reported figure is the money that moved. The withheld event is released as <code>payment.succeeded</code> carrying that reported amount. The reason and the actor go to the audit table.</td></tr>
+          <tr><td><strong>Reject</strong></td><td>Owner role</td><td>Requires a written reason. The attempt becomes <code>failed</code> with <code>amount_mismatch</code> and the intent returns to <code>requires_payment_method</code>. The withheld event is released as <code>payment.failed</code>. If money genuinely did move, rejecting does not reverse it, so the screen states plainly that a rejection may need a manual refund at the gateway and records that fact.</td></tr>
+          <tr><td>Never</td><td>Nobody</td><td>A hold cannot be resolved by a job, by a retry, or by a later notification. Only a person, and only with a reason.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════ PART 7 · API ══════════ -->
+<section id="t07">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">07</div>
+      <div class="txt">
+        <span class="eyebrow">Contract</span>
+        <h2>The API</h2>
+        <p class="lede">Three groups: the merchant's server with a secret key, the browser with a publishable key and a client secret, and the gateway. Panel endpoints use session authentication and are not part of the public contract.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-bottom:16px;">7.1 Create a payment</h3>
+    <span class="pre-label">Request</span>
+    <pre>
+<b>POST</b> /v1/payment-intents
+Authorization: Bearer <i>sk_test_&hellip;</i>
+Idempotency-Key: <i>a1b2c3d4-&hellip;</i>          <em>required</em>
+Content-Type: application/json
+
+{
+  "amount":      { "value": <b>"240.00"</b>, "currency": "AED" },   <i>decimal string, never a float</i>
+  "reference":   "ORD-7741",                            <i>your order id, returned untouched</i>
+  "description": "Order 7741",
+  "customer":    { "ref": "cus_88", "email": "a@b.com", "name": "Sara" },
+  "methods":     ["card", "apple_pay", "google_pay"],   <i>optional, defaults to all</i>
+  "return_url":  "https://acme.example/thanks",
+  "cancel_url":  "https://acme.example/cart",
+  "metadata":    { "cart": "7741" }
+}
+    </pre>
+
+    <span class="pre-label" style="margin-top:20px;">Response 201</span>
+    <pre>
+{
+  "id": "<b>pi_01J8Z9Q4MF3K</b>",
+  "object": "payment_intent",
+  "status": "requires_payment_method",
+  "mode": "test",
+  "amount":   { "value": "240.00", "currency": "AED" },
+  "captured": { "value": "0.00",   "currency": "AED" },
+  "reference": "ORD-7741",
+  "methods_available": ["card", "apple_pay"],      <i>google_pay absent: this gateway
+                                                       account has no Google merchant id</i>
+  "client_secret": "<b>cs_live_9f2K&hellip;</b>",            <i>returned exactly once</i>
+  "expires_at": "2026-09-21T09:11:02Z",
+  "created_at": "2026-09-21T08:41:02Z",
+  "metadata": { "cart": "7741" }
+}
+    </pre>
+
+    <div class="cols" style="margin-top:26px;">
+      <div class="card">
+        <span class="eyebrow">Validation, in order</span>
+        <p>Key is valid and not revoked, application is not suspended, idempotency key present and consistent, amount is a positive integer number of fils once parsed, currency is AED, return and cancel URLs are HTTPS and on an allowed domain, metadata within limits, and an active provider account exists for this application and mode. Any failure is a 4xx to the merchant's server, never a broken box in front of a shopper.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">What is deliberately absent</span>
+        <p>No gateway name, no entity identifier, no merchant id in the body. The tenant comes from the key and only from the key. A body field claiming a different merchant is rejected outright rather than merged.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Amount as a string</span>
+        <p><span class="chip">Decision</span> Decimal strings in and out, integer fils inside. Every language parses <code>"240.00"</code> identically; not every language parses a JSON number identically. This is the cheapest way to make a whole class of integration bug impossible.</p>
+      </div>
+    </div>
+
+    <h3 style="margin:38px 0 16px;">7.2 The rest of the surface</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:34%">Endpoint</th><th style="width:16%">Auth</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td><code>GET /v1/payment-intents/:id</code></td><td>sk_</td><td>Authoritative state. Safe to poll, rate limited per key</td></tr>
+          <tr><td><code>GET /v1/payment-intents</code></td><td>sk_</td><td>List with cursor pagination, filters on status, reference, created range</td></tr>
+          <tr><td><code>POST /v1/payment-intents/:id/cancel</code></td><td>sk_</td><td>Only while no attempt is in flight. Idempotent</td></tr>
+          <tr><td><code>GET /v1/events/:id</code></td><td>sk_</td><td>Re-read a notification payload the merchant may have lost</td></tr>
+          <tr><td><code>POST /v1/checkout/:id/init</code></td><td>pk_ + client_secret + Origin</td><td>Creates the attempt, resolves the gateway, returns only what the widget needs</td></tr>
+          <tr><td><code>GET /v1/checkout/:id/status</code></td><td>pk_ + client_secret</td><td>Browser polling. Re-queries the gateway when the attempt is still open</td></tr>
+          <tr><td><code>POST /v1/checkout/:id/abandon</code></td><td>pk_ + client_secret</td><td>The shopper closed the box. A hint for the recovery job, never a state change</td></tr>
+          <tr><td><code>POST /v1/notifications/afs</code></td><td>Gateway</td><td>Inbound. Always answers 200 to a readable request</td></tr>
+          <tr><td><code>GET /.well-known/apple-developer-merchantid-domain-association</code></td><td>public</td><td>Served on the payment page origin, for our own domain's verification</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin:38px 0 16px;">7.3 Errors</h3>
+    <span class="pre-label">Every error, in one shape</span>
+    <pre>
+HTTP 402
+{
+  "error": {
+    "type":    "card_error",              <i>api_error | card_error | validation_error |
+                                            authentication_error | rate_limit_error</i>
+    "code":    "<b>card_declined</b>",            <i>from the published list, &sect;6.3</i>
+    "message": "The bank declined this payment.",
+    "param":   null,
+    "intent":  "pi_01J8Z9Q4MF3K",
+    "request_id": "req_01J8Z9&hellip;"          <i>quote this to support</i>
+  }
+}
+    </pre>
+    <p style="margin-top:14px;" class="prose">Status codes: <code>400</code> malformed, <code>401</code> bad key, <code>403</code> wrong tenant or origin, <code>404</code> not found within this tenant, <code>409</code> idempotent request in flight, <code>422</code> idempotency key reused with a different body, <code>402</code> the payment was declined, <code>429</code> rate limited with <code>Retry-After</code>, <code>503</code> gateway unreachable.</p>
+
+    <h3 style="margin:38px 0 16px;">7.4 Panel surface</h3>
+    <p class="prose">Session-authenticated, not part of the public contract, and therefore free to change. Listed because the two panels are part of Phase 1 and a build plan that omits them is incomplete. Every write listed here also produces an audit row.</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:15%">Panel</th><th style="width:30%">Group</th><th>Operations</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="8"><strong>Admin</strong></td><td>Auth</td><td>Sign in with a second factor, refresh, sign out, revoke a session, enrol and reset the second factor</td></tr>
+          <tr><td>Merchants</td><td>List with filters, create, read, update, suspend, resume</td></tr>
+          <tr><td>Applications</td><td>List, create, read, update branding and time-to-live, approve go-live, suspend</td></tr>
+          <tr><td>Provider accounts</td><td>List including inactive, create with credentials, verify connection, deactivate, and <strong>switch</strong> an application from one account to another. Credentials are write-only: no endpoint returns them, in any form, to anyone</td></tr>
+          <tr><td>Payments</td><td>List across all merchants with the full filter set, read one with its attempts and timeline, re-query the gateway, resend a notification, export</td></tr>
+          <tr><td>Queues</td><td>Money at risk, held payments with accept and reject (each requiring a written reason), unmatched gateway messages, exhausted deliveries</td></tr>
+          <tr><td>Gateway messages</td><td>List, and read one decrypted body. That read is restricted to the owner role and is itself audited</td></tr>
+          <tr><td>Team and audit</td><td>Invite an admin, change a role, disable, and read the audit log with filters</td></tr>
+          <tr><td rowspan="7"><strong>Merchant</strong></td><td>Auth</td><td>Accept an invitation, sign in with a second factor, refresh, sign out, reset a password</td></tr>
+          <tr><td>Keys</td><td>List, create, reveal once at creation, revoke. Live keys are not listed at all until the application is approved</td></tr>
+          <tr><td>Domains</td><td>List, add, remove, download the Apple association file, trigger verification, read the verification state</td></tr>
+          <tr><td>Notifications</td><td>Read and set the URL per mode, rotate the secret, <strong>send a test notification</strong> and read the live result, list deliveries, resend one or resend all failures</td></tr>
+          <tr><td>Payments</td><td>List with filters scoped to this merchant, read one, resend its notification, export to Excel and CSV</td></tr>
+          <tr><td>Go-live</td><td>Read the checklist with each item evaluated now, request go-live, read the request state</td></tr>
+          <tr><td>Team and settings</td><td>Invite a user, change a role, remove, update branding and alert email addresses</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note is-flag" style="margin-top:24px;">
+      <span class="eyebrow">Two rules that apply to every panel endpoint</span>
+      <p><strong>One.</strong> A merchant endpoint derives its tenant from the session and never from a path or body parameter, exactly as a key-authenticated endpoint does. <strong>Two.</strong> Exports are generated by the worker and delivered as a signed, short-lived download link rather than streamed from the request, so a large export cannot hold an HTTP connection or a database cursor open.</p>
+    </div>
+
+
+    <h3 style="margin:38px 0 16px;">7.5 Conventions that apply to every endpoint</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:22%">Concern</th><th>Rule</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Money</strong></td><td>Always an object: <code>{"value": "240.00", "currency": "AED"}</code>. Value is a decimal <em>string</em> with exactly two places. Never a number, never a bare integer, never a float. Rejected if it does not parse to a whole number of minor units.</td></tr>
+          <tr><td><strong>Times</strong></td><td>ISO 8601 with a <code>Z</code> suffix, always UTC, always to milliseconds. The panels convert to UAE time for display; the API never does. A report that spans a month must not depend on whose clock rendered it.</td></tr>
+          <tr><td><strong>Ids</strong></td><td>Prefixed and opaque: <code>pi_</code>, <code>pa_</code>, <code>evt_</code>, <code>app_</code>. A caller must never parse one or infer anything from it. They sort chronologically, which is a property we use internally and do not promise externally.</td></tr>
+          <tr><td><strong>Lists</strong></td><td>Cursor based. <code>?limit=</code> up to 100, default 20, plus <code>?starting_after=&lt;id&gt;</code>. The response carries <code>{ data: [...], has_more: true, next_cursor: "pi_..." }</code>. No page numbers and no total count, because both are unstable on a table that is being written to while you read it.</td></tr>
+          <tr><td><strong>Versioning</strong></td><td>The path carries <code>/v1/</code>. Payload shapes are pinned per application by a dated <code>api_version</code>. Fields are only ever added, never removed or repurposed. A merchant moves to a newer version deliberately, from their own panel, and can move back for 30 days.</td></tr>
+          <tr><td><strong>Unknown fields</strong></td><td>Rejected with a 400 naming the field. Silently ignoring an unknown field is how a merchant spends a day wondering why their amount had no effect.</td></tr>
+          <tr><td><strong>Request id</strong></td><td>Every response carries <code>Smooth-Request-Id</code>. It appears in every error body and in every log line for that request. Support asks for this one value and nothing else.</td></tr>
+          <tr><td><strong>Compatibility</strong></td><td>A new payment method, a new gateway or a new status value must not change any existing response shape. This is asserted by snapshot tests, and a deliberate break requires a new <code>api_version</code>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════ PART 8 · BROWSER ══════════ -->
+<section id="t08">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">08</div>
+      <div class="txt">
+        <span class="eyebrow">The box</span>
+        <h2>Loader, iframe and the wallet mechanics</h2>
+        <p class="lede">The part with the most external constraints, and therefore the part specified in the most detail.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-bottom:14px;">8.1 What the merchant writes</h3>
+    <span class="pre-label">On their page. This is the whole integration</span>
+    <pre>
+&lt;div id="pay"&gt;&lt;/div&gt;
+&lt;script src="https://pay.checkout.smoothpay.ai/v1/smooth.js"
+        <em>integrity="sha384-&hellip;" crossorigin="anonymous"</em>&gt;&lt;/script&gt;
+&lt;script&gt;
+  SmoothCheckout.mount({
+    container:      "#pay",
+    publishableKey: "<i>pk_test_&hellip;</i>",
+    intentId:       "<i>pi_01J8Z9Q4MF3K</i>",
+    clientSecret:   "<i>cs_live_9f2K&hellip;</i>",
+    onSuccess: function (e) { <i>/* display only. Ship on the webhook */</i> },
+    onFailure: function (e) {},
+    onCancel:  function ()  {}
+  });
+&lt;/script&gt;
+    </pre>
+
+    <div class="note is-accent" style="margin-top:22px;">
+      <span class="eyebrow">Why we publish an integrity hash for our own loader</span>
+      <p>Because <code>smooth.js</code> runs on the merchant's payment page, it falls inside <em>their</em> obligation to inventory and protect the scripts on that page. Publishing a hash they can pin turns a compliance conversation into a copy and paste. It costs us a build step and saves every merchant an argument with their assessor.</p>
+    </div>
+
+    <h3 style="margin:34px 0 14px;">8.2 What the loader does</h3>
+    <ul class="plain is-accent">
+      <li>Creates the iframe with <code>allow="payment"</code>. <span class="chip is-accent">Verified</span> A cross-origin iframe cannot invoke the payment APIs that Apple Pay and Google Pay rely on unless the embedding page grants this permission. Because our loader writes the iframe, the merchant cannot forget it. A merchant who hand-builds the iframe instead will find wallets silently absent, and the documentation says so in one line.</li>
+      <li>Adds <code>sandbox="allow-scripts allow-forms allow-popups allow-same-origin"</code>. <code>allow-same-origin</code> is required for the gateway widget to function; it grants our own origin to our own frame and does not give the merchant access to it.</li>
+      <li>Relays height changes so the box never scrolls internally, and relays events with a strict origin check in <em>both</em> directions. A message from any origin other than ours is ignored, and we post only to the origin the merchant declared.</li>
+      <li>Exposes exactly one global, <code>SmoothCheckout</code>, and touches nothing else on the page.</li>
+      <li>Queues calls made before it finishes loading, so an integrator cannot lose a <code>mount()</code> to a race.</li>
+    </ul>
+
+    <h3 style="margin:34px 0 14px;">8.3 What init returns</h3>
+    <span class="pre-label">POST /v1/checkout/:id/init &rarr; 200</span>
+    <pre>
+{
+  "attempt_id": "pa_01J8&hellip;",
+  "expires_at": "2026-09-21T09:11:02Z",
+  "amount": { "value": "240.00", "currency": "AED" },
+  "branding": { "display_name": "Acme Retail", "logo_url": "&hellip;", "accent": "#0A7", "theme": "light" },
+  "client": {
+    "kind": "<b>hosted_fields</b>",                         <i>a rendering instruction, not a gateway name</i>
+    "script_url": "https://&hellip;/v1/paymentWidgets.js?checkoutId=&hellip;",
+    "integrity":  "sha384-&hellip;",
+    "brands":     ["VISA", "MASTER"],
+    "return_url": "https://pay.checkout.smoothpay.ai/r/pa_01J8&hellip;",
+    "wallet": {
+      "type": "apple_pay",
+      "merchant_identifier": "&hellip;",                <i>from the provider account</i>
+      "display_name": "Acme Retail"
+    }
+  }
+}
+    </pre>
+
+    <div class="note is-flag" style="margin-top:22px;">
+      <span class="eyebrow">One honest limit on the abstraction</span>
+      <p>The shopper's browser has to load the gateway's own script, so the gateway's identity is visible to anyone reading network traffic on the payment page. That is unavoidable with any hosted-fields integration, ours included. What the design does guarantee is narrower and still valuable: <strong>no gateway name, field, status or error code ever appears in the merchant's server-side integration, in our API, or in anything we send them.</strong> Changing gateway changes the script the browser loads, and changes nothing the merchant wrote. The claim is stated this precisely here so nobody later discovers a gap between the promise and the wire.</p>
+    </div>
+
+    <h3 style="margin:34px 0 14px;">8.4 Wallet configuration</h3>
+    <p class="prose">These values are taken from Smooth Pay's live implementation rather than from documentation. <span class="chip is-accent">Verified</span> against <code>AfsWalletWidgetInline.tsx</code>, which has been in production on this gateway.</p>
+    <span class="pre-label" style="margin-top:16px;">Apple Pay</span>
+    <pre>
+form[data-brands]      = "APPLEPAY"
+form[data-integrity]   = &lt;hash returned with the checkout&gt;
+wpwlOptions.applePay = {
+  merchantIdentifier: <i>provider_account.apple_merchant_identifier</i>,
+  displayName:        <i>application.display_name</i>,
+  buttonSource: "js", buttonStyle: "black", buttonType: "plain"
+}
+<b>Precondition on the device</b>  window.ApplePaySession &amp;&amp; ApplePaySession.canMakePayments()
+<b>Precondition on our side</b>    merchant identifier present AND the embedding host is
+                            recorded as VERIFIED in application_domain
+    </pre>
+    <span class="pre-label" style="margin-top:20px;">Google Pay</span>
+    <pre>
+form[data-brands]      = "GOOGLEPAY"
+wpwlOptions.googlePay = {
+  gatewayMerchantId: <i>&lt;the gateway's account identifier&gt;</i>,
+  environment:       <i>mode === 'LIVE' ? "PRODUCTION" : "TEST"</i>,
+  merchantId:        <i>provider_account.google_merchant_id</i>,
+  merchantName:      <i>provider_account.google_merchant_name</i>,
+  buttonType: "pay", buttonSizeMode: "fill", buttonColor: "black"
+}
+<b>Precondition</b>  the widget renders the button, or it does not. There is no reliable
+                pre-check, so a 6 second timeout decides, exactly as the live code does.
+    </pre>
+
+    <div class="note is-alert" style="margin-top:22px;">
+      <span class="eyebrow">The one field that crosses the abstraction, and why</span>
+      <p>Google Pay requires the gateway's own account identifier to be present in the browser. There is no way around it: the value is part of Google's payload. It is therefore exposed, but under a neutral name (<code>gateway_merchant_id</code>) and never as a gateway-specific field. It is not a secret, it appears in every widget request already, and it cannot be used without the account's access token, which never leaves the server. This is documented as a deliberate exception rather than left as an inconsistency for a reviewer to find.</p>
+    </div>
+
+    <h3 style="margin:34px 0 14px;">8.5 Apple Pay domain verification</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:8%">Step</th><th style="width:20%">Who</th><th>What happens</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Merchant</td><td>Adds their host on <code>M-04</code>. Row created with <code>apple_pay_state = NOT_STARTED</code>.</td></tr>
+          <tr><td>2</td><td>Us</td><td>Issue the association file content for that host and move to <code>FILE_ISSUED</code>.</td></tr>
+          <tr><td>3</td><td>Merchant</td><td>Serves it at <code>https://&lt;host&gt;/.well-known/apple-developer-merchantid-domain-association</code>, over HTTPS, with no redirect. <span class="chip is-accent">Verified</span> from Apple's published requirements.</td></tr>
+          <tr><td>4</td><td>Us</td><td>Register the domain with Apple and record the result. <span class="chip is-flag">Confirm B3</span>: whether that registration is a call we make, a call the gateway makes for us, or a manual step in Apple's portal per merchant.</td></tr>
+          <tr><td>5</td><td>Us</td><td><code>VERIFIED</code> or <code>FAILED</code> with a readable reason. A daily job re-checks verified hosts, because a merchant can remove the file during a deployment and the button would then fail silently.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:16px;" class="prose"><strong>The reason this exists at all:</strong> for an embedded checkout, the page the shopper is on belongs to the merchant, and Apple checks the domain of that page, not the domain of our frame. So the file has to live on their server. This is the single most surprising requirement in Phase 1 and the one most likely to be discovered late if it is not written down here.</p>
+
+    <h3 style="margin:34px 0 14px;">8.6 Bank challenge inside a frame</h3>
+    <p class="prose">Some issuers refuse to have their challenge page framed. The page therefore detects a frame that fails to render within a short window and escalates the whole top window to the challenge instead, returning to the payment page afterwards. <span class="chip">Decision</span> Both paths are built in Phase 1, because whichever one is skipped is the one a real card will need in week one.</p>
+    <h3 style="margin:38px 0 14px;">8.7 The page message protocol</h3>
+    <p class="prose">The only contract between our frame and the merchant's page. Both directions check the origin, and a message from any other origin is dropped without being parsed.</p>
+
+    <span class="pre-label" style="margin-top:16px;">Our frame to their page. Every message has this shape</span>
+    <pre>
+{ "source": "smooth-checkout", "version": 1, "type": &hellip;, "intentId": "pi_&hellip;", &hellip; }
+
+<b>ready</b>      &#123; height: 412 &#125;                         the box has loaded and is usable
+<b>resize</b>     &#123; height: 486 &#125;                         sent on every height change
+<b>processing</b> &#123; method: "apple_pay" &#125;                 the shopper has committed. Disable
+                                                 your own "place order" button here
+<b>action</b>     &#123; kind: "bank_challenge" &#125;             the shopper has gone to their bank.
+                                                 Do not navigate the page away
+<b>success</b>    &#123; reference: "ORD-7741" &#125;              <em>display only. Never ship on this</em>
+<b>failed</b>     &#123; code: "card_declined", retryable: true &#125;
+<b>cancel</b>     &#123;&#125;                                      the shopper backed out
+<b>expired</b>    &#123;&#125;                                      the payment page timed out
+<b>error</b>      &#123; code: "origin_not_allowed", ref: "8F2C-1140" &#125;
+                                                 configuration problems, with the code
+                                                 the shopper also sees on screen
+    </pre>
+
+    <span class="pre-label" style="margin-top:20px;">Their page to our frame. Only two, both optional</span>
+    <pre>
+<b>smooth:retry</b>    &#123;&#125;    reset the box to try again after a decline
+<b>smooth:destroy</b>  &#123;&#125;    tear the box down, for a single-page app changing route
+    </pre>
+
+    <ul class="plain" style="margin-top:20px;">
+      <li>Our frame posts only to the origin the merchant registered, never to <code>*</code>.</li>
+      <li>Messages arriving at our frame are accepted only from the parent's registered origin, and only these two types. Anything else is ignored silently, not logged as an error, because a busy page sends plenty of unrelated messages.</li>
+      <li><code>resize</code> is throttled to animation frames, so a keyboard opening on a phone cannot flood the parent.</li>
+      <li>The loader re-emits the last <code>ready</code> or <code>success</code> to a handler attached late, so an integrator cannot lose an event to a race.</li>
+    </ul>
+
+    <h3 style="margin:38px 0 14px;">8.8 The status channel, and the route the gateway returns to</h3>
+    <p class="prose">Two mechanisms that together cover the shopper who stays and the shopper who leaves.</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:20%">Mechanism</th><th style="width:26%">What it is</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Live status</strong></td>
+            <td>Server-sent events on <code>GET /v1/checkout/:id/stream</code>, with polling on <code>/status</code> as the fallback</td>
+            <td>Events are chosen over a socket because the traffic is one-directional and short-lived, and because server-sent events survive corporate proxies that break websockets. The fallback is not optional: any client that cannot hold the stream open polls at no faster than the configured floor. Both paths re-query the gateway when the attempt is still open, so neither can report a stale state. The stream closes on a terminal status or at the intent's expiry, whichever comes first.</td>
+          </tr>
+          <tr>
+            <td><strong>Return route</strong></td>
+            <td><code>GET /r/:attemptId</code> on the payment page origin</td>
+            <td>This is the URL handed to the gateway, and it is where the browser lands after a bank challenge. It is a real page, not a redirect: it re-opens the payment page in the state the attempt is actually in. If the challenge happened in the top window it also restores the frame and tells the parent page. It accepts no query parameter that could influence a decision, because whatever the gateway appends is attacker-influenced; the attempt id in the path is the only input, and the outcome still comes from asking the gateway.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note is-alert" style="margin-top:22px;">
+      <span class="eyebrow">Why neither of these settles anything</span>
+      <p>The stream reports state, the return route restores a screen. Neither writes payment state. Settlement happens in exactly one place, the transaction in &sect;10.1, reached only from a gateway status response. A shopper who never loads the return route at all, because they closed the tab, changes nothing about whether the payment is recorded.</p>
+    </div>
+
+    <h3 style="margin:38px 0 14px;">8.9 How the offered methods are decided</h3>
+    <span class="pre-label">Evaluated at init, in this order. Each step can only remove</span>
+    <pre>
+start        <i>everything the merchant asked for on the intent</i>
+  &darr;
+step 1       <b>&cap; the gateway account's real capabilities</b>
+             apple_pay survives only if apple_merchant_identifier is present
+             google_pay survives only if google_merchant_id is present
+             <i>not a flag, not a checkbox. The credential itself, or nothing</i>
+  &darr;
+step 2       <b>&cap; the embedding domain's state</b>
+             apple_pay survives only if this host is VERIFIED for this mode
+  &darr;
+step 3       <b>&cap; what the device reports</b>
+             apple_pay survives only if the browser can actually pay
+             google_pay survives only if the widget renders within its timeout
+  &darr;
+result       <i>what the box renders. An empty wallet set is normal, not an error:</i>
+             <i>the card form simply moves up and nothing is greyed out.</i>
+
+<b>If the result is empty entirely</b>  the account has no usable method at all. That is a
+configuration fault, reported to the merchant's server at creation time, never
+discovered by a shopper looking at an empty box.
+    </pre>
+
+  </div>
+</section>
+
+<!-- ══════════ PART 9 · NOTIFICATIONS ══════════ -->
+<section id="t09">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">09</div>
+      <div class="txt">
+        <span class="eyebrow">Both directions</span>
+        <h2>Notifications in, notifications out</h2>
+      </div>
+    </div>
+
+    <h3 style="margin-bottom:14px;">9.1 From the gateway: a message is a hint, never a fact</h3>
+    <span class="pre-label">Inbound pipeline</span>
+    <pre>
+receive  <i>body parsed as TEXT, not JSON</i>          <em>an encrypted body must not 400 at the parser</em>
+   │
+verify   <i>decrypt and check the auth tag if the two encryption headers are present,</i>
+   │     <i>otherwise record it as unverified. Never guess at a body that fails to decrypt</i>
+   │
+persist  <i>store raw + encrypted, with a dedupe hash</i>   <em>an event we cannot read is still evidence</em>
+   │
+dedupe   <i>UNIQUE(provider, dedupe_hash) → already seen → 200, no work</i>
+   │
+extract  <i>pull only a reference and an identifier. Never a status</i>
+   │
+match    <i>parse our own attempt reference back out of what the gateway echoed</i>
+   │     <i>no match → 200 + flag as unmatched. Never 4xx</i>
+   │
+enqueue  <i>a re-query job</i>
+   │
+<b>200</b>      <i>answered within a second, before any gateway call is made</i>
+   │
+worker   <b>ask the gateway directly</b> → assert reference, amount and currency
+         → apply the transition, or hold
+    </pre>
+
+    <div class="cols" style="margin-top:26px;">
+      <div class="card">
+        <span class="eyebrow">Why always 200</span>
+        <p>A 4xx or 5xx makes the gateway retry, and sustained failures can get an endpoint disabled at their end. This is already the rule in Smooth Pay's production handlers and it is carried over unchanged. <span class="chip is-accent">Verified</span></p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Why text, not JSON</span>
+        <p>Because an encrypted notification arrives as a hex string. Smooth Pay's dine-in endpoint parses JSON and therefore silently drops those, which is recorded there as a known issue. This service reads text first and decides afterwards.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Why re-query rather than trust</span>
+        <p>One code path for every gateway, whatever its signature strength. A forged message then costs us one query and settles nothing. It also means the day a second gateway arrives with weaker signing, no new trust model is needed.</p>
+      </div>
+    </div>
+
+    <h3 style="margin:38px 0 14px;">9.2 To the merchant</h3>
+    <span class="pre-label">What their server receives</span>
+    <pre>
+POST https://acme.example/webhooks/smooth
+Smooth-Signature: <b>t=1758441722,v1=5f2c8a&hellip;</b>
+Smooth-Event-Id:  evt_01J8Z9&hellip;
+Content-Type: application/json
+
+{
+  "id": "evt_01J8Z9&hellip;",
+  "type": "<b>payment.succeeded</b>",
+  "api_version": "2026-09-01",
+  "created_at": "2026-09-21T08:42:11.204Z",
+  "data": {
+    "id": "pi_01J8Z9Q4MF3K",
+    "status": "succeeded",
+    "amount":   { "value": "240.00", "currency": "AED" },
+    "captured": { "value": "240.00", "currency": "AED" },
+    "reference": "ORD-7741",
+    "method": "apple_pay",
+    "card": { "brand": "visa", "last4": "4242" },
+    "metadata": { "cart": "7741" }
+  }
+}
+
+<i>signature  = HMAC-SHA256( timestamp + "." + raw_body, secret )</i>
+<i>verify by  recomputing over the RAW body, comparing in constant time,</i>
+<i>           and rejecting a timestamp more than 5 minutes old</i>
+    </pre>
+
+    <div class="tw" style="margin-top:26px;">
+      <table>
+        <thead><tr><th style="width:26%">Guarantee</th><th>What it means for the merchant</th></tr></thead>
+        <tbody>
+          <tr><td><strong>At least once</strong></td><td>They may receive the same event twice. Every event carries a unique id and they deduplicate on it. Stated in the documentation in bold, because it is the assumption integrators get wrong</td></tr>
+          <tr><td><strong>One event per outcome</strong></td><td>A single intent produces exactly one <code>payment.succeeded</code>, enforced by a unique constraint, however many internal paths reach that conclusion</td></tr>
+          <tr><td><strong>Ordering within an intent</strong></td><td>Delivered in the order they occurred. Across different intents there is no ordering and none is implied</td></tr>
+          <tr><td><strong>Retry schedule</strong></td><td>Immediately, then 1 minute, 5, 15, 1 hour, 3, 6, 12, 24. Nine attempts across roughly two days, then marked exhausted and visible on both panels</td></tr>
+          <tr><td><strong>Timeout</strong></td><td>5 seconds to connect and respond. A slow endpoint is a failed delivery and is retried, never left hanging</td></tr>
+          <tr><td><strong>Secret rotation</strong></td><td>Both signatures are sent during a 24 hour window, so they can deploy the new secret without a coordinated switch</td></tr>
+          <tr><td><strong>Auto-disable</strong></td><td>After 20 consecutive failures the endpoint is disabled, both panels are alerted, and queued events are held rather than discarded</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin:38px 0 14px;">9.3 Outbound egress rules</h3>
+    <p class="prose">A merchant's notification URL is attacker-influenced input and is treated as such.</p>
+    <ul class="plain is-alert">
+      <li>HTTPS only. No plain HTTP, in any mode, including test.</li>
+      <li>DNS is resolved by us, and the resolved address is rejected if it is private, loopback, link-local, or the cloud metadata address.</li>
+      <li><strong>The connection is made to the resolved address</strong>, not re-resolved by the HTTP client. Without this, a hostname that resolves to a public address during the check and a private one a moment later would defeat the check entirely. This is the detail most implementations of this rule miss.</li>
+      <li>No redirects are followed, at all.</li>
+      <li>Response body read is capped at 64 KB, and the connection has a hard timeout.</li>
+      <li>Requests leave through a dedicated egress path with no access to internal services.</li>
+    </ul>
+
+    <h3 style="margin:38px 0 14px;">9.4 Every event, and its payload</h3>
+    <p class="prose">Five event types in Phase 1. The envelope is identical for all of them; only <code>type</code> and the parts of <code>data</code> noted below differ. A merchant who handles <code>payment.succeeded</code> and ignores the rest has a correct integration.</p>
+
+    <div class="tw" style="margin-top:18px;">
+      <table>
+        <thead><tr><th style="width:20%">Type</th><th style="width:26%">Emitted when</th><th style="width:24%">Extra fields in <code>data</code></th><th>Guarantee</th></tr></thead>
+        <tbody>
+          <tr><td><code>payment.succeeded</code></td><td>Inside the settlement transaction</td><td><code>captured</code>, <code>method</code>, <code>card {brand, last4}</code>, <code>paid_at</code></td><td><strong>Exactly one per intent, forever.</strong> Enforced by a unique constraint on the event, not by application logic</td></tr>
+          <tr><td><code>payment.failed</code></td><td>An attempt reaches a terminal decline</td><td><code>failure_code</code>, <code>failure_message</code>, <code>retryable</code>, <code>attempt_number</code></td><td>One per failed attempt, so a shopper who tries three cards produces three</td></tr>
+          <tr><td><code>payment.expired</code></td><td>The expiry job closes an intent</td><td><code>expired_at</code></td><td>One per intent. Never sent if the intent later succeeds, because expiry only fires when there is no open attempt</td></tr>
+          <tr><td><code>payment.canceled</code></td><td>The merchant cancels it</td><td><code>canceled_at</code></td><td>One per intent. An echo of their own action, sent so their systems stay consistent without polling</td></tr>
+          <tr><td><code>payment.held</code></td><td>Released only after a person decides <span class="chip is-flag">&sect;6.4</span></td><td><code>reason</code></td><td>Created immediately, delivered only on rejection. On acceptance it is replaced by <code>payment.succeeded</code>. A merchant is never told about a hold we have not yet understood</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <ul class="plain" style="margin-top:20px;">
+      <li><strong>Every payload is the same object the merchant would get from <code>GET /v1/payment-intents/:id</code>.</strong> One shape to learn, and a merchant who distrusts webhooks entirely can poll instead and receive identical data.</li>
+      <li>No internal identifier, no gateway field and no attempt id appears in a payload. The attempt number does, because it is meaningful to them; the attempt's id is ours.</li>
+      <li>A terminal event is never contradicted by a later one. If our own data and a late gateway message ever disagree, that opens an internal finding rather than emitting a second, contradictory event.</li>
+    </ul>
+
+    <h3 style="margin:38px 0 14px;">9.5 Email, as a technical concern</h3>
+    <p class="prose">The full list of messages and their reasons is in the product walkthrough. What matters here is that <strong>no payment outcome depends on an email being delivered</strong>, and that email is treated as an unreliable side channel throughout.</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:24%">Rule</th><th>Detail</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Queued, never inline</strong></td><td>Every email is a job. A failing mail provider must never slow down or fail a payment request, a go-live approval, or a key revocation.</td></tr>
+          <tr><td><strong>Deduplicated</strong></td><td>Each email has a key, for example <code>endpoint_failing:&lt;endpoint_id&gt;:&lt;day&gt;</code>. A business whose server has been down for a day receives one message, not four hundred.</td></tr>
+          <tr><td><strong>Content restrictions</strong></td><td>No amounts, no customer names and no payment identifiers in an operational alert. The email says what happened and links into the panel, which is behind a login. An inbox is not an access-controlled place.</td></tr>
+          <tr><td><strong>Security notices are not suppressible</strong></td><td>Key created, key revoked and endpoint disabled always send, to the owner, regardless of notification preferences. A business cannot accidentally turn off the message that tells them about a stolen key.</td></tr>
+          <tr><td><strong>Single-use links</strong></td><td>Invitations and password resets carry a hashed, single-use token with an expiry. The token is stored hashed, so a database read does not yield a working link.</td></tr>
+          <tr><td><strong>Nothing to the shopper</strong></td><td>There is no shopper email address in any template, and no code path that could send to one. The receipt is the merchant's, from their own system. <span class="chip is-flag">Confirm B10</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════ PART 10 · IDEMPOTENCY ══════════ -->
+<section id="t10">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">10</div>
+      <div class="txt">
+        <span class="eyebrow">Never twice</span>
+        <h2>Four layers, each answering a different question</h2>
+        <p class="lede">All four are database constraints. None of them is application logic that could be bypassed by a second copy of the service running at the same moment.</p>
+      </div>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:9%">Layer</th><th style="width:20%">Question</th><th style="width:32%">Constraint</th><th>Behaviour on collision</th></tr></thead>
+        <tbody>
+          <tr><td><strong>1</strong></td><td>Is this the same request?</td><td><code>UNIQUE(application_id, endpoint, key)</code></td><td>Completed replays the stored response exactly. In flight returns 409 with <code>Retry-After</code>. Same key, different body returns 422</td></tr>
+          <tr><td><strong>2</strong></td><td>Is this the same try?</td><td><code>UNIQUE(provider_account_id, attempt_reference)</code></td><td>The reference is derived, never random, so a retried creation lands on the same row instead of creating a second gateway checkout</td></tr>
+          <tr><td><strong>3</strong></td><td>Has this gateway payment already landed?</td><td><code>UNIQUE(provider, provider_payment_id)</code> and <code>UNIQUE(provider, provider_ref)</code></td><td>The second writer gets a unique violation and returns the first result. This is what makes a notification racing a browser confirmation harmless</td></tr>
+          <tr><td><strong>4</strong></td><td>Have I seen this message?</td><td><code>UNIQUE(provider, dedupe_hash)</code></td><td>A redelivered gateway message does no work at all</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin:34px 0 14px;">10.1 The settlement transaction</h3>
+    <span class="pre-label">The only place in the service that requires a serialisable transaction</span>
+    <pre>
+BEGIN ISOLATION LEVEL SERIALIZABLE
+  SELECT ... FROM payment_intent WHERE id = $1 <b>FOR UPDATE</b>
+  <i>re-read the attempt; if already terminal, return the existing result</i>
+  <i>assert:  reported_amount == amount  AND  reported_currency == currency</i>
+  <i>         AND the gateway echoed our attempt_reference</i>
+  <i>on any assertion failure → status held, write no money, emit no event</i>
+  UPDATE payment_attempt  SET status='succeeded', settled_at=now(), &hellip;
+  UPDATE payment_intent   SET status='succeeded', amount_captured_minor=&hellip;
+  INSERT outbound_event   (dedupe_key = intent_id || ':succeeded')   <b>ON CONFLICT DO NOTHING</b>
+COMMIT
+<i>then, outside the transaction: enqueue delivery</i>
+    </pre>
+    <ul class="plain" style="margin-top:18px;">
+      <li>The event row is written <strong>inside</strong> the transaction so an event can never exist for a payment that was rolled back, and a payment can never be recorded without its event being queued.</li>
+      <li>The delivery attempt is made <strong>outside</strong> it, so a slow merchant server can never hold a database lock.</li>
+      <li>A serialisation failure is retried up to three times with jitter. That is the correct response, not an error.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ══════════ PART 11 · JOBS ══════════ -->
+<section id="t11">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">11</div>
+      <div class="txt">
+        <span class="eyebrow">The safety net</span>
+        <h2>Background jobs</h2>
+        <p class="lede">The recovery job is not a nicety. It is the difference between a payment product and a demo, because the browser poll dies the moment the shopper closes the tab.</p>
+      </div>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:20%">Job</th><th style="width:13%">Runs</th><th style="width:30%">Selects</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>attempt-sweeper</strong></td><td>every 2 min</td>
+            <td>Attempts in <code>pending</code>, <code>processing</code> or <code>requires_action</code> with <code>next_sweep_at &lt;= now()</code>, batched at 50</td>
+            <td>Re-queries the gateway using the attempt's own provider account, then settles, fails, or reschedules. Backoff: 30s, 1m, 2m, 5m, 10m, 20m, 30m, then hourly until the intent expires plus a 24 hour grace period. <span class="chip is-flag">Confirm B7</span> on the gateway's rate limits before finalising these numbers</td>
+          </tr>
+          <tr>
+            <td><strong>intent-expiry</strong></td><td>every 5 min</td>
+            <td>Intents past <code>expires_at</code> with no open attempt</td>
+            <td>Moves them to <code>expired</code> and emits one event. Never touches an intent with an attempt still in flight</td>
+          </tr>
+          <tr>
+            <td><strong>webhook-sender</strong></td><td>queue</td>
+            <td>Pending deliveries</td>
+            <td>Signs, applies the egress rules, sends, records the outcome, schedules the next attempt</td>
+          </tr>
+          <tr>
+            <td><strong>endpoint-health</strong></td><td>every 10 min</td>
+            <td>Endpoints at 20 consecutive failures</td>
+            <td>Disables, alerts both panels, holds queued events rather than discarding them</td>
+          </tr>
+          <tr>
+            <td><strong>apple-domain-recheck</strong></td><td>daily</td>
+            <td>Domains in <code>VERIFIED</code></td>
+            <td>Re-fetches the association file. A merchant deployment that drops the file is caught by us, not by a shopper seeing a broken button</td>
+          </tr>
+          <tr>
+            <td><strong>retention-purge</strong></td><td>daily</td>
+            <td>Expired idempotency keys, raw notification bodies past 90 days, request logs past 30 days</td>
+            <td>Deletes the raw payload, keeps the row and its hints</td>
+          </tr>
+          <tr>
+            <td><strong>risk-report</strong></td><td>every 5 min</td>
+            <td>Everything currently unknown</td>
+            <td>Publishes the <code>money_at_risk</code> figure and raises the alert when it is non-zero past threshold</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note is-accent" style="margin-top:28px;">
+      <span class="eyebrow">Why every job must be safe to run twice</span>
+      <p>Two copies of the worker will eventually run at once, during a deployment if nowhere else. Every selection is therefore claimed with a conditional update before any gateway call, and every settlement goes through the same constrained transaction as the live path. No job has a private way to write money.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PART 12 · SECURITY ══════════ -->
+<section id="t12">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">12</div>
+      <div class="txt">
+        <span class="eyebrow">Controls</span>
+        <h2>Security</h2>
+      </div>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:22%">Area</th><th>Control</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Tenant isolation</strong></td><td>Five independent layers: the key resolves to exactly one application; an immutable request context is built once by the guard; every repository call requires that context; row-level security in Postgres as defence behind the ORM; and the provider account is bound to the attempt so a payment can never settle against another tenant's gateway. A body field naming a merchant is rejected, never merged.</td></tr>
+          <tr><td><strong>Browser authorisation</strong></td><td>Publishable key, plus a 32-byte client secret compared in constant time, plus an <code>Origin</code> that matches an allowed domain for that application and mode. All three required. The secret is the real control; the origin is a supporting signal.</td></tr>
+          <tr><td><strong>Embed boundary</strong></td><td>A per-intent <code>Content-Security-Policy: frame-ancestors</code> header built from that application's allowed domains. This is browser-enforced and is the actual boundary. A forwarded origin header is not, and is never treated as one.</td></tr>
+          <tr><td><strong>Page hardening</strong></td><td>The payment page sends its own strict policy: scripts limited to our origin and the gateway's, no inline scripts except a nonce, no framing of anything but the gateway, and no outbound connections other than to our API and the gateway.</td></tr>
+          <tr><td><strong>Secrets at rest</strong></td><td>AES-256-GCM with a key from parameter storage, never in the database, with a version column on every encrypted row so re-encryption can roll forward without downtime.</td></tr>
+          <tr><td><strong>Key handling</strong></td><td>Secret keys are stored only as SHA-256. A deterministic hash is safe here because the key is 32 random base62 characters. Several active keys per application are allowed, so rotation is create, migrate, revoke, with no window where nothing works.</td></tr>
+          <tr><td><strong>Panel access</strong></td><td>Argon2id passwords, mandatory two-factor on both panels, short-lived access tokens with rotating refresh tokens, lockout with backoff, and every session revocable individually.</td></tr>
+          <tr><td><strong>Rate limits</strong></td><td>Per key on server endpoints. Per IP <em>and</em> per intent on the public endpoints, which is what stops a client secret being guessed and a status endpoint being hammered. The limit is a rejection with <code>Retry-After</code>, never a silent drop.</td></tr>
+          <tr><td><strong>Replay</strong></td><td>Outbound signatures carry a timestamp and are rejected beyond 5 minutes. Idempotency keys expire. Client secrets die with their intent.</td></tr>
+          <tr><td><strong>Egress</strong></td><td>&sect;9.3 for merchant URLs. Gateway URLs are always rebuilt from a trusted base and never taken from a message, and any path fragment we accept is validated against a strict pattern first. This rule is carried over from the existing production code, where it exists for the same reason. <span class="chip is-accent">Verified</span></td></tr>
+          <tr><td><strong>Logging</strong></td><td>One serialiser with an allow-list, not a deny-list. A raw gateway body is never handed to a logger. Secrets are reported as present or absent, never by value, which is the pattern the existing AFS service already follows. A continuous-integration check greps for raw body logging and fails the build.</td></tr>
+          <tr><td><strong>Card data</strong></td><td>Never reaches this service, in any form, at any point. There is no code path that could accept it, and the test suite asserts that the fields the gateway returns are filtered to brand, last four and expiry before anything is written.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin:34px 0 14px;">12.1 Threats, and what stops each</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:26%">Attack</th><th style="width:30%">Stopped by</th><th>Residual risk</th></tr></thead>
+        <tbody>
+          <tr><td>Shopper edits the amount in the browser</td><td>The amount exists only on the intent, created server to server. The browser never sends an amount</td><td>None</td></tr>
+          <tr><td>Forged notification claiming a payment</td><td>The body is a hint; we re-query the gateway; the reference must echo; the amount must match</td><td>Very low</td></tr>
+          <tr><td>Stolen publishable key</td><td>Useless alone: an intent can only be created with the secret key, and init needs both the client secret and an allowed origin</td><td>Low</td></tr>
+          <tr><td>Stolen secret key</td><td>Hashed at rest, rotatable with no downtime, rate limited, every use audited</td><td>Real while undetected. Mitigated by the last-used timestamp and by rotation being painless</td></tr>
+          <tr><td>Another merchant's payment read or altered</td><td>Five isolation layers, any one of which fails closed</td><td>Low</td></tr>
+          <tr><td>Hostile page embeds the box</td><td>Browser-enforced frame-ancestors from the allowed list, plus the client secret</td><td>Low</td></tr>
+          <tr><td>Notification URL pointed at an internal service</td><td>&sect;9.3, including connecting to the resolved address</td><td>Low</td></tr>
+          <tr><td>Card data reaching a log</td><td>Allow-list serialiser, a lint rule, and a build-time grep</td><td>Needs active enforcement, so it is a review item forever, not a one-off task</td></tr>
+          <tr><td>Two copies of the worker settling the same payment</td><td>Conditional claim before any gateway call, plus the unique constraints</td><td>Very low</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin:38px 0 14px;">12.2 Rate limits, with actual numbers</h3>
+    <p class="prose">A limit without a number is not a control. These are starting values, sized so that no honest integrator can reach them and no attacker can make progress; they are configuration, and the first review after a month of real traffic should adjust them from evidence.</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:28%">Endpoint</th><th style="width:20%">Counted per</th><th style="width:16%">Limit</th><th>Reasoning</th></tr></thead>
+        <tbody>
+          <tr><td><code>POST /payment-intents</code></td><td>API key</td><td>100 / minute<br>burst 20 / second</td><td>A busy shop creates a handful a second. A hundred a minute is generous and still bounds the damage from a stolen key</td></tr>
+          <tr><td><code>GET /payment-intents/:id</code></td><td>API key</td><td>600 / minute</td><td>Polling is a legitimate integration choice and should not be punished</td></tr>
+          <tr><td><code>GET /payment-intents</code> (list)</td><td>API key</td><td>60 / minute</td><td>Lists are expensive. This is ample for a nightly reconciliation job</td></tr>
+          <tr><td><code>POST /checkout/:id/init</code></td><td><strong>Intent</strong></td><td>10 total</td><td>Counted per intent, not per IP. Ten initialisations is more than any real shopper needs and caps attempt creation absolutely</td></tr>
+          <tr><td><code>POST /checkout/:id/init</code></td><td>IP</td><td>30 / minute</td><td>Catches a script working through guessed intent ids</td></tr>
+          <tr><td><code>GET /checkout/:id/status</code></td><td>Intent</td><td>1 per 1.5 seconds</td><td>The floor the box itself respects. A faster caller is told to slow down rather than being cut off</td></tr>
+          <tr><td><code>GET /checkout/:id/stream</code></td><td>Intent</td><td>3 concurrent</td><td>Three tabs is plausible. Thirty is not</td></tr>
+          <tr><td><strong>Wrong client secret</strong></td><td>IP <em>and</em> intent</td><td>5, then the intent is locked for 15 minutes</td><td>The important one. A 32-byte secret cannot be guessed anyway, and this makes even trying pointless while keeping a genuine mistyped request recoverable</td></tr>
+          <tr><td><strong>Panel sign-in</strong></td><td>Account <em>and</em> IP</td><td>5 failures, then increasing backoff</td><td>Per account as well as per IP, so a distributed attempt on one account is still slowed</td></tr>
+          <tr><td><code>POST /notifications/afs</code></td><td>IP</td><td>1000 / minute</td><td>High on purpose. Throttling a gateway means losing real notifications, and verification is cheap because the work happens on the worker</td></tr>
+          <tr><td>Panel reads</td><td>Session</td><td>300 / minute</td><td>Generous enough that a dashboard refreshing on a timer is never affected</td></tr>
+          <tr><td>Exports</td><td>Session</td><td>5 / hour</td><td>Exports are worker jobs. This bounds a user clicking repeatedly</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="plain" style="margin-top:20px;">
+      <li>Every rejection is a <code>429</code> with <code>Retry-After</code> and our own error code. Never a dropped connection, and never a silent delay, because both are indistinguishable from an outage to whoever is on the other end.</li>
+      <li>Counters live in Redis and are approximate at the boundary. That is acceptable: these are abuse controls, not accounting.</li>
+      <li>Limits are per key and per intent rather than global, so one noisy integrator can never affect another merchant's shopper.</li>
+    </ul>
+
+  </div>
+</section>
+
+<!-- ══════════ PART 13 · OBSERVABILITY ══════════ -->
+<section id="t13">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">13</div>
+      <div class="txt">
+        <span class="eyebrow">Running it</span>
+        <h2>Observability</h2>
+      </div>
+    </div>
+
+    <div class="note is-alert" style="margin-bottom:28px;">
+      <span class="eyebrow">The one metric that matters</span>
+      <p><code>money_at_risk_minor</code>: the total value of attempts that are not terminal and are past their grace window, by merchant. It is the only number that answers "may we have taken money we have not recorded". It should be zero. A non-zero value that survives two sweeper passes wakes a person. Everything else on this page is diagnostics.</p>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:30%">Metric</th><th style="width:22%">Labels</th><th>Alerts when</th></tr></thead>
+        <tbody>
+          <tr><td><code>money_at_risk_minor</code></td><td>merchant, provider</td><td>Above zero past the second sweep</td></tr>
+          <tr><td><code>payment_success_ratio</code></td><td>merchant, method</td><td>Below 85% for 15 minutes with meaningful volume</td></tr>
+          <tr><td><code>amount_assertion_failures_total</code></td><td>provider</td><td>Any occurrence at all</td></tr>
+          <tr><td><code>provider_call_duration_seconds</code></td><td>operation</td><td>99th percentile above 10 seconds</td></tr>
+          <tr><td><code>provider_errors_total</code></td><td>operation, class</td><td>Rate spike</td></tr>
+          <tr><td><code>sweeper_recovered_total</code></td><td>outcome</td><td>Trend only. This is the number that proves the safety net works</td></tr>
+          <tr><td><code>webhook_delivery_failures_total</code></td><td>merchant</td><td>Any endpoint reaching auto-disable</td></tr>
+          <tr><td><code>notification_unmatched_total</code></td><td>provider</td><td>Any occurrence. An unmatched message may be a payment we do not know about</td></tr>
+          <tr><td><code>idempotency_replays_total</code></td><td>endpoint</td><td>A spike, which usually means a broken merchant client</td></tr>
+          <tr><td><code>wallet_render_failures_total</code></td><td>wallet, merchant</td><td>A merchant whose wallet stops rendering after a deployment of theirs</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <span class="pre-label" style="margin-top:28px;">Trace and log fields: an allow-list, nothing else permitted</span>
+    <pre>
+request_id   payment_intent_id   payment_attempt_id   provider   provider_account_id
+provider_ref merchant_id         application_id        mode       method
+result_code  failure_code        amount_minor          currency
+
+<b>Never</b>  request or response bodies &middot; any card field &middot; credentials &middot;
+       decrypted notification payloads &middot; client secrets &middot; cardholder name
+    </pre>
+    <p style="margin-top:14px;" class="prose">Correlation runs <code>request_id &rarr; payment_intent_id &rarr; payment_attempt_id &rarr; provider_ref</code>, so a merchant asking "what happened to order 7741" and the gateway asking "what happened to this transaction" resolve to the same trace from opposite ends.</p>
+  </div>
+</section>
+
+<!-- ══════════ PART 14 · FAILURES ══════════ -->
+<section id="t14">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">14</div>
+      <div class="txt">
+        <span class="eyebrow">Reality</span>
+        <h2>Failure matrix</h2>
+        <p class="lede">Every row is a thing that will happen. A design that has not written this table has simply not decided yet.</p>
+      </div>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:28%">What happens</th><th style="width:18%">What is actually true</th><th style="width:18%">Correct state</th><th>Handling</th></tr></thead>
+        <tbody>
+          <tr><td>Gateway times out creating a checkout</td><td>No money moved</td><td>Attempt failed, intent still open</td><td>A new attempt is allowed immediately</td></tr>
+          <tr><td>Gateway returns 5xx with no result code</td><td><strong>Unknown</strong></td><td><code>processing</code></td><td>Sweeper owns it. Never marked failed</td></tr>
+          <tr><td>Gateway returns a result code on a 4xx</td><td>A business outcome</td><td>Classified from the code</td><td>A body carrying a result code is read, whatever the HTTP status. Carried over from the live implementation <span class="chip is-accent">Verified</span></td></tr>
+          <tr><td>Acquirer is in its cut-off window</td><td><strong>Charged</strong>, queued for the next batch</td><td><code>succeeded</code></td><td>The live code already detects this and settles rather than failing. Ported exactly. Treating it as a failure is how a customer pays twice <span class="chip is-accent">Verified</span></td></tr>
+          <tr><td>Shopper closes the tab after paying</td><td><strong>Charged</strong></td><td><code>succeeded</code></td><td>Sweeper. This is the single most important row in the table</td></tr>
+          <tr><td>Bank challenge abandoned</td><td>Unknown</td><td><code>processing</code> then <code>expired</code></td><td>Sweeper until expiry plus grace</td></tr>
+          <tr><td>Notification never arrives</td><td>Possibly charged</td><td>Resolved by re-query</td><td>Sweeper. The product never depends on a notification arriving</td></tr>
+          <tr><td>Notification arrives twice</td><td>Nothing new</td><td>Unchanged</td><td>Layer 4, then layer 3</td></tr>
+          <tr><td>Notification races the browser confirmation</td><td>One real payment</td><td><code>succeeded</code> once</td><td>First writer wins, second gets a unique violation and returns the same result</td></tr>
+          <tr><td>Notification is encrypted</td><td>Readable if we decrypt it</td><td>Processed normally</td><td>Body read as text and decrypted when the two headers are present</td></tr>
+          <tr><td>Gateway reports a different amount</td><td>Something is wrong</td><td><code>held</code></td><td>No money recorded, no event emitted, a person is paged</td></tr>
+          <tr><td>Merchant retries creation after a timeout</td><td>One intended payment</td><td>Original returned</td><td>Layer 1</td></tr>
+          <tr><td>Two browser tabs on one intent</td><td>One intended payment</td><td>One open attempt</td><td>The partial unique index refuses the second</td></tr>
+          <tr><td>Merchant's notification endpoint is down</td><td>We owe them the news</td><td>Queued</td><td>Nine retries over two days, then exhausted and visible on both panels</td></tr>
+          <tr><td>Merchant's endpoint is dead for days</td><td>Retrying is pointless</td><td>Disabled, events held</td><td>Auto-disable plus alert. Nothing is discarded</td></tr>
+          <tr><td>Box embedded on a domain not on the list</td><td>Configuration error</td><td>Rejected at init</td><td>A quiet, specific message and a reference code, not a generic outage screen</td></tr>
+          <tr><td>Apple Pay file removed by a merchant deployment</td><td>The button would fail</td><td>Wallet withdrawn</td><td>The daily recheck moves the domain out of verified and the button stops rendering</td></tr>
+          <tr><td>Issuer refuses to be framed for the challenge</td><td>Nothing wrong</td><td>Normal</td><td>The page escalates to the top window and returns</td></tr>
+          <tr><td>Gateway credentials wrong or undecryptable</td><td>Configuration error</td><td>Rejected at creation</td><td>The merchant's server gets a clear error. A shopper never sees a broken box</td></tr>
+          <tr><td>Gateway entirely unavailable</td><td>Nothing moves</td><td>Intent open</td><td>503 with a retry hint, and the box says so honestly</td></tr>
+          <tr><td>Unmatched gateway message</td><td><strong>Possibly a payment we do not know about</strong></td><td>Flagged</td><td>Stored, surfaced on <code>A-14</code>, alerted. Never dropped</td></tr>
+          <tr><td>Two workers pick the same attempt</td><td>One payment</td><td>One settlement</td><td>Conditional claim, then the unique constraints</td></tr>
+          <tr><td>Gateway switched while payments are in flight</td><td>Those are on the old account</td><td>They complete there</td><td>The provider account on the attempt, and the old account staying active for queries</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PART 15 · TESTS ══════════ -->
+<section id="t15">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">15</div>
+      <div class="txt">
+        <span class="eyebrow">Definition of done</span>
+        <h2>The tests that decide whether Phase 1 ships</h2>
+        <p class="lede">These are not a wish list. Phase 1 is finished when every one of them passes, and not before.</p>
+      </div>
+    </div>
+
+    <div class="cols">
+      <div class="card">
+        <span class="eyebrow">Money correctness</span>
+        <ul class="plain is-accent">
+          <li>A confirmation arriving after expiry still settles, exactly once.</li>
+          <li>An amount mismatch writes no money, emits no event, and produces a held payment.</li>
+          <li>A currency mismatch does the same.</li>
+          <li>A replayed confirmation returns the original result through the unique-violation path.</li>
+          <li>The sweeper settles an attempt whose browser poll never returned.</li>
+          <li>An acquirer cut-off result settles rather than failing.</li>
+          <li>A gateway response with no result code leaves the attempt open, never failed.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Idempotency and concurrency</span>
+        <ul class="plain is-accent">
+          <li>The same creation request twice produces one intent and two identical responses.</li>
+          <li>The same key with a different body returns 422.</li>
+          <li>An in-flight key returns 409.</li>
+          <li>Two tabs initialising at once produce one attempt.</li>
+          <li>A notification and a browser confirmation racing produce one settlement.</li>
+          <li>Two workers claiming one attempt produce one gateway call.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Security</span>
+        <ul class="plain is-alert">
+          <li>A key from one application cannot read another's intent, at the API and at the repository.</li>
+          <li>Row-level security blocks a cross-tenant read even when the repository filter is deliberately removed in the test.</li>
+          <li>Initialising from a domain not on the list is refused.</li>
+          <li>A forged notification settles nothing.</li>
+          <li>A notification URL resolving to a private or metadata address is refused at send time.</li>
+          <li>A hostname that resolves publicly then privately is still refused.</li>
+          <li>No raw gateway body reaches a logger, asserted by a build-time check.</li>
+          <li>A client secret cannot be brute forced within the rate limit.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Gateway adapter</span>
+        <ul class="plain">
+          <li>Recorded real responses used as fixtures: success, decline, pending, cut-off, parameter conflict, nothing-to-reverse, result-code-on-4xx, and an unreadable body.</li>
+          <li>The mapper never lets a gateway field name or code escape the adapter, asserted by a test that inspects the serialised output.</li>
+          <li>Reference build and parse round-trip for every attempt number up to 99.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="eyebrow">End to end, against the sandbox</span>
+        <ul class="plain">
+          <li>Card payment, success and decline.</li>
+          <li>Bank challenge, completed and abandoned.</li>
+          <li>Apple Pay on a real device, once <span class="chip is-flag">B3</span> and <span class="chip is-flag">B4</span> are answered.</li>
+          <li>Google Pay on a real device.</li>
+          <li>The box on a real third-party page, including the permission attribute.</li>
+          <li>An unverified domain hides the Apple Pay button and the card path still works.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="eyebrow">The human tests</span>
+        <ul class="plain">
+          <li>Someone outside the team integrates from the documentation alone, with no help, and takes a test payment.</li>
+          <li>A support person answers "what happened to this payment" using only the admin panel.</li>
+          <li>A gateway switch is performed on a test merchant with payments in flight, and none of them is lost.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PART 16 · BUILD ORDER ══════════ -->
+<section id="t16">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">16</div>
+      <div class="txt">
+        <span class="eyebrow">Sequence</span>
+        <h2>Build order</h2>
+        <p class="lede">Ordered so that the riskiest unknown is met early and the work that depends on an outside answer sits late.</p>
+      </div>
+    </div>
+
+    <div class="track">
+      <div class="step is-flag"><span class="n">WEEK 0</span><span class="h">Answers and scaffold</span><span class="d">Send the gateway questions. Lock the API contract. Service, database, deployment pipeline.</span></div>
+      <div class="step"><span class="n">WEEK 1 &ndash; 2</span><span class="h">Domain and schema</span><span class="d">All 21 tables with every constraint. State machines with the forbidden transitions tested first.</span></div>
+      <div class="step"><span class="n">WEEK 2 &ndash; 3</span><span class="h">Gateway adapter</span><span class="d">Against recorded fixtures, then the sandbox. Card only at this stage.</span></div>
+      <div class="step"><span class="n">WEEK 3 &ndash; 4</span><span class="h">API and idempotency</span><span class="d">Create, read, init, status. All four layers, with the concurrency tests.</span></div>
+    </div>
+    <div class="track" style="margin-top:14px;">
+      <div class="step"><span class="n">WEEK 4 &ndash; 5</span><span class="h">Page and loader</span><span class="d">Payment page as a standalone URL first, iframe embed second. Card path complete end to end.</span></div>
+      <div class="step"><span class="n">WEEK 5 &ndash; 6</span><span class="h">Notifications and sweeper</span><span class="d">Inbound, outbound, recovery, alerting. The first point at which no payment can be lost.</span></div>
+      <div class="step is-accent"><span class="n">WEEK 6 &ndash; 7</span><span class="h">Wallets</span><span class="d">Apple Pay and Google Pay, including domain verification. Deliberately here, because it is the part that waits on outside answers.</span></div>
+      <div class="step"><span class="n">WEEK 7 &ndash; 9</span><span class="h">Panels and hardening</span><span class="d">Both panels, roles, audit, rate limits, documentation, the full test suite, one pilot merchant.</span></div>
+    </div>
+
+    <div class="note is-flag" style="margin-top:32px;">
+      <span class="eyebrow">Honest note on the estimate</span>
+      <p>The earlier plan said six to eight weeks. Two things have been added since: the wallets, and sign-in with roles and invitations for two panels, which a brand new product cannot inherit from anywhere. <strong>Seven to nine weeks with two backend and one frontend developer working full time</strong> is the realistic figure, and it assumes the gateway answers B2 within the first fortnight. If that answer is late, the testing work moves and the date moves with it.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PART 17 · SOURCES ══════════ -->
+<section id="t17">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">17</div>
+      <div class="txt">
+        <span class="eyebrow">Provenance</span>
+        <h2>Where each claim came from</h2>
+      </div>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:38%">Source</th><th>Used for</th></tr></thead>
+        <tbody>
+          <tr><td><code>payments/afs/afs.service.ts</code></td><td>Gateway endpoints and payment types, the result-code families, the encryption layout, the rebuild-from-a-trusted-base rule, and the log redaction pattern</td></tr>
+          <tr><td><code>payments/payments.service.ts</code></td><td>Server-side amount recomputation, confirmation by re-query, the acquirer cut-off handling, the temporary-failure retry, and the row lock before settlement</td></tr>
+          <tr><td><code>payment/components/AfsWalletWidgetInline.tsx</code></td><td>The exact Apple Pay and Google Pay widget configuration, the device availability check, and the render timeout</td></tr>
+          <tr><td><code>billing/invoices/billing-collection.util.ts</code> and <code>billing-afs-webhook.util.ts</code></td><td>Deterministic references, the three-way result classification, the merchant advice code ladder, and encrypted notification handling</td></tr>
+          <tr><td><code>reconciliation/afs-report.types.ts</code></td><td>Why settlement identifiers must be persisted, and what the monthly report does and does not contain</td></tr>
+          <tr><td>ACI Open Payment Platform documentation</td><td>Payment types, the result-code taxonomy, notification encryption, retry schedule, and the absence of any ordering guarantee</td></tr>
+          <tr><td>Apple, on Apple Pay on the web</td><td>Domain registration, the association file path, the cross-origin permission attribute, and provider-level merchant registration</td></tr>
+          <tr><td>Google, on Google Pay in embedded contexts</td><td>The permission attribute requirement for the payment APIs inside a cross-origin frame</td></tr>
+          <tr><td>PCI Security Standards Council, 2025 changes</td><td>Which party owns which scripts on a payment page, and what a merchant using an embedded form needs from their provider in writing</td></tr>
+          <tr><td>The two earlier internal designs</td><td>The product surface came from the September checkout plan; the domain model came from the provider blueprint. Both are superseded by this document and the companion walkthrough</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note is-alert" style="margin-top:30px;">
+      <span class="eyebrow">Not available, and therefore not assumed</span>
+      <p>The gateway publishes no technical documentation of its own, no sandbox self-service, no schedule of charges and no onboarding checklist. Nothing in this document is attributed to them that has not been observed in Smooth Pay's own production traffic. Every remaining gap is a numbered question in &sect;2 rather than a guess.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ FOOTER ══════════ -->
+<footer class="foot">
+  <div class="shell">
+    <hr class="rule" style="margin-bottom:26px;">
+    <div class="r">
+      <span>Smooth Checkout &mdash; Technical Design</span>
+      <span>&middot;</span>
+      <span>Phase 1</span>
+      <span>&middot;</span>
+      <span>September 2026</span>
+      <span>&middot;</span>
+      <a href="../smooth-checkout-product-walkthrough/">Companion: Product Walkthrough &rarr;</a>
+    </div>
+  </div>
+</footer>
+<style>
+  .theme-toggle{
+    position:fixed; right:16px; bottom:16px; z-index:50;
+    display:inline-flex; align-items:center; gap:7px;
+    padding:9px 13px; border-radius:9px; cursor:pointer;
+    background:var(--raise); color:var(--ink);
+    border:1px solid var(--line-2);
+    font-family:var(--mono); font-size:0.68rem; font-weight:600;
+    letter-spacing:0.11em; text-transform:uppercase;
+    box-shadow:0 2px 14px rgba(0,0,0,0.10);
+  }
+  .theme-toggle:hover{ border-color:var(--accent); color:var(--accent); }
+  @media print{ .theme-toggle{ display:none; } }
+</style>
+
+<button class="theme-toggle" type="button" id="themeToggle" aria-label="Switch colour theme">
+  <span id="themeLabel">Dark</span>
+</button>
+
+<script>
+(function () {
+  var KEY = 'ss-docs-theme';
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  var label = document.getElementById('themeLabel');
+
+  function current() {
+    return root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+  function apply(theme) {
+    root.setAttribute('data-theme', theme);
+    label.textContent = theme === 'dark' ? 'Light' : 'Dark';
+  }
+  function stored() {
+    try { return localStorage.getItem(KEY) === 'dark' ? 'dark' : 'light'; }
+    catch (e) { return current(); }
+  }
+
+  apply(current());
+
+  btn.addEventListener('click', function () {
+    var next = current() === 'dark' ? 'light' : 'dark';
+    apply(next);
+    try { localStorage.setItem(KEY, next); } catch (e) {}
+  });
+
+  /* Toggled on another document of this site, in another tab. */
+  window.addEventListener('storage', function (e) {
+    if (e.key === KEY) apply(stored());
+  });
+  /* Restored from the back/forward cache, where the head script never reruns. */
+  window.addEventListener('pageshow', function (e) {
+    if (e.persisted) apply(stored());
+  });
+})();
+</script>
+</body>
+</html>
