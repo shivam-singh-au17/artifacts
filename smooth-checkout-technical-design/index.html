@@ -547,10 +547,10 @@ src/
           </tr>
           <tr>
             <td><strong>B3</strong></td>
-            <td>Who registers a merchant's web domain with Apple: the gateway on our behalf through Apple's provider registration interface, or each merchant through Apple's own portal?</td>
+            <td>Who registers a merchant's web domain with Apple: the gateway on our behalf through Apple's provider registration interface, or each merchant through Apple's own portal? <strong>And under which Apple Developer Team is that registration held?</strong></td>
             <td>Gateway</td>
             <td>Wallet module</td>
-            <td>Apple only allows the button on a domain it has checked, and for an embedded box the checked domain is the merchant's, not ours. The answer changes onboarding from one click to a guided process.</td>
+            <td>Apple only allows the button on a domain it has checked, and for an embedded box the checked domain is the merchant's, not ours. The answer changes onboarding from one click to a guided process. The second half matters more: Apple refuses to register one domain under two different developer teams, so the answer also decides whether Apple Pay can survive a merchant being moved to another gateway, or has to be re-established each time.</td>
           </tr>
           <tr>
             <td><strong>B4</strong></td>
@@ -630,9 +630,9 @@ src/
           </tr>
           <tr>
             <td><strong>B3</strong></td>
-            <td><strong>Build the longer path: issue the association file, the merchant hosts it, we fetch it to verify, then register.</strong></td>
+            <td><strong>Build the longer path: issue the association file, the merchant hosts it, we fetch it to verify, then register.</strong> Treat the registration as belonging to a gateway account rather than to a domain</td>
             <td>Apple validates the file on the domain hosting the payment page, and for an embedded box that is the merchant's domain, not ours. So the hosting step exists under every possible answer. If the gateway can register domains on our behalf through Apple's provider interface, our screen collapses to one button and the work already done still applies. Designing for that easier case first would mean rebuilding the screen if the answer goes the other way</td>
-            <td>The registration call sits behind one function with two implementations, selected by configuration: <em>we call the gateway's registration endpoint</em>, or <em>an operator completes it and marks it done from the admin panel</em>. Verification, state machine, daily re-check and the button-hiding rule are identical either way</td>
+            <td>The registration call sits behind one function with two implementations, selected by configuration: <em>we call the gateway's registration endpoint</em>, or <em>an operator completes it and marks it done from the admin panel</em>. Verification, state machine, daily re-check and the button-hiding rule are identical either way. The Apple Developer Team constraint is isolated the same way: the verified state is recorded against the gateway account that obtained it, not against the domain alone, so a switch re-opens the step for the new account instead of silently inheriting a registration that Apple may not honour</td>
           </tr>
           <tr>
             <td><strong>B4</strong></td>
@@ -1599,6 +1599,38 @@ wpwlOptions.googlePay = {
     </div>
     <p style="margin-top:16px;" class="prose"><strong>The reason this exists at all:</strong> for an embedded checkout, the page the shopper is on belongs to the merchant, and Apple checks the domain of that page, not the domain of our frame. So the file has to live on their server. This is the single most surprising requirement in Phase 1 and the one most likely to be discovered late if it is not written down here.</p>
 
+    <h4 style="margin:28px 0 12px;">The three Apple rules that shape all of this</h4>
+    <p class="prose">Taken from Apple's own environment configuration and maintenance pages. They are Apple's rules rather than any gateway's, so they hold whichever gateway sits behind a merchant. <span class="chip is-accent">Verified</span></p>
+    <div class="tw" style="margin-top:16px;">
+      <table>
+        <thead><tr><th style="width:38%">Apple's rule</th><th>What it means for us</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>The association file must be served <strong>at exactly that path, over HTTPS, with no redirect and no proxy in front of it</strong></td>
+            <td>We cannot host it for the merchant, and we cannot accept a merchant pointing that path at us. A host serves <strong>one</strong> file there, so whichever gateway's file is present is the one that works</td>
+          </tr>
+          <tr>
+            <td>The same domain <strong>may</strong> be registered under several merchant identifiers</td>
+            <td>Several of our merchants can share a domain, and one merchant can hold more than one identifier, without conflict</td>
+          </tr>
+          <tr>
+            <td>The same domain <strong>may not</strong> be registered under a different Apple Developer Team</td>
+            <td><strong>This is the constraint that matters.</strong> A gateway registers merchant domains under its own Apple Developer Team. So a domain already registered through one gateway's team may not be registrable through another's, and the file at that single path belongs to whichever gateway registered it</td>
+          </tr>
+          <tr>
+            <td>Verification lapses when the domain's certificate lapses, unless it is renewed</td>
+            <td>This is a second reason the daily re-check job in &sect;11 exists. A merchant renewing a certificate can silently lose Apple Pay, and we should find out before their shoppers do</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note is-alert" style="margin-top:22px;">
+      <span class="eyebrow">Consequence for the one thing this product is built to do</span>
+      <p>Moving a merchant from one gateway to another is the core promise of this service, and <strong>Apple Pay is the one capability that may not survive that move on its own.</strong> If the new gateway registers domains under a different Apple Developer Team, the merchant's domain has to be re-registered and the file at that fixed path replaced, and Apple may refuse the second registration while the first stands.</p>
+      <p>So the switch screen treats Apple Pay exactly the way it treats saved cards: as something that does not transfer by itself, counted and stated before the switch is confirmed rather than discovered afterwards. Card and Google Pay are unaffected, so a merchant mid-switch still takes payments normally.</p>
+    </div>
+
     <h3 style="margin:34px 0 14px;">8.6 Bank challenge inside a frame</h3>
     <p class="prose">Some issuers refuse to have their challenge page framed. The page therefore detects a frame that fails to render within a short window and escalates the whole top window to the challenge instead, returning to the payment page afterwards. <span class="chip">Decision</span> Both paths are built in Phase 1, because whichever one is skipped is the one a real card will need in week one.</p>
     <h3 style="margin:38px 0 14px;">8.7 The page message protocol</h3>
@@ -2105,6 +2137,8 @@ result_code  failure_code        amount_minor          currency
           <tr><td>Merchant's endpoint is dead for days</td><td>Retrying is pointless</td><td>Disabled, events held</td><td>Auto-disable plus alert. Nothing is discarded</td></tr>
           <tr><td>Box embedded on a domain not on the list</td><td>Configuration error</td><td>Rejected at init</td><td>A quiet, specific message and a reference code, not a generic outage screen</td></tr>
           <tr><td>Apple Pay file removed by a merchant deployment</td><td>The button would fail</td><td>Wallet withdrawn</td><td>The daily recheck moves the domain out of verified and the button stops rendering</td></tr>
+          <tr><td>Merchant's certificate renewed, Apple verification lapses</td><td>The button would fail</td><td>Wallet withdrawn</td><td>Same daily recheck. Apple ties verification to the certificate, so this is expected rather than exceptional</td></tr>
+          <tr><td>Merchant switched to a gateway under a different Apple Developer Team</td><td><strong>Apple Pay does not transfer</strong></td><td>Wallet withdrawn for that domain until re-verified</td><td>Verified state is held per gateway account, so the switch re-opens the verification step. Card and Google Pay are unaffected and the merchant keeps taking payments throughout. Counted and stated on the switch screen before it is confirmed</td></tr>
           <tr><td>Issuer refuses to be framed for the challenge</td><td>Nothing wrong</td><td>Normal</td><td>The page escalates to the top window and returns</td></tr>
           <tr><td>Gateway credentials wrong or undecryptable</td><td>Configuration error</td><td>Rejected at creation</td><td>The merchant's server gets a clear error. A shopper never sees a broken box</td></tr>
           <tr><td>Gateway entirely unavailable</td><td>Nothing moves</td><td>Intent open</td><td>503 with a retry hint, and the box says so honestly</td></tr>

@@ -560,8 +560,8 @@ ul.plain.is-flag li::before{ background:var(--flag); }
         <tbody>
           <tr>
             <td><strong>The gateway behind a website</strong></td>
-            <td>Only payments started <em>after</em> the switch go to the new gateway.</td>
-            <td>Their keys, their code, their notification URL, their address list, and every payment already taken. This is the entire point of the product.</td>
+            <td>Only payments started <em>after</em> the switch go to the new gateway. <strong>Apple Pay also has to be set up again</strong>, because Apple ties a web address to the payment company that registered it, and the file on their server belongs to that company.</td>
+            <td>Their keys, their code, their notification URL, their address list, card payments, Google Pay, and every payment already taken. This is the entire point of the product. Apple Pay is the single exception, and the switch screen says so before anything is confirmed.</td>
           </tr>
           <tr>
             <td><strong>A secret key is revoked</strong></td>
@@ -1273,7 +1273,7 @@ ul.plain.is-flag li::before{ background:var(--flag); }
             <div class="wf-body">
               <div class="wf-block"><span class="wf-t">acme.example</span><span class="wf-s">From: AFS (live) &rarr; To: (choose)</span></div>
               <div class="wf-field">new gateway account</div>
-              <div class="wf-block is-flag"><span class="wf-t">Before you switch</span><span class="wf-s">14 payments are in progress. They will complete on the old gateway.<br>Old connection stays available for refunds and settlement.<br>0 saved cards affected.</span></div>
+              <div class="wf-block is-flag"><span class="wf-t">Before you switch</span><span class="wf-s">14 payments are in progress. They will complete on the old gateway.<br>Old connection stays available for refunds and settlement.<br>0 saved cards affected.<br><strong>Apple Pay: 2 addresses need verifying again.</strong> Card and Google Pay keep working.</span></div>
               <div class="wf-field">type "acme.example" to confirm</div>
               <div class="wf-btn">Switch gateway</div>
             </div>
@@ -2165,6 +2165,7 @@ ul.plain.is-flag li::before{ background:var(--flag); }
         <p>Apple only allows the Apple Pay button on a website it has checked in advance. Because our box sits inside the business's page, <strong>it is the business's own web address that Apple checks, not ours.</strong></p>
         <p>So the business has to put one small file on their own server, at a fixed path, and we then ask Apple to verify it. Screen <code>M-04</code> exists entirely for this.</p>
         <p>Until it is verified, we do not render the button.</p>
+        <p><strong>One more rule of Apple's, and it is the one with consequences.</strong> Apple lets several businesses share a web address, but it does not let the same web address be registered by two different payment companies. The file sits at one fixed path, and it belongs to whichever gateway put it there. So Apple Pay is tied to the gateway that set it up, and moving a business to a different gateway means doing this step again.</p>
       </div>
       <div class="card">
         <span class="eyebrow">Google Pay</span>
@@ -2411,7 +2412,7 @@ ul.plain.is-flag li::before{ background:var(--flag); }
           <tr><th style="width:6%">#</th><th style="width:36%">Question</th><th style="width:16%">Who answers</th><th>What it blocks</th></tr>
         </thead>
         <tbody>
-          <tr><td>1</td><td>Who registers a business's web address with Apple: the gateway on our behalf, or each business through Apple's own portal?</td><td>The gateway, in writing</td><td>The shape of <code>M-04</code>. Not the rest of Phase 1</td></tr>
+          <tr><td>1</td><td>Who registers a business's web address with Apple: the gateway on our behalf, or each business through Apple's own portal? And whose Apple account holds that registration, since Apple will not let two payment companies register the same address?</td><td>The gateway, in writing</td><td>The shape of <code>M-04</code>, and whether Apple Pay survives moving a business to another gateway. Not the rest of Phase 1</td></tr>
           <tr><td>2</td><td>Are Apple Pay and Google Pay enabled on our sandbox, so this can be tested before going live?</td><td>The gateway</td><td>Testing the wallet work at all</td></tr>
           <tr><td>3</td><td>What are the sandbox test card numbers, and does the sandbox decide the result from the card or from the amount?</td><td>The gateway</td><td><code>M-07</code> and the whole test-mode promise</td></tr>
           <tr><td>4</td><td>Can a separate notification address be set for the sandbox and for live, on the same account?</td><td>The gateway</td><td>Keeping test and live cleanly apart</td></tr>
@@ -2438,8 +2439,8 @@ ul.plain.is-flag li::before{ background:var(--flag); }
         <tbody>
           <tr>
             <td><strong>1</strong></td>
-            <td><strong>Build for the harder case: the business hosts one file on their own site, and we verify it.</strong></td>
-            <td>Apple checks the file on the business's own website whichever route we take, so that step exists either way. If the gateway turns out to register domains for us, our screen simply becomes one click instead of three steps. Designing for the easier case first would mean rebuilding the screen if the answer is the harder one.</td>
+            <td><strong>Build for the harder case: the business hosts one file on their own site, and we verify it.</strong> And record that verification against the gateway it was obtained through, not against the address on its own</td>
+            <td>Apple checks the file on the business's own website whichever route we take, so that step exists either way. If the gateway turns out to register domains for us, our screen simply becomes one click instead of three steps. Designing for the easier case first would mean rebuilding the screen if the answer is the harder one.<br><br>Recording it against the gateway matters for the same reason: Apple will not let two payment companies register one web address, so a business moved to a different gateway has to do this step again. Storing it that way makes the switch screen able to warn them instead of the button quietly disappearing.</td>
             <td>Nothing stops. Screen <code>M-04</code> is built as the guided version, and the registration call itself is one small piece that is switched on when the gateway answers.</td>
           </tr>
           <tr>
