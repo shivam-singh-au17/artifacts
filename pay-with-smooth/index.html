@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex, nofollow">
+<title>Pay with Smooth &middot; Checkout for your own website</title>
+<meta name="description" content="Add a Pay with Smooth button to your website and take Apple Pay, Google Pay, card and Tabby payments. Screen by screen, plus everything your developer needs.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#128179;</text></svg>">
+
+<!-- Theme, applied before first paint. Light unless this browser chose dark
+     on any page of the site; the key is shared by every document. -->
+<script>
+(function () {
+  var saved;
+  try { saved = localStorage.getItem('ss-docs-theme'); } catch (e) {}
+  document.documentElement.setAttribute('data-theme', saved === 'dark' ? 'dark' : 'light');
+})();
+</script>
+
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  img,svg{max-width:100%;height:auto}
+  body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+</style>
+</head>
+<body>
+
+<div style="border-bottom:1px solid var(--line);background:var(--surface);">
+  <div style="max-width:1120px;margin-inline:auto;padding:11px clamp(18px,4vw,48px);">
+    <a href="../" style="font-family:var(--mono);font-size:0.68rem;font-weight:600;letter-spacing:0.13em;text-transform:uppercase;color:var(--slate);text-decoration:none;">&#8592;&nbsp;&nbsp;Shivam Singh &middot; Documents</a>
+  </div>
+</div>
+<style>
+/* ────────────────────────────────────────────────
+   TOKENS
+   ──────────────────────────────────────────────── */
+:root{
+  color-scheme:light;
+  --paper:#FCFCFB; --surface:#F3F6F4; --raise:#FFFFFF;
+  --ink:#0D1512; --ink-2:#39473F; --slate:#61706A;
+  --line:#E1E7E3; --line-2:#CBD5D0;
+  --accent:#088F58; --accent-strong:#0AB971; --accent-bg:#E8F7F0;
+  --tabby:#0B8E71; --tabby-bg:#E2FAF2;
+  --flag:#9C5C0C; --flag-bg:#FBF1E1;
+  --alert:#A93028; --alert-bg:#FBEAE8;
+
+  /* the live customer app's own values, so the mockups are not an approximation */
+  --app-bg:#EDEDED; --app-card:#FFFFFF; --app-ink:#212121; --app-mute:#8A8F8C;
+  --app-green:#0AB971; --app-green-bg:#E7F8F1; --app-btn:#060201;
+  --app-line:#E6E8E7;
+
+  --sans:ui-sans-serif,"Segoe UI Variable Text","SF Pro Text",-apple-system,"Segoe UI",system-ui,"Helvetica Neue",sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","Segoe UI Mono",Consolas,"Liberation Mono",monospace;
+  --shell:1120px; --prose:69ch;
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#0A100D; --surface:#101815; --raise:#131D19;
+  --ink:#ECF2EF; --ink-2:#BDCAC4; --slate:#84968E;
+  --line:#1E2C26; --line-2:#2C3D36;
+  --accent:#2ED68F; --accent-strong:#3FE39C; --accent-bg:#0D2A1F;
+  --tabby:#3EEDBF; --tabby-bg:#082A22;
+  --flag:#E3AC5C; --flag-bg:#2A2013;
+  --alert:#EC7A70; --alert-bg:#2B1512;
+}
+:root[data-theme="light"]{
+  --paper:#FCFCFB; --surface:#F3F6F4; --raise:#FFFFFF;
+  --ink:#0D1512; --ink-2:#39473F; --slate:#61706A;
+  --line:#E1E7E3; --line-2:#CBD5D0;
+  --accent:#088F58; --accent-strong:#0AB971; --accent-bg:#E8F7F0;
+  --tabby:#0B8E71; --tabby-bg:#E2FAF2;
+  --flag:#9C5C0C; --flag-bg:#FBF1E1;
+  --alert:#A93028; --alert-bg:#FBEAE8;
+}
+
+/* ────────────────────────────────────────────────
+   BASE
+   ──────────────────────────────────────────────── */
+html{ -webkit-text-size-adjust:100%; }
+body{ background:var(--paper); color:var(--ink); font-family:var(--sans); font-size:16.5px; line-height:1.62; letter-spacing:-0.005em; overflow-x:hidden; }
+.shell{ max-width:var(--shell); margin-inline:auto; padding-inline:clamp(18px,4vw,48px); }
+.prose{ max-width:var(--prose); }
+p{ margin:0 0 1.05em; color:var(--ink-2); }
+p:last-child{ margin-bottom:0; }
+strong{ color:var(--ink); font-weight:650; }
+a{ color:var(--accent); text-decoration-thickness:1px; text-underline-offset:2px; }
+a:focus-visible,button:focus-visible{ outline:2px solid var(--accent-strong); outline-offset:3px; border-radius:3px; }
+h1,h2,h3,h4{ color:var(--ink); text-wrap:balance; margin:0; }
+h1{ font-size:clamp(2.5rem,6vw,4.1rem); font-weight:760; letter-spacing:-0.038em; line-height:1.02; }
+h2{ font-size:clamp(1.6rem,3.2vw,2.3rem); font-weight:720; letter-spacing:-0.028em; line-height:1.12; }
+h3{ font-size:1.19rem; font-weight:680; letter-spacing:-0.018em; line-height:1.28; }
+h4{ font-size:1rem; font-weight:670; letter-spacing:-0.01em; }
+.eyebrow{ font-family:var(--mono); font-size:0.685rem; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--slate); }
+.lede{ font-size:1.16rem; line-height:1.55; color:var(--ink-2); }
+code,.mono{ font-family:var(--mono); font-size:0.86em; letter-spacing:-0.01em; }
+code{ background:var(--surface); border:1px solid var(--line); border-radius:4px; padding:0.08em 0.36em; color:var(--ink); overflow-wrap:anywhere; }
+hr.rule{ border:0; border-top:1px solid var(--line); margin:0; }
+
+/* ────────────────────────────────────────────────
+   COVER
+   ──────────────────────────────────────────────── */
+.cover{ padding-block:clamp(56px,9vw,104px) clamp(40px,6vw,64px); border-bottom:1px solid var(--line); }
+.cover .kicker{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:26px; }
+.cover h1{ margin-bottom:22px; }
+.cover .sub{ font-size:clamp(1.1rem,2vw,1.32rem); line-height:1.5; color:var(--slate); max-width:60ch; }
+.meta-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(178px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-top:44px; }
+.meta-grid > div{ background:var(--paper); padding:16px 18px; }
+.meta-grid dt{ font-family:var(--mono); font-size:0.66rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--slate); margin-bottom:6px; }
+.meta-grid dd{ margin:0; font-size:0.94rem; font-weight:600; color:var(--ink); }
+
+/* ────────────────────────────────────────────────
+   CHIPS
+   ──────────────────────────────────────────────── */
+.chip{ display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:0.66rem; font-weight:600; letter-spacing:0.09em; text-transform:uppercase; padding:4px 9px; border-radius:5px; border:1px solid var(--line-2); color:var(--slate); background:var(--surface); white-space:nowrap; }
+.chip.is-accent{ color:var(--accent); border-color:color-mix(in srgb,var(--accent) 34%,transparent); background:var(--accent-bg); }
+.chip.is-tabby{ color:var(--tabby); border-color:color-mix(in srgb,var(--tabby) 36%,transparent); background:var(--tabby-bg); }
+
+/* ────────────────────────────────────────────────
+   SECTIONS
+   ──────────────────────────────────────────────── */
+section{ padding-block:clamp(48px,7vw,86px); border-bottom:1px solid var(--line); }
+section:last-of-type{ border-bottom:0; }
+.sec-head{ display:flex; flex-direction:column; gap:14px; margin-bottom:38px; max-width:var(--prose); }
+.part-head{ display:grid; grid-template-columns:auto 1fr; gap:clamp(18px,3vw,34px); align-items:start; margin-bottom:42px; }
+.part-num{ font-family:var(--mono); font-size:clamp(2.6rem,6vw,4.2rem); font-weight:600; line-height:0.82; color:var(--line-2); letter-spacing:-0.05em; }
+.part-head .txt{ display:flex; flex-direction:column; gap:12px; max-width:var(--prose); }
+.stack{ display:flex; flex-direction:column; gap:clamp(20px,3vw,32px); }
+.cols{ display:grid; gap:clamp(16px,2.4vw,26px); grid-template-columns:repeat(auto-fit,minmax(272px,1fr)); }
+
+/* ────────────────────────────────────────────────
+   CARDS
+   ──────────────────────────────────────────────── */
+.card{ background:var(--raise); border:1px solid var(--line); border-radius:12px; padding:clamp(18px,2.6vw,26px); display:flex; flex-direction:column; gap:13px; }
+.card > .eyebrow{ margin-bottom:-4px; }
+.card p{ font-size:0.955rem; }
+.note{ border:1px solid var(--line); border-radius:10px; padding:16px 18px; background:var(--surface); display:flex; flex-direction:column; gap:8px; }
+.note.is-accent{ background:var(--accent-bg); border-color:color-mix(in srgb,var(--accent) 26%,transparent); }
+.note.is-tabby{ background:var(--tabby-bg); border-color:color-mix(in srgb,var(--tabby) 26%,transparent); }
+.note p{ margin:0; font-size:0.93rem; }
+.note .eyebrow{ color:inherit; opacity:0.85; }
+.note.is-accent .eyebrow{ color:var(--accent); }
+
+/* ────────────────────────────────────────────────
+   CODE
+   ──────────────────────────────────────────────── */
+pre{ margin:0; overflow-x:auto; background:var(--surface); border:1px solid var(--line); border-radius:11px; padding:16px 18px; font-family:var(--mono); font-size:0.795rem; line-height:1.66; color:var(--ink-2); letter-spacing:-0.005em; }
+pre b{ color:var(--ink); font-weight:650; }
+pre i{ color:var(--slate); font-style:normal; }
+pre em{ color:var(--accent); font-style:normal; font-weight:600; }
+.pre-label{ font-family:var(--mono); font-size:0.66rem; letter-spacing:0.13em; text-transform:uppercase; color:var(--slate); margin-bottom:8px; display:block; }
+
+/* ────────────────────────────────────────────────
+   TABLES
+   ──────────────────────────────────────────────── */
+.tw{ overflow-x:auto; border:1px solid var(--line); border-radius:11px; background:var(--raise); }
+table{ border-collapse:collapse; width:100%; min-width:540px; font-size:0.91rem; }
+th,td{ text-align:left; padding:12px 15px; border-bottom:1px solid var(--line); vertical-align:top; }
+thead th{ font-family:var(--mono); font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--slate); font-weight:600; background:var(--surface); white-space:nowrap; }
+tbody tr:last-child td{ border-bottom:0; }
+
+/* ────────────────────────────────────────────────
+   LISTS
+   ──────────────────────────────────────────────── */
+ul.plain{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:9px; }
+ul.plain li{ position:relative; padding-left:19px; font-size:0.955rem; color:var(--ink-2); line-height:1.55; }
+ul.plain li::before{ content:""; position:absolute; left:2px; top:0.62em; width:6px; height:6px; border-radius:1.5px; background:var(--line-2); }
+ul.plain.is-accent li::before{ background:var(--accent); }
+
+/* ────────────────────────────────────────────────
+   CONTENTS
+   ──────────────────────────────────────────────── */
+.toc{ display:grid; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:12px; overflow:hidden; grid-template-columns:repeat(auto-fit,minmax(238px,1fr)); }
+.toc a{ background:var(--raise); padding:13px 16px; text-decoration:none; color:var(--ink); display:flex; gap:11px; align-items:baseline; }
+.toc a:hover{ background:var(--accent-bg); }
+.toc a .n{ font-family:var(--mono); font-size:0.68rem; color:var(--slate); font-weight:600; flex:none; }
+.toc a .t{ font-size:0.93rem; font-weight:620; letter-spacing:-0.012em; line-height:1.35; }
+.toc a .s{ display:block; font-size:0.8rem; color:var(--slate); font-weight:400; margin-top:2px; }
+[id]{ scroll-margin-top:22px; }
+
+/* ════════════════════════════════════════════════
+   PHONE MOCKUP  (recreates the live payment screen)
+   ════════════════════════════════════════════════ */
+.rail{ display:grid; gap:clamp(20px,3vw,30px); grid-template-columns:repeat(auto-fit,minmax(256px,1fr)); align-items:start; }
+.shot{ display:flex; flex-direction:column; gap:13px; }
+.shot .cap{ display:flex; flex-direction:column; gap:5px; }
+.shot .cap .n{ font-family:var(--mono); font-size:0.66rem; font-weight:600; letter-spacing:0.13em; text-transform:uppercase; color:var(--accent); }
+.shot .cap .t{ font-weight:660; font-size:1rem; letter-spacing:-0.014em; color:var(--ink); }
+.shot .cap .d{ font-size:0.88rem; color:var(--slate); line-height:1.5; }
+
+.phone{
+  width:100%; max-width:292px; margin-inline:auto;
+  border:9px solid #14181A; border-radius:34px;
+  background:var(--app-bg); overflow:hidden;
+  box-shadow:0 14px 40px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.10);
+}
+:root[data-theme="dark"] .phone{ border-color:#2A3330; box-shadow:0 14px 40px rgba(0,0,0,0.5); }
+.phone .notch{ height:20px; background:#14181A; display:flex; align-items:center; justify-content:center; }
+:root[data-theme="dark"] .phone .notch{ background:#2A3330; }
+.phone .notch i{ display:block; width:52px; height:5px; border-radius:99px; background:rgba(255,255,255,0.22); }
+.scr{ padding:9px; display:flex; flex-direction:column; gap:8px; color:var(--app-ink); font-size:11px; line-height:1.42; }
+
+.ac{ background:var(--app-card); border-radius:13px; padding:11px 12px; }
+.ac.tight{ padding:9px 11px; }
+.arow{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.amute{ color:var(--app-mute); }
+.ah{ font-weight:680; font-size:12px; letter-spacing:-0.01em; }
+.abig{ font-weight:760; font-size:27px; letter-spacing:-0.03em; line-height:1.05; }
+.acen{ text-align:center; }
+.alab{ font-family:var(--mono); font-size:8.5px; letter-spacing:0.14em; text-transform:uppercase; color:var(--app-mute); }
+.asep{ height:1px; background:var(--app-line); margin:7px 0; }
+
+.abrand{ display:flex; align-items:center; gap:8px; }
+.alogo{ width:26px; height:26px; border-radius:7px; background:linear-gradient(135deg,#0AB971,#088F58); flex:none; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:760; font-size:11px; }
+.apill{ border:1px solid var(--app-line); border-radius:99px; padding:3px 8px; font-size:9.5px; color:var(--app-mute); white-space:nowrap; }
+
+.atip{ display:grid; grid-template-columns:repeat(4,1fr); gap:5px; }
+.atip > span{ border:1px solid var(--app-line); border-radius:9px; padding:9px 2px; text-align:center; font-size:10px; font-weight:600; background:#fff; position:relative; }
+.atip > span.on{ border-color:var(--app-green); background:var(--app-green-bg); }
+.abadge{ position:absolute; left:50%; transform:translateX(-50%); bottom:-6px; background:var(--app-green); color:#fff; font-size:7px; font-weight:700; padding:1px 5px; border-radius:4px; white-space:nowrap; letter-spacing:0.02em; }
+.afield{ border:1px solid var(--app-green); border-radius:10px; padding:9px 11px; color:var(--app-mute); font-size:10.5px; background:#fff; }
+
+.amrow{ display:flex; align-items:center; gap:9px; border:1px solid var(--app-line); border-radius:12px; padding:9px 11px; background:#fff; }
+.amrow.on{ border-color:var(--app-green); background:var(--app-green-bg); }
+.amico{ width:34px; height:20px; border-radius:5px; border:1px solid var(--app-line); background:#fff; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:700; flex:none; letter-spacing:-0.02em; }
+.amico.dark{ background:#1C1C1E; border-color:#1C1C1E; color:#fff; }
+.amico.tab{ background:#3BEBA0; border-color:#3BEBA0; color:#04231A; }
+.amsep{ width:1px; align-self:stretch; background:var(--app-line); }
+.amname{ flex:1; font-size:11px; }
+.amrad{ width:14px; height:14px; border-radius:50%; border:1.5px solid #CFD4D2; flex:none; }
+.amrow.on .amrad{ border-color:var(--app-green); background:var(--app-green); box-shadow:inset 0 0 0 2.5px #fff; }
+
+.abtn{ background:var(--app-btn); color:#fff; border-radius:99px; height:38px; display:flex; align-items:center; justify-content:center; gap:6px; font-size:12px; font-weight:600; letter-spacing:-0.01em; }
+.abtn.ghost{ background:#fff; color:var(--app-ink); border:1px solid var(--app-line); }
+.afoot{ text-align:center; font-size:8px; color:var(--app-mute); line-height:1.4; }
+.asecure{ display:inline-flex; align-items:center; gap:4px; color:var(--app-green); font-size:10px; font-weight:620; }
+.atick{ width:30px; height:30px; border-radius:50%; background:var(--app-green); color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; margin:0 auto 7px; }
+.askel{ height:11px; border-radius:5px; background:var(--app-line); }
+
+/* browser frame, for the merchant's own website */
+.brow{
+  width:100%; border:1px solid var(--line-2); border-radius:13px; overflow:hidden;
+  background:var(--raise); box-shadow:0 10px 30px rgba(0,0,0,0.08);
+}
+.brow .bar{ display:flex; align-items:center; gap:8px; padding:8px 11px; background:var(--surface); border-bottom:1px solid var(--line); }
+.brow .dots{ display:flex; gap:4px; }
+.brow .dots i{ width:7px; height:7px; border-radius:50%; background:var(--line-2); display:block; }
+.brow .url{ flex:1; background:var(--raise); border:1px solid var(--line); border-radius:99px; padding:3px 10px; font-family:var(--mono); font-size:9.5px; color:var(--slate); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.brow .body{ padding:13px; display:flex; flex-direction:column; gap:9px; font-size:11.5px; }
+.bblk{ border:1px solid var(--line); border-radius:9px; padding:10px 11px; display:flex; flex-direction:column; gap:5px; background:var(--raise); }
+.bblk.ghost{ border-style:dashed; opacity:0.72; }
+.bt{ font-weight:660; color:var(--ink); font-size:11.5px; }
+.bs{ color:var(--slate); font-size:10.5px; line-height:1.45; }
+.bbtn{ border-radius:9px; height:36px; display:flex; align-items:center; justify-content:center; gap:7px; font-weight:660; font-size:11.5px; background:var(--app-btn); color:#fff; }
+.bbtn.smooth{ background:linear-gradient(135deg,#0AB971,#088F58); color:#fff; }
+.bline{ height:1px; background:var(--line); }
+
+/* flow strip */
+.flow{ display:grid; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:12px; overflow:hidden; grid-template-columns:repeat(auto-fit,minmax(168px,1fr)); }
+.flow .st{ background:var(--raise); padding:16px 17px 19px; display:flex; flex-direction:column; gap:7px; }
+.flow .st .n{ font-family:var(--mono); font-size:0.66rem; letter-spacing:0.12em; color:var(--slate); }
+.flow .st .h{ font-weight:660; font-size:0.95rem; letter-spacing:-0.012em; }
+.flow .st .d{ font-size:0.85rem; color:var(--slate); line-height:1.5; }
+.flow .st.is-accent{ background:var(--accent-bg); }
+.flow .st.is-accent .n{ color:var(--accent); }
+
+/* method tiles */
+.meth{ display:grid; gap:clamp(14px,2vw,20px); grid-template-columns:repeat(auto-fit,minmax(218px,1fr)); }
+.mtile{ background:var(--raise); border:1px solid var(--line); border-radius:12px; padding:18px 19px; display:flex; flex-direction:column; gap:10px; }
+.mtile .mi{ width:44px; height:30px; border-radius:7px; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:10px; letter-spacing:-0.02em; background:var(--surface); color:var(--ink); }
+.mtile .mi.dark{ background:#1C1C1E; border-color:#1C1C1E; color:#fff; }
+.mtile .mi.tab{ background:#3BEBA0; border-color:#3BEBA0; color:#04231A; }
+.mtile .mn{ font-weight:670; font-size:1rem; letter-spacing:-0.014em; }
+.mtile .md{ font-size:0.9rem; color:var(--slate); line-height:1.5; }
+
+/* foot */
+.foot{ padding-block:44px 66px; color:var(--slate); font-size:0.88rem; }
+.foot .r{ display:flex; flex-wrap:wrap; gap:10px 22px; align-items:center; }
+@media (prefers-reduced-motion:reduce){ *{ animation:none !important; transition:none !important; } }
+</style>
+
+<!-- ══════════ COVER ══════════ -->
+<section class="cover">
+  <div class="shell">
+    <div class="kicker">
+      <span class="chip is-accent">Checkout for your website</span>
+      <span class="chip">Apple Pay</span>
+      <span class="chip">Google Pay</span>
+      <span class="chip">Cards</span>
+      <span class="chip is-tabby">Tabby</span>
+    </div>
+
+    <h1>Pay with<br>Smooth</h1>
+
+    <p class="sub">Add one button to your checkout page and start taking Apple Pay, Google Pay, card and pay-later payments. Your customer pays on a secure Smooth page and comes straight back to you, and your system is told the moment the money is confirmed.</p>
+
+    <dl class="meta-grid">
+      <div><dt>Your side</dt><dd>One button, two API calls</dd></div>
+      <div><dt>Methods included</dt><dd>Apple Pay, Google Pay, cards, Tabby</dd></div>
+      <div><dt>Card details</dt><dd>Never touch your servers</dd></div>
+      <div><dt>Built on</dt><dd>Smooth&rsquo;s live payment page</dd></div>
+    </dl>
+  </div>
+</section>
+
+<!-- ══════════ CONTENTS ══════════ -->
+<section id="contents">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">Contents</span>
+      <h2>What is in this document</h2>
+      <p>Parts 1 to 4 are the product, written for anyone. Part 5 is written for your developer and has everything they need to build against.</p>
+    </div>
+    <div class="toc">
+      <a href="#p1"><span class="n">01</span><span class="t">How it works<span class="s">The whole thing in five steps</span></span></a>
+      <a href="#p2"><span class="n">02</span><span class="t">What your customer sees<span class="s">Every screen, in order</span></span></a>
+      <a href="#p3"><span class="n">03</span><span class="t">The payment methods<span class="s">Four ways to pay, all included</span></span></a>
+      <a href="#p4"><span class="n">04</span><span class="t">How you know it is paid<span class="s">The confirmation your system receives</span></span></a>
+      <a href="#p5"><span class="n">05</span><span class="t">For your developer<span class="s">Endpoints, payloads, signatures, going live</span></span></a>
+      <a href="#p6"><span class="n">06</span><span class="t">Getting started<span class="s">What we need from you, and what you get</span></span></a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 01 · HOW IT WORKS ══════════ -->
+<section id="p1">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">01</div>
+      <div class="txt">
+        <span class="eyebrow">The idea</span>
+        <h2>How it works</h2>
+        <p class="lede">Your website keeps doing what it already does. When it is time to take the money, you hand that one job to Smooth and get the result back.</p>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="st"><span class="n">STEP 1</span><span class="h">Your customer chooses to pay</span><span class="d">On your own checkout page, they pick <strong>Pay with Smooth</strong> alongside your other options.</span></div>
+      <div class="st"><span class="n">STEP 2</span><span class="h">Your server asks us for a payment</span><span class="d">One API call with the amount and your order number. We reply with a secure payment address.</span></div>
+      <div class="st is-accent"><span class="n">STEP 3</span><span class="h">They pay on the Smooth page</span><span class="d">Apple Pay, Google Pay, card or Tabby. The same page that already takes payments every day.</span></div>
+      <div class="st"><span class="n">STEP 4</span><span class="h">We confirm and tell your server</span><span class="d">The moment the money is confirmed, we send your system a signed confirmation carrying your order number.</span></div>
+      <div class="st"><span class="n">STEP 5</span><span class="h">Your customer is back with you</span><span class="d">They land on whichever page of yours you chose, with the payment already recorded on your side.</span></div>
+    </div>
+
+    <div class="cols" style="margin-top:34px;">
+      <div class="card">
+        <span class="eyebrow">What you build</span>
+        <p>A button, one call to create the payment, and one small endpoint that receives our confirmation. That is the whole integration.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">What you never handle</span>
+        <p>Card numbers. They are entered on the payment page and go straight to the bank&rsquo;s own secure system. They never pass through your website or your servers.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">What you always control</span>
+        <p>The amount, which is set by your server and cannot be changed in anyone&rsquo;s browser, and where your customer is sent afterwards.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 02 · SCREENS ══════════ -->
+<section id="p2">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">02</div>
+      <div class="txt">
+        <span class="eyebrow">Screen by screen</span>
+        <h2>What your customer sees</h2>
+        <p class="lede">Five screens, start to finish. The payment screens below are the real Smooth payment page, which is already taking live payments today.</p>
+      </div>
+    </div>
+
+    <div class="rail">
+
+      <!-- 1 · their checkout -->
+      <div class="shot">
+        <div class="brow">
+          <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">your-website.com/checkout</div></div>
+          <div class="body">
+            <div class="bblk ghost"><span class="bt">Your Store</span><span class="bs">Your header, your design</span></div>
+            <div class="bblk"><span class="bt">Order summary</span><span class="bs">2 items</span><div class="bline"></div><div class="arow" style="font-size:11.5px;"><span class="bs">Total</span><span class="bt">AED 125.46</span></div></div>
+            <span class="bs" style="font-family:var(--mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;">Payment</span>
+            <div class="bbtn smooth">Pay with Smooth</div>
+            <span class="bs" style="text-align:center;">Apple&nbsp;Pay &middot; Google&nbsp;Pay &middot; Cards &middot; Tabby</span>
+            <div class="bbtn ghost" style="background:transparent;color:var(--slate);border:1px solid var(--line);">Your other payment options</div>
+          </div>
+        </div>
+        <div class="cap">
+          <span class="n">Screen 1</span>
+          <span class="t">Your checkout page</span>
+          <span class="d">The button sits with your other options, and the line underneath tells the customer what they will be able to use. Your page, your design, your wording.</span>
+        </div>
+      </div>
+
+      <!-- 2 · smooth payment page -->
+      <div class="shot">
+        <div class="phone">
+          <div class="notch"><i></i></div>
+          <div class="scr">
+            <div class="ac tight">
+              <div class="arow">
+                <span class="abrand"><span class="alogo">S</span><span><span style="font-weight:680;display:block;">Your Store</span><span class="amute" style="font-size:9px;">Secure payment</span></span></span>
+                <span class="apill">Order #4821</span>
+              </div>
+            </div>
+            <div class="ac acen">
+              <span class="alab">Payable amount</span>
+              <div class="abig" style="margin:5px 0 3px;">AED 125.46</div>
+              <span class="amute" style="font-size:9.5px;">Inclusive of all taxes and charges</span>
+            </div>
+            <div class="ac">
+              <div class="ah" style="margin-bottom:7px;">Payment Summary</div>
+              <div class="arow" style="margin-bottom:4px;"><span class="amute">Order amount</span><span>AED 123.00</span></div>
+              <div class="arow"><span class="amute">Processing</span><span>AED 2.46</span></div>
+              <div class="asep"></div>
+              <div class="arow"><span class="ah">You Pay</span><span class="ah">AED 125.46</span></div>
+            </div>
+            <div class="ac">
+              <div class="arow" style="margin-bottom:8px;"><span class="ah">Payment Method</span><span class="asecure">&#10003; Secure</span></div>
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <div class="amrow"><span class="amico dark">Apple</span><span class="amsep"></span><span class="amname">Apple Pay</span><span class="amrad"></span></div>
+                <div class="amrow on"><span class="amico">G Pay</span><span class="amsep"></span><span class="amname">Google Pay</span><span class="amrad"></span></div>
+                <div class="amrow"><span class="amico dark">Card</span><span class="amsep"></span><span class="amname">Credit/Debit Cards</span><span class="amrad"></span></div>
+                <div class="amrow"><span class="amico tab">tabby</span><span class="amsep"></span><span class="amname">Pay later with Tabby</span><span class="amrad"></span></div>
+              </div>
+              <div class="asep"></div>
+              <div class="arow" style="margin-bottom:8px;"><span class="ah">You Pay</span><span class="ah">AED 125.46</span></div>
+              <div class="abtn">Pay with Google&nbsp;Pay</div>
+            </div>
+            <div class="afoot">Payments are processed securely. Your card details are never stored by the merchant.</div>
+          </div>
+        </div>
+        <div class="cap">
+          <span class="n">Screen 2</span>
+          <span class="t">The Smooth payment page</span>
+          <span class="d">Your name and your order number are shown at the top, so the customer always knows who they are paying and for what. The amount is exactly what your server asked for, and it cannot be edited.</span>
+        </div>
+      </div>
+
+      <!-- 3 · paying -->
+      <div class="shot">
+        <div class="phone">
+          <div class="notch"><i></i></div>
+          <div class="scr">
+            <div class="ac tight">
+              <div class="arow">
+                <span class="abrand"><span class="alogo">S</span><span><span style="font-weight:680;display:block;">Your Store</span><span class="amute" style="font-size:9px;">Secure payment</span></span></span>
+                <span class="apill">Order #4821</span>
+              </div>
+            </div>
+            <div class="ac acen">
+              <span class="alab">Paying</span>
+              <div class="abig" style="margin:5px 0 3px;">AED 125.46</div>
+            </div>
+            <div class="ac">
+              <div class="arow" style="margin-bottom:9px;"><span class="ah">Card details</span><span class="asecure">&#10003; Secure</span></div>
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <div class="afield" style="border-color:var(--app-line);">Card number</div>
+                <div style="display:flex;gap:6px;">
+                  <div class="afield" style="border-color:var(--app-line);flex:1;">MM / YY</div>
+                  <div class="afield" style="border-color:var(--app-line);flex:1;">CVV</div>
+                </div>
+                <div class="afield" style="border-color:var(--app-line);">Name on card</div>
+              </div>
+              <div style="margin-top:9px;" class="abtn">Pay AED 125.46</div>
+            </div>
+            <div class="ac acen">
+              <span class="amute" style="font-size:9.5px;">Your bank may ask you to confirm with a code. That happens here and comes straight back.</span>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <span class="n">Screen 3</span>
+          <span class="t">Paying by card</span>
+          <span class="d">Card fields are provided directly by the payment processor inside the page, which is what keeps card details away from both your systems and ours. If the bank asks for a verification code, that step happens here and returns automatically.</span>
+        </div>
+      </div>
+
+      <!-- 4 · success -->
+      <div class="shot">
+        <div class="phone">
+          <div class="notch"><i></i></div>
+          <div class="scr">
+            <div class="ac tight">
+              <div class="arow">
+                <span class="abrand"><span class="alogo">S</span><span><span style="font-weight:680;display:block;">Your Store</span><span class="amute" style="font-size:9px;">Secure payment</span></span></span>
+                <span class="apill">Order #4821</span>
+              </div>
+            </div>
+            <div class="ac acen" style="padding-block:17px;">
+              <div class="atick">&#10003;</div>
+              <div class="ah" style="font-size:13px;">Payment successful</div>
+              <div class="abig" style="font-size:21px;margin:6px 0 4px;">AED 125.46</div>
+              <span class="amute" style="font-size:9.5px;display:block;">Paid to Your Store</span>
+              <span class="amute" style="font-size:9.5px;display:block;">Google Pay &middot; Visa &bull;&bull;&bull;&bull; 4242</span>
+            </div>
+            <div class="ac">
+              <div class="arow" style="margin-bottom:4px;"><span class="amute">Your order</span><span>#4821</span></div>
+              <div class="arow"><span class="amute">Reference</span><span>SMTH-0001248</span></div>
+            </div>
+            <div class="abtn ghost">Return to Your Store</div>
+            <div class="afoot">Taking you back automatically&hellip;</div>
+          </div>
+        </div>
+        <div class="cap">
+          <span class="n">Screen 4</span>
+          <span class="t">Paid</span>
+          <span class="d">A short confirmation showing the amount, your order number and a reference the customer can quote. They are then taken back to you automatically, with a button in case they prefer to tap it themselves.</span>
+        </div>
+      </div>
+
+      <!-- 5 · back on their site -->
+      <div class="shot">
+        <div class="brow">
+          <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">your-website.com/order/4821/confirmed</div></div>
+          <div class="body">
+            <div class="bblk ghost"><span class="bt">Your Store</span><span class="bs">Your header, your design</span></div>
+            <div class="bblk" style="border-color:color-mix(in srgb,var(--accent) 45%,transparent);background:var(--accent-bg);">
+              <span class="bt">Thank you, your order is confirmed</span>
+              <span class="bs">Order #4821 &middot; AED 125.46 paid</span>
+            </div>
+            <div class="bblk"><span class="bt">What happens next</span><span class="bs">Your own confirmation, your own emails, your own fulfilment. Exactly as it works today.</span></div>
+            <div class="bblk ghost"><span class="bs">Your footer</span></div>
+          </div>
+        </div>
+        <div class="cap">
+          <span class="n">Screen 5</span>
+          <span class="t">Back on your website</span>
+          <span class="d">They land on the page you nominated. By the time they arrive, your server has already received our confirmation, so the order can be shown as paid immediately.</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="note is-accent" style="margin-top:38px;">
+      <span class="eyebrow">One detail worth pointing out</span>
+      <p>Your business name and your order number appear on every screen of the payment page. The customer is never in any doubt about who they are paying, and the reference they see is one your own team can look up.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 03 · METHODS ══════════ -->
+<section id="p3">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">03</div>
+      <div class="txt">
+        <span class="eyebrow">Included</span>
+        <h2>Four ways to pay, all from the one button</h2>
+        <p class="lede">You do not choose, enable or build these separately. The page offers whichever of them the customer&rsquo;s device supports, in the order most likely to be quickest for them.</p>
+      </div>
+    </div>
+
+    <div class="meth">
+      <div class="mtile">
+        <span class="mi dark">Apple</span>
+        <span class="mn">Apple Pay</span>
+        <span class="md">One touch on an iPhone or iPad, with no card to type. Shown automatically when the customer&rsquo;s device supports it.</span>
+      </div>
+      <div class="mtile">
+        <span class="mi">G Pay</span>
+        <span class="mn">Google Pay</span>
+        <span class="md">The same one-tap experience on Android and on Chrome, using a card the customer has already saved with Google.</span>
+      </div>
+      <div class="mtile">
+        <span class="mi dark">Card</span>
+        <span class="mn">Credit and debit cards</span>
+        <span class="md">Visa and Mastercard, entered on the page. Where the bank requires a verification code, that step is handled inside the same flow.</span>
+      </div>
+      <div class="mtile">
+        <span class="mi tab">tabby</span>
+        <span class="mn">Pay later with Tabby</span>
+        <span class="md">The customer splits the amount into instalments with Tabby. You are paid as a single payment, exactly like the others.</span>
+      </div>
+    </div>
+
+    <div class="cols" style="margin-top:34px;">
+      <div class="card">
+        <span class="eyebrow">Shown only when it will work</span>
+        <p>A method appears only when the customer&rsquo;s device and browser can actually complete it. Nobody is offered a button that then fails, and the card option is always available as the dependable choice.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">One amount, one settlement</span>
+        <p>Whichever method the customer picks, you receive one payment for the amount you asked for, recorded against your order number.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Mobile first</span>
+        <p>The payment page is built for phones and used on them every day. It works equally well opened from a desktop browser.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 04 · CONFIRMATION ══════════ -->
+<section id="p4">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">04</div>
+      <div class="txt">
+        <span class="eyebrow">The important part</span>
+        <h2>How you know it is paid</h2>
+        <p class="lede">Your system is told directly, server to server. That message is the confirmation your fulfilment should act on, and it carries your own order number so it slots straight into your existing process.</p>
+      </div>
+    </div>
+
+    <div class="cols">
+      <div class="card">
+        <span class="eyebrow">Sent immediately</span>
+        <p>The moment the payment is confirmed with the bank, we send your endpoint a message containing the amount, the method used, the last four digits of the card and your order number.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Signed, so you can trust it</span>
+        <p>Every message carries a signature generated with a secret only you and Smooth hold. Your server can verify in one line that the message genuinely came from us.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Delivered reliably</span>
+        <p>If your endpoint is briefly unreachable, we keep trying on a spaced-out schedule for the next two days, and every attempt is visible to both of us.</p>
+      </div>
+    </div>
+
+    <div class="tw" style="margin-top:34px;">
+      <table>
+        <thead><tr><th style="width:30%">Situation</th><th>What happens</th></tr></thead>
+        <tbody>
+          <tr><td><strong>The customer pays normally</strong></td><td>You receive the confirmation within seconds, and the customer is returned to your page.</td></tr>
+          <tr><td><strong>The customer closes the browser right after paying</strong></td><td>You still receive the confirmation. It does not depend on the customer coming back to your site.</td></tr>
+          <tr><td><strong>The customer decides not to pay</strong></td><td>They are returned to the page you nominated for that case, and nothing is charged.</td></tr>
+          <tr><td><strong>Your server is briefly unreachable</strong></td><td>We retry automatically, and you can also ask us for the status of any payment at any time with a single call.</td></tr>
+          <tr><td><strong>Your server sends the same request twice</strong></td><td>You get the same payment back, not a second one. A repeated request can never produce a duplicate charge.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note is-accent" style="margin-top:30px;">
+      <span class="eyebrow">Also visible to you</span>
+      <p>Every payment appears in your Smooth merchant panel with its amount, method, status, time and reference, alongside the rest of your Smooth activity. So your finance team has one place to look, and nobody has to ask a developer.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 05 · TECHNICAL ══════════ -->
+<section id="p5">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">05</div>
+      <div class="txt">
+        <span class="eyebrow">For your developer</span>
+        <h2>The integration, in full</h2>
+        <p class="lede">Two calls out, one endpoint in. Everything below is what your developer needs; nothing is left to be discovered later.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-bottom:14px;">5.1 The shape of it</h3>
+    <span class="pre-label">Three moving parts</span>
+    <pre>
+<b>1.</b>  <em>POST</em> /api/v1/checkout/sessions      <i>your server, when the customer chooses to pay</i>
+        &rarr; returns a <b>checkoutUrl</b>. Send the customer there.
+
+<b>2.</b>  <em>POST</em> https://your-site.com/smooth/webhook
+        &larr; we call you when the payment is confirmed. <i>This is your proof of payment.</i>
+
+<b>3.</b>  <em>GET</em>  /api/v1/checkout/sessions/:id    <i>optional, whenever you want the current state</i>
+    </pre>
+
+    <h3 style="margin:38px 0 14px;">5.2 Creating the payment</h3>
+    <span class="pre-label">Request</span>
+    <pre>
+POST /api/v1/checkout/sessions
+Authorization: Bearer <i>sk_live_&hellip;</i>              <i>your secret key, server side only</i>
+Idempotency-Key: <i>4f9c1a2e-&hellip;</i>                 <i>any unique value per attempt</i>
+Content-Type: application/json
+
+{
+  "amount":    { "value": <b>"125.46"</b>, "currency": "AED" },
+  "reference": <b>"4821"</b>,                        <i>your order number, returned untouched</i>
+  "description": "Order 4821",
+  "customer":  { "name": "Sara N.", "email": "sara@example.com", "phone": "+9715&hellip;" },
+  "returnUrl": "https://your-site.com/order/4821/confirmed",
+  "cancelUrl": "https://your-site.com/cart",
+  "metadata":  { "cartId": "c_119" }              <i>anything you like, returned as sent</i>
+}
+    </pre>
+
+    <span class="pre-label" style="margin-top:20px;">Response 201</span>
+    <pre>
+{
+  "id": "<b>chk_01J8Z9Q4MF3K</b>",
+  "status": "awaiting_payment",
+  "amount":    { "value": "125.46", "currency": "AED" },
+  "reference": "4821",
+  "checkoutUrl": "<b>https://app.smoothpay.ai/&hellip;</b>",   <i>send the customer here</i>
+  "expiresAt": "2026-09-29T09:11:02Z",
+  "createdAt": "2026-09-29T08:41:02Z"
+}
+    </pre>
+
+    <ul class="plain is-accent" style="margin-top:20px;">
+      <li><strong>The amount comes from your server and only from your server.</strong> There is no way for a browser to influence it, which is what makes the flow safe by construction.</li>
+      <li><strong>The idempotency key protects you.</strong> If your request times out and you retry with the same key, you receive the original payment rather than a second one.</li>
+      <li><strong>Your reference travels with the payment</strong> and comes back on the confirmation, in the status call, and on the merchant panel, so matching is exact rather than by amount and time.</li>
+      <li>Amounts are sent as decimal strings, so no language rounds them differently.</li>
+    </ul>
+
+    <h3 style="margin:38px 0 14px;">5.3 The confirmation we send you</h3>
+    <span class="pre-label">What arrives at your endpoint</span>
+    <pre>
+POST https://your-site.com/smooth/webhook
+Smooth-Signature: <b>t=1790000000,v1=5f2c8a&hellip;</b>
+Smooth-Event-Id:  evt_01J8Z9&hellip;
+Content-Type: application/json
+
+{
+  "id":   "evt_01J8Z9&hellip;",
+  "type": <b>"checkout.paid"</b>,
+  "createdAt": "2026-09-29T08:42:11.204Z",
+  "data": {
+    "id":        "chk_01J8Z9Q4MF3K",
+    "status":    "paid",
+    "amount":    { "value": "125.46", "currency": "AED" },
+    "reference": <b>"4821"</b>,
+    "method":    "google_pay",
+    "card":      { "brand": "visa", "last4": "4242" },
+    "paidAt":    "2026-09-29T08:42:10Z",
+    "receipt":   "SMTH-0001248",
+    "metadata":  { "cartId": "c_119" }
+  }
+}
+
+<i>Reply 200 as soon as you have stored it. Anything slow or unanswered is retried.</i>
+    </pre>
+
+    <span class="pre-label" style="margin-top:20px;">Verifying the signature</span>
+    <pre>
+signed  = <i>timestamp</i> + "." + <i>the raw request body</i>
+expected = HMAC_SHA256(signed, <i>your webhook secret</i>)
+
+<b>Compare</b> expected with the v1 value, using a constant-time comparison.
+<b>Reject</b> a timestamp more than 5 minutes old.
+
+<i>Verify against the raw body, before any JSON parsing or reformatting.</i>
+    </pre>
+
+    <h3 style="margin:38px 0 14px;">5.4 Checking status yourself</h3>
+    <span class="pre-label">Whenever you want it</span>
+    <pre>
+GET /api/v1/checkout/sessions/chk_01J8Z9Q4MF3K
+Authorization: Bearer <i>sk_live_&hellip;</i>
+
+&rarr; the same <b>data</b> object the webhook carries.
+
+<i>Useful for a reconciliation job, a support screen, or simply as a belt-and-braces
+check before fulfilment. Safe to call as often as you need.</i>
+    </pre>
+
+    <h3 style="margin:38px 0 14px;">5.5 Statuses</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:24%">Status</th><th style="width:34%">Meaning</th><th>Your action</th></tr></thead>
+        <tbody>
+          <tr><td><code>awaiting_payment</code></td><td>Created, the customer has not finished paying</td><td>Nothing yet</td></tr>
+          <tr><td><code>processing</code></td><td>The customer has paid and we are confirming with the bank</td><td>Nothing yet. Usually a few seconds</td></tr>
+          <tr><td><code>paid</code></td><td>Confirmed. Final</td><td><strong>Fulfil the order</strong></td></tr>
+          <tr><td><code>cancelled</code></td><td>The customer chose not to continue</td><td>Release anything you were holding</td></tr>
+          <tr><td><code>expired</code></td><td>The payment page was not used in time</td><td>Release anything you were holding. Create a new one if they return</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin:38px 0 14px;">5.6 Security, in one place</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:28%">Concern</th><th>How it is handled</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Card details</strong></td><td>Entered into fields supplied by the payment processor and sent directly to them. They never reach your servers or ours, which keeps your own compliance obligations at their lightest.</td></tr>
+          <tr><td><strong>Your secret key</strong></td><td>Used server side only, never in a browser or a mobile app. It is stored hashed on our side, can be rotated at any time, and several can be active at once so a rotation needs no downtime.</td></tr>
+          <tr><td><strong>The amount</strong></td><td>Fixed by your server at creation. Nothing in the customer&rsquo;s browser can change it.</td></tr>
+          <tr><td><strong>The confirmation</strong></td><td>Signed with a shared secret and timestamped, so a message cannot be forged or replayed.</td></tr>
+          <tr><td><strong>Duplicate requests</strong></td><td>The idempotency key guarantees one payment per attempt, however many times a request is retried.</td></tr>
+          <tr><td><strong>Return addresses</strong></td><td>Checked against the addresses you registered with us, so a payment can only ever send a customer back to your own site.</td></tr>
+          <tr><td><strong>Transport</strong></td><td>HTTPS throughout, in both directions.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin:38px 0 14px;">5.7 Going live</h3>
+    <div class="flow">
+      <div class="st"><span class="n">1</span><span class="h">We send your keys</span><span class="d">A test key and a live key, plus your webhook secret, from the Smooth merchant panel.</span></div>
+      <div class="st"><span class="n">2</span><span class="h">You build against test</span><span class="d">Same endpoints, same payloads. Test payments move no money and are kept separate from your live figures.</span></div>
+      <div class="st"><span class="n">3</span><span class="h">One test run together</span><span class="d">We watch one payment go through end to end, including your webhook, and confirm your reference matched.</span></div>
+      <div class="st is-accent"><span class="n">4</span><span class="h">Swap one value</span><span class="d">Replace the test key with the live key. Nothing else in your code changes.</span></div>
+    </div>
+
+    <div class="note is-accent" style="margin-top:30px;">
+      <span class="eyebrow">A note your developer will appreciate</span>
+      <p>The address your customer is sent to, the request shape, the statuses and the confirmation payload are all stable. Adding a payment method or changing anything behind the scenes on our side does not alter a single field you integrate against.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 06 · GETTING STARTED ══════════ -->
+<section id="p6">
+  <div class="shell">
+    <div class="part-head">
+      <div class="part-num">06</div>
+      <div class="txt">
+        <span class="eyebrow">Next</span>
+        <h2>Getting started</h2>
+      </div>
+    </div>
+
+    <div class="cols">
+      <div class="card">
+        <span class="eyebrow">What we need from you</span>
+        <ul class="plain">
+          <li>The web addresses your checkout runs on.</li>
+          <li>One endpoint address for the confirmation, and the pages to return customers to after a payment and after a cancellation.</li>
+          <li>Your business name and logo as you want them shown on the payment page.</li>
+          <li>A contact for your developer, for the one test run together.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="eyebrow">What you get from us</span>
+        <ul class="plain is-accent">
+          <li>A test key and a live key, and your webhook secret.</li>
+          <li>The integration reference, with copy-and-paste examples.</li>
+          <li>Test card details so your developer can try every outcome before going live.</li>
+          <li>Your payments visible in the Smooth merchant panel from the first test.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="eyebrow">What it takes on your side</span>
+        <p>One button, one call to create the payment, and one endpoint to receive the confirmation. For a developer who has the amount and the order number to hand, that is a short piece of work rather than a project.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ FOOTER ══════════ -->
+<footer class="foot">
+  <div class="shell">
+    <hr class="rule" style="margin-bottom:26px;">
+    <div class="r">
+      <span>Pay with Smooth</span>
+      <span>&middot;</span>
+      <span>Checkout for your own website</span>
+      <span>&middot;</span>
+      <span>Prepared for review</span>
+    </div>
+  </div>
+</footer>
+<style>
+  .theme-toggle{
+    position:fixed; right:16px; bottom:16px; z-index:50;
+    display:inline-flex; align-items:center; gap:7px;
+    padding:9px 13px; border-radius:9px; cursor:pointer;
+    background:var(--raise); color:var(--ink);
+    border:1px solid var(--line-2);
+    font-family:var(--mono); font-size:0.68rem; font-weight:600;
+    letter-spacing:0.11em; text-transform:uppercase;
+    box-shadow:0 2px 14px rgba(0,0,0,0.10);
+  }
+  .theme-toggle:hover{ border-color:var(--accent); color:var(--accent); }
+  @media print{ .theme-toggle{ display:none; } }
+</style>
+
+<button class="theme-toggle" type="button" id="themeToggle" aria-label="Switch colour theme">
+  <span id="themeLabel">Dark</span>
+</button>
+
+<script>
+(function () {
+  var KEY = 'ss-docs-theme';
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  var label = document.getElementById('themeLabel');
+
+  function current() {
+    return root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+  function apply(theme) {
+    root.setAttribute('data-theme', theme);
+    label.textContent = theme === 'dark' ? 'Light' : 'Dark';
+  }
+  function stored() {
+    try { return localStorage.getItem(KEY) === 'dark' ? 'dark' : 'light'; }
+    catch (e) { return current(); }
+  }
+
+  apply(current());
+
+  btn.addEventListener('click', function () {
+    var next = current() === 'dark' ? 'light' : 'dark';
+    apply(next);
+    try { localStorage.setItem(KEY, next); } catch (e) {}
+  });
+
+  /* Toggled on another document of this site, in another tab. */
+  window.addEventListener('storage', function (e) {
+    if (e.key === KEY) apply(stored());
+  });
+  /* Restored from the back/forward cache, where the head script never reruns. */
+  window.addEventListener('pageshow', function (e) {
+    if (e.persisted) apply(stored());
+  });
+})();
+</script>
+</body>
+</html>
