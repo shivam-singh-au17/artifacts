@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex, nofollow">
+<title>Apple Pay for Geidea restaurants: the options</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#128179;</text></svg>">
+
+<!-- Theme, applied before first paint. Light unless this browser chose dark
+     on any page of the site; the key is shared by every document. -->
+<script>
+(function () {
+  var saved;
+  try { saved = localStorage.getItem('ss-docs-theme'); } catch (e) {}
+  document.documentElement.setAttribute('data-theme', saved === 'dark' ? 'dark' : 'light');
+})();
+</script>
+
+<style>
+/* ────────────────────────────────────────────────
+   TOKENS
+   ──────────────────────────────────────────────── */
+:root{
+  color-scheme:light;
+  --paper:#FCFCFB; --surface:#F3F6F4; --raise:#FFFFFF;
+  --ink:#0D1512; --ink-2:#39473F; --slate:#61706A;
+  --line:#E1E7E3; --line-2:#CBD5D0;
+  --accent:#088F58; --accent-strong:#0AB971; --accent-bg:#E8F7F0;
+  --flag:#9C5C0C; --flag-bg:#FBF1E1;
+  --alert:#A93028; --alert-bg:#FBEAE8;
+  --sans:ui-sans-serif,"Segoe UI Variable Text","SF Pro Text",-apple-system,"Segoe UI",system-ui,"Helvetica Neue",sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","Segoe UI Mono",Consolas,"Liberation Mono",monospace;
+  --shell:1120px; --prose:69ch;
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#0A100D; --surface:#101815; --raise:#131D19;
+  --ink:#ECF2EF; --ink-2:#BDCAC4; --slate:#84968E;
+  --line:#1E2C26; --line-2:#2C3D36;
+  --accent:#2ED68F; --accent-strong:#3FE39C; --accent-bg:#0D2A1F;
+  --flag:#E3AC5C; --flag-bg:#2A2013;
+  --alert:#EC7A70; --alert-bg:#2B1512;
+}
+:root[data-theme="light"]{
+  --paper:#FCFCFB; --surface:#F3F6F4; --raise:#FFFFFF;
+  --ink:#0D1512; --ink-2:#39473F; --slate:#61706A;
+  --line:#E1E7E3; --line-2:#CBD5D0;
+  --accent:#088F58; --accent-strong:#0AB971; --accent-bg:#E8F7F0;
+  --flag:#9C5C0C; --flag-bg:#FBF1E1;
+  --alert:#A93028; --alert-bg:#FBEAE8;
+}
+
+/* ────────────────────────────────────────────────
+   BASE
+   ──────────────────────────────────────────────── */
+*,*::before,*::after{ box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; }
+html,body{ margin:0; padding:0; }
+body{ background:var(--paper); color:var(--ink); font-family:var(--sans); font-size:16.5px; line-height:1.62; letter-spacing:-0.005em; overflow-x:hidden; -webkit-font-smoothing:antialiased; }
+.shell{ max-width:var(--shell); margin-inline:auto; padding-inline:clamp(18px,4vw,48px); }
+.prose{ max-width:var(--prose); }
+p{ margin:0 0 1.05em; color:var(--ink-2); }
+p:last-child{ margin-bottom:0; }
+strong{ color:var(--ink); font-weight:650; }
+a{ color:var(--accent); text-decoration-thickness:1px; text-underline-offset:2px; }
+a:focus-visible,button:focus-visible{ outline:2px solid var(--accent-strong); outline-offset:3px; border-radius:3px; }
+h1,h2,h3{ color:var(--ink); text-wrap:balance; margin:0; }
+h1{ font-size:clamp(2.3rem,5.6vw,3.8rem); font-weight:760; letter-spacing:-0.038em; line-height:1.04; }
+h2{ font-size:clamp(1.5rem,3vw,2.1rem); font-weight:720; letter-spacing:-0.028em; line-height:1.14; }
+h3{ font-size:1.08rem; font-weight:680; letter-spacing:-0.018em; line-height:1.3; }
+.eyebrow{ font-family:var(--mono); font-size:0.685rem; font-weight:600; letter-spacing:0.16em; text-transform:uppercase; color:var(--slate); }
+code{ font-family:var(--mono); font-size:0.86em; letter-spacing:-0.01em; background:var(--surface); border:1px solid var(--line); border-radius:4px; padding:0.08em 0.36em; color:var(--ink); overflow-wrap:anywhere; }
+
+/* ────────────────────────────────────────────────
+   LAYOUT
+   ──────────────────────────────────────────────── */
+.cover{ padding-block:clamp(56px,9vw,104px) clamp(40px,6vw,64px); border-bottom:1px solid var(--line); }
+section{ padding-block:clamp(44px,6.5vw,78px); border-bottom:1px solid var(--line); }
+section:last-of-type{ border-bottom:0; }
+.sec-head{ display:flex; flex-direction:column; gap:12px; margin-bottom:30px; max-width:var(--prose); }
+.sec-head .chip{ align-self:flex-start; }
+.stack{ display:flex; flex-direction:column; gap:clamp(18px,2.6vw,26px); }
+.cols{ display:grid; gap:clamp(16px,2.4vw,24px); grid-template-columns:repeat(auto-fit,minmax(272px,1fr)); }
+
+.card{ background:var(--raise); border:1px solid var(--line); border-radius:12px; padding:clamp(18px,2.6vw,26px); display:flex; flex-direction:column; gap:12px; }
+.note{ border:1px solid var(--line); border-radius:10px; padding:16px 18px; background:var(--surface); display:flex; flex-direction:column; gap:10px; }
+.note.is-accent{ background:var(--accent-bg); border-color:color-mix(in srgb,var(--accent) 26%,transparent); }
+.note.is-flag{ background:var(--flag-bg); border-color:color-mix(in srgb,var(--flag) 26%,transparent); }
+.note.is-alert{ background:var(--alert-bg); border-color:color-mix(in srgb,var(--alert) 26%,transparent); }
+.note p{ margin:0; font-size:0.95rem; }
+
+.chip{ display:inline-flex; align-items:center; font-family:var(--mono); font-size:0.66rem; font-weight:600; letter-spacing:0.09em; text-transform:uppercase; padding:4px 9px; border-radius:5px; border:1px solid var(--line-2); color:var(--slate); background:var(--surface); white-space:nowrap; }
+.chip.is-accent{ color:var(--accent); border-color:color-mix(in srgb,var(--accent) 34%,transparent); background:var(--accent-bg); }
+
+ul.plain,ol.plain{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:9px; }
+ul.plain li{ position:relative; padding-left:19px; font-size:0.955rem; color:var(--ink-2); line-height:1.55; }
+ul.plain li::before{ content:""; position:absolute; left:2px; top:0.62em; width:6px; height:6px; border-radius:1.5px; background:var(--line-2); }
+ul.plain.is-accent li::before{ background:var(--accent); }
+ol.plain{ counter-reset:step; }
+ol.plain li{ position:relative; padding-left:30px; font-size:0.955rem; color:var(--ink-2); line-height:1.55; counter-increment:step; }
+ol.plain li::before{ content:counter(step); position:absolute; left:0; top:0.08em; width:21px; height:21px; border-radius:6px; background:var(--accent-bg); color:var(--accent); font-family:var(--mono); font-size:0.72rem; font-weight:700; display:flex; align-items:center; justify-content:center; }
+
+/* ────────────────────────────────────────────────
+   TABLE
+   ──────────────────────────────────────────────── */
+.tw{ overflow-x:auto; border:1px solid var(--line); border-radius:11px; background:var(--raise); }
+table{ border-collapse:collapse; width:100%; min-width:600px; font-size:0.93rem; }
+th,td{ text-align:left; padding:12px 15px; border-bottom:1px solid var(--line); vertical-align:top; color:var(--ink-2); }
+thead th{ font-family:var(--mono); font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--slate); font-weight:600; background:var(--surface); white-space:nowrap; }
+tbody th{ font-weight:620; color:var(--ink); }
+tbody tr:last-child td,tbody tr:last-child th{ border-bottom:0; }
+</style>
+</head>
+<body>
+
+<div style="border-bottom:1px solid var(--line);background:var(--surface);">
+  <div style="max-width:1120px;margin-inline:auto;padding:11px clamp(18px,4vw,48px);">
+    <a href="../" style="font-family:var(--mono);font-size:0.68rem;font-weight:600;letter-spacing:0.13em;text-transform:uppercase;color:var(--slate);text-decoration:none;">&#8592;&nbsp;&nbsp;Shivam Singh &middot; Documents</a>
+  </div>
+</div>
+
+<!-- ══════════ COVER ══════════ -->
+<header class="cover">
+  <div class="shell">
+    <h1>Apple Pay for Geidea restaurants: the options</h1>
+  </div>
+</header>
+
+<!-- ══════════ WHY ══════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <h2>Why we need a decision</h2>
+    </div>
+    <div class="prose">
+      <p>Apple allows only one payment company to run Apple Pay on one website address. Our customer website (<code>app.smoothpay.ai</code>) is already set up for AFS, and Apple does not allow Geidea to be added to the same address.</p>
+      <p>We want Geidea restaurants&rsquo; customers to pay with Apple Pay on our own page, exactly as they do today, without being sent to another company&rsquo;s page. There are three ways to do that.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ OPTION A ══════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <h2>Option A: A second Smooth Pay web address for Geidea restaurants (recommended)</h2>
+    </div>
+    <div class="cols">
+      <div class="card">
+        <h3>How it works</h3>
+        <ul class="plain">
+          <li>AFS restaurants keep working exactly as today on <code>app.smoothpay.ai</code>.</li>
+          <li>Geidea restaurants use a second Smooth Pay address, for example <code>pay.smoothpay.ai</code>.</li>
+          <li>When a customer scans a Geidea restaurant&rsquo;s QR code, they are moved to the second address automatically, in the blink of an eye. The app looks the same, the steps are the same, and Apple Pay is on the same screen.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>What changes</h3>
+        <ul class="plain">
+          <li><strong>Restaurants:</strong> nothing. QR codes stay the same, with no reprinting.</li>
+          <li><strong>Customers:</strong> the address at the top of the browser is different at Geidea restaurants. A customer who was signed in has to sign in once more on the new address. We can remove this with some extra work.</li>
+          <li><strong>Smooth Pay:</strong> we set up the second address, and Geidea checks and approves it.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Why we recommend it</h3>
+        <ul class="plain is-accent">
+          <li>It does not touch the restaurants that are live on AFS today, so there is no risk to them.</li>
+          <li>It is the setup Apple itself recommends.</li>
+          <li>It does not need AFS&rsquo;s permission.</li>
+          <li>Moving a restaurant between AFS and Geidea later happens automatically, with no reprinting.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ OPTION B ══════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <h2>Option B: Smooth Pay gets its own Apple Pay account, with one address for everyone</h2>
+    </div>
+    <div class="stack">
+      <div class="cols">
+        <div class="card">
+          <h3>How it works</h3>
+          <ul class="plain">
+            <li>Smooth Pay opens its own Apple Pay account.</li>
+            <li>Both AFS and Geidea then run Apple Pay through Smooth Pay&rsquo;s account, on the same address <code>app.smoothpay.ai</code>.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>What changes</h3>
+          <ul class="plain">
+            <li><strong>Customers:</strong> nothing.</li>
+            <li><strong>Restaurants:</strong> nothing visible. But before each Geidea restaurant goes live, we do a setup step with Geidea for that restaurant, and repeat it about every two years.</li>
+            <li><strong>Smooth Pay:</strong> AFS must agree in writing to run Apple Pay on Smooth Pay&rsquo;s account. Then all live AFS restaurants move over at the same moment, in one planned switch.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="note is-flag">
+        <p><strong>The risk:</strong> on switch day, if anything goes wrong, Apple Pay stops for all AFS restaurants until it is fixed. We cannot start without AFS&rsquo;s written agreement.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ OPTION C ══════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <h2>Option C: Smooth Pay handles Apple Pay itself</h2>
+    </div>
+    <div class="stack">
+      <div class="cols">
+        <div class="card">
+          <h3>How it works</h3>
+          <ul class="plain">
+            <li>Smooth Pay opens its own Apple Pay account, and our system processes the Apple Pay payment itself.</li>
+            <li>It then hands the payment to whichever payment company the restaurant uses (AFS, Geidea or a future one).</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>What changes</h3>
+          <ul class="plain">
+            <li><strong>Customers:</strong> nothing.</li>
+            <li><strong>Restaurants:</strong> nothing, and no setup per restaurant. Any future payment company can be added easily.</li>
+            <li><strong>Smooth Pay:</strong> we must pass a card-security certification (an official security audit that is renewed every year). Both AFS and Geidea must agree to accept payments this way, and live AFS restaurants go through the same one-time switch as in Option B.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="note is-flag">
+        <p><strong>The risk:</strong> it takes the longest to get ready, and it has the same switch-day risk as Option B.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ AT A GLANCE ══════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <h2>At a glance</h2>
+    </div>
+    <div class="stack">
+      <div class="tw">
+        <table>
+          <thead>
+            <tr><th></th><th>Option A</th><th>Option B</th><th>Option C</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">Customers pay with Apple Pay on our own page</th><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+            <tr><th scope="row">Customers notice anything</th><td>New address, sign in again</td><td>No</td><td>No</td></tr>
+            <tr><th scope="row">Restaurants need to do anything</th><td>No</td><td>No (setup is on our side)</td><td>No</td></tr>
+            <tr><th scope="row">Risk to restaurants live today</th><td>None</td><td>On switch day</td><td>On switch day</td></tr>
+            <tr><th scope="row">Needs AFS&rsquo;s agreement</th><td>No</td><td>Yes</td><td>Yes</td></tr>
+            <tr><th scope="row">Speed to launch</th><td>Fastest</td><td>Slower</td><td>Slowest</td></tr>
+            <tr><th scope="row">Adding more payment companies later</th><td>A new address each time</td><td>Setup per company</td><td>Easiest</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note is-alert">
+        <p><strong>What is not possible:</strong></p>
+        <ul class="plain">
+          <li>A separate Apple Pay set-up per restaurant on the same address.</li>
+          <li>Keeping both AFS&rsquo;s and Geidea&rsquo;s Apple Pay on the same address.</li>
+          <li>Switching between them back and forth. Apple would turn off the other company&rsquo;s Apple Pay.</li>
+        </ul>
+      </div>
+
+      <div class="note is-accent">
+        <p><strong>Our recommendation:</strong> start with <strong>Option A</strong>. It is safe for all live restaurants and gives Geidea restaurants Apple Pay on our own page. If later you want everyone on one address, we can move to Option B or C, but only after AFS agrees in writing.</p>
+      </div>
+
+      <div class="note">
+        <p><strong>Testing:</strong> whichever option you choose, we will test Apple Pay with a small real payment on a Smooth Pay test restaurant before any real restaurant uses it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ WHAT WE NEED ══════════ -->
+<section>
+  <div class="shell">
+    <div class="sec-head">
+      <h2>What we need from you</h2>
+    </div>
+    <ol class="plain prose">
+      <li>Which option you prefer.</li>
+      <li>If Option A: the name of the second address.</li>
+      <li>If Option A: whether customers should simply sign in again there, or we build the automatic sign-in (extra work).</li>
+    </ol>
+  </div>
+</section>
+
+<style>
+  .theme-toggle{
+    position:fixed; right:16px; bottom:16px; z-index:50;
+    padding:9px 13px; border-radius:9px; cursor:pointer;
+    background:var(--raise); color:var(--ink); border:1px solid var(--line-2);
+    font-family:var(--mono); font-size:0.68rem; font-weight:600;
+    letter-spacing:0.11em; text-transform:uppercase;
+    box-shadow:0 2px 14px rgba(0,0,0,0.10);
+  }
+  .theme-toggle:hover{ border-color:var(--accent); color:var(--accent); }
+  @media print{ .theme-toggle{ display:none; } }
+</style>
+
+<button class="theme-toggle" type="button" id="themeToggle" aria-label="Switch colour theme">
+  <span id="themeLabel">Dark</span>
+</button>
+
+<script>
+(function () {
+  var KEY = 'ss-docs-theme';
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  var label = document.getElementById('themeLabel');
+
+  function current() {
+    return root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+  function apply(theme) {
+    root.setAttribute('data-theme', theme);
+    label.textContent = theme === 'dark' ? 'Light' : 'Dark';
+  }
+  function stored() {
+    try { return localStorage.getItem(KEY) === 'dark' ? 'dark' : 'light'; }
+    catch (e) { return current(); }
+  }
+
+  apply(current());
+
+  btn.addEventListener('click', function () {
+    var next = current() === 'dark' ? 'light' : 'dark';
+    apply(next);
+    try { localStorage.setItem(KEY, next); } catch (e) {}
+  });
+
+  /* Toggled on another document of this site, in another tab. */
+  window.addEventListener('storage', function (e) {
+    if (e.key === KEY) apply(stored());
+  });
+  /* Restored from the back/forward cache, where the head script never reruns. */
+  window.addEventListener('pageshow', function (e) {
+    if (e.persisted) apply(stored());
+  });
+})();
+</script>
+</body>
+</html>
