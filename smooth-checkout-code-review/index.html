@@ -1,0 +1,1334 @@
+<!doctype html>
+<html lang="hi-Latn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex, nofollow">
+<title>Smooth Checkout &mdash; Code Review</title>
+<meta name="description" content="Fazal ke Smooth Checkout (merchant website checkout) code ka poora review, Hinglish mein: kya bana hai, kaise chalta hai, kahan gadbad hai.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#128269;</text></svg>">
+
+<!-- Theme, applied before first paint. Light unless this browser chose dark
+     on any page of the site; the key is shared by every document. -->
+<script>
+(function () {
+  var saved;
+  try { saved = localStorage.getItem('ss-docs-theme'); } catch (e) {}
+  document.documentElement.setAttribute('data-theme', saved === 'dark' ? 'dark' : 'light');
+})();
+</script>
+
+<style>
+/* ────────────────────────────────────────────────
+   TOKENS — shared with every document on this site,
+   plus --flag / --alert / --watch for severity.
+   ──────────────────────────────────────────────── */
+:root{
+  color-scheme:light;
+  --paper:#FCFCFB;
+  --surface:#F3F6F4;
+  --raise:#FFFFFF;
+  --ink:#0D1512;
+  --ink-2:#39473F;
+  --slate:#61706A;
+  --line:#E1E7E3;
+  --line-2:#CBD5D0;
+
+  --accent:#088F58;
+  --accent-strong:#0AB971;
+  --accent-bg:#E8F7F0;
+
+  --flag:#9C5C0C;
+  --flag-bg:#FBF1E1;
+  --alert:#A93028;
+  --alert-bg:#FBEAE8;
+  --watch:#2C6B96;
+  --watch-bg:#E8F1F7;
+
+  --sans:ui-sans-serif,"Segoe UI Variable Text","SF Pro Text",-apple-system,"Segoe UI",system-ui,"Helvetica Neue",sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","Segoe UI Mono",Consolas,"Liberation Mono",monospace;
+
+  --shell:1120px;
+  --prose:70ch;
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#0A100D; --surface:#101815; --raise:#131D19;
+  --ink:#ECF2EF; --ink-2:#BDCAC4; --slate:#84968E;
+  --line:#1E2C26; --line-2:#2C3D36;
+  --accent:#2ED68F; --accent-strong:#3FE39C; --accent-bg:#0D2A1F;
+  --flag:#E3AC5C; --flag-bg:#2A2013;
+  --alert:#EC7A70; --alert-bg:#2B1512;
+  --watch:#79B7DD; --watch-bg:#0C1F2B;
+}
+:root[data-theme="light"]{
+  --paper:#FCFCFB; --surface:#F3F6F4; --raise:#FFFFFF;
+  --ink:#0D1512; --ink-2:#39473F; --slate:#61706A;
+  --line:#E1E7E3; --line-2:#CBD5D0;
+  --accent:#088F58; --accent-strong:#0AB971; --accent-bg:#E8F7F0;
+  --flag:#9C5C0C; --flag-bg:#FBF1E1;
+  --alert:#A93028; --alert-bg:#FBEAE8;
+  --watch:#2C6B96; --watch-bg:#E8F1F7;
+}
+
+/* ────────────────────────────────────────────────
+   BASE
+   ──────────────────────────────────────────────── */
+*,*::before,*::after{ box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; scroll-behavior:smooth; }
+html,body{ margin:0; padding:0; }
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:16.5px;
+  line-height:1.64;
+  letter-spacing:-0.005em;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+img,svg{ max-width:100%; height:auto; }
+
+.shell{ max-width:var(--shell); margin-inline:auto; padding-inline:clamp(16px,4vw,48px); }
+.prose{ max-width:var(--prose); }
+
+p{ margin:0 0 1.05em; color:var(--ink-2); }
+p:last-child{ margin-bottom:0; }
+strong{ color:var(--ink); font-weight:650; }
+a{ color:var(--accent); text-decoration-thickness:1px; text-underline-offset:2px; }
+a:focus-visible,button:focus-visible{ outline:2px solid var(--accent-strong); outline-offset:3px; border-radius:3px; }
+
+h1,h2,h3,h4{ color:var(--ink); text-wrap:balance; margin:0; }
+h1{ font-size:clamp(2.3rem,6vw,4rem); font-weight:760; letter-spacing:-0.038em; line-height:1.03; }
+h2{ font-size:clamp(1.55rem,3.2vw,2.25rem); font-weight:720; letter-spacing:-0.028em; line-height:1.12; }
+h3{ font-size:1.17rem; font-weight:680; letter-spacing:-0.018em; line-height:1.3; }
+h4{ font-size:1rem; font-weight:670; letter-spacing:-0.01em; }
+
+.eyebrow{
+  font-family:var(--mono); font-size:0.685rem; font-weight:600;
+  letter-spacing:0.16em; text-transform:uppercase; color:var(--slate);
+}
+.lede{ font-size:1.12rem; line-height:1.58; color:var(--ink-2); }
+
+code,.mono{ font-family:var(--mono); font-size:0.86em; letter-spacing:-0.01em; }
+code{
+  background:var(--surface); border:1px solid var(--line); border-radius:4px;
+  padding:0.08em 0.36em; color:var(--ink);
+  overflow-wrap:anywhere;
+}
+pre{
+  margin:0; padding:14px 16px; overflow-x:auto;
+  background:var(--surface); border:1px solid var(--line); border-radius:10px;
+  font-family:var(--mono); font-size:0.8rem; line-height:1.55; color:var(--ink);
+}
+
+/* ────────────────────────────────────────────────
+   COVER
+   ──────────────────────────────────────────────── */
+.cover{ padding-block:clamp(52px,9vw,100px) clamp(40px,6vw,64px); border-bottom:1px solid var(--line); }
+.cover .kicker{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:26px; }
+.cover h1{ margin-bottom:22px; }
+.cover .sub{ font-size:clamp(1.08rem,2vw,1.3rem); line-height:1.5; color:var(--slate); max-width:62ch; }
+
+.meta-grid{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));
+  gap:1px; background:var(--line); border:1px solid var(--line);
+  border-radius:10px; overflow:hidden; margin:40px 0 0;
+}
+.meta-grid > div{ background:var(--paper); padding:15px 17px; }
+.meta-grid dt{ font-family:var(--mono); font-size:0.64rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--slate); margin-bottom:6px; }
+.meta-grid dd{ margin:0; font-size:0.93rem; font-weight:600; color:var(--ink); }
+.meta-grid dd span{ display:block; font-weight:400; color:var(--slate); font-size:0.84rem; margin-top:2px; }
+
+/* ────────────────────────────────────────────────
+   CHIPS
+   ──────────────────────────────────────────────── */
+.chip{
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:var(--mono); font-size:0.66rem; font-weight:600;
+  letter-spacing:0.09em; text-transform:uppercase;
+  padding:4px 9px; border-radius:5px;
+  border:1px solid var(--line-2); color:var(--slate); background:var(--surface);
+  white-space:nowrap;
+}
+.chip.is-accent{ color:var(--accent); border-color:color-mix(in srgb,var(--accent) 34%,transparent); background:var(--accent-bg); }
+.chip.is-flag{ color:var(--flag); border-color:color-mix(in srgb,var(--flag) 34%,transparent); background:var(--flag-bg); }
+.chip.is-alert{ color:var(--alert); border-color:color-mix(in srgb,var(--alert) 34%,transparent); background:var(--alert-bg); }
+.chip.is-watch{ color:var(--watch); border-color:color-mix(in srgb,var(--watch) 34%,transparent); background:var(--watch-bg); }
+
+/* ────────────────────────────────────────────────
+   CONTENTS
+   ──────────────────────────────────────────────── */
+.toc{
+  display:grid; gap:1px; background:var(--line); border:1px solid var(--line);
+  border-radius:12px; overflow:hidden;
+  grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+}
+.toc a{
+  background:var(--raise); padding:13px 16px; text-decoration:none; color:var(--ink);
+  display:flex; gap:12px; align-items:baseline; font-size:0.94rem; font-weight:560;
+}
+.toc a:hover{ background:var(--accent-bg); }
+.toc a span{ font-family:var(--mono); font-size:0.7rem; color:var(--slate); min-width:2ch; }
+
+/* ────────────────────────────────────────────────
+   SECTIONS
+   ──────────────────────────────────────────────── */
+section{ padding-block:clamp(46px,7vw,84px); border-bottom:1px solid var(--line); scroll-margin-top:12px; }
+section:last-of-type{ border-bottom:0; }
+.sec-head{ display:flex; flex-direction:column; gap:13px; margin-bottom:34px; max-width:var(--prose); }
+
+.stack{ display:flex; flex-direction:column; gap:clamp(20px,3vw,30px); }
+.stack-sm{ display:flex; flex-direction:column; gap:14px; }
+.cols{ display:grid; gap:clamp(16px,2.4vw,24px); grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); }
+
+.card{
+  background:var(--raise); border:1px solid var(--line); border-radius:12px;
+  padding:clamp(17px,2.5vw,24px); display:flex; flex-direction:column; gap:11px;
+}
+.card > .eyebrow{ margin-bottom:-3px; }
+.card p{ font-size:0.95rem; margin:0; }
+
+.note{
+  border:1px solid var(--line); border-radius:10px; padding:16px 18px;
+  background:var(--surface); display:flex; flex-direction:column; gap:8px;
+}
+.note.is-flag{ background:var(--flag-bg); border-color:color-mix(in srgb,var(--flag) 26%,transparent); }
+.note.is-alert{ background:var(--alert-bg); border-color:color-mix(in srgb,var(--alert) 26%,transparent); }
+.note.is-accent{ background:var(--accent-bg); border-color:color-mix(in srgb,var(--accent) 26%,transparent); }
+.note.is-watch{ background:var(--watch-bg); border-color:color-mix(in srgb,var(--watch) 26%,transparent); }
+.note p{ margin:0; font-size:0.94rem; }
+.note.is-flag .eyebrow{ color:var(--flag); }
+.note.is-alert .eyebrow{ color:var(--alert); }
+.note.is-accent .eyebrow{ color:var(--accent); }
+.note.is-watch .eyebrow{ color:var(--watch); }
+
+ul.plain{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:9px; }
+ul.plain li{ position:relative; padding-left:19px; font-size:0.95rem; color:var(--ink-2); line-height:1.56; }
+ul.plain li::before{
+  content:""; position:absolute; left:2px; top:0.62em;
+  width:6px; height:6px; border-radius:1.5px; background:var(--line-2);
+}
+ul.plain.is-accent li::before{ background:var(--accent); }
+ul.plain.is-alert li::before{ background:var(--alert); }
+ul.plain.is-flag li::before{ background:var(--flag); }
+
+/* ────────────────────────────────────────────────
+   TRACK (flow, step by step)
+   ──────────────────────────────────────────────── */
+.track{
+  display:grid; gap:1px; background:var(--line); border:1px solid var(--line);
+  border-radius:12px; overflow:hidden;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+}
+.track .step{ background:var(--raise); padding:16px 17px 19px; display:flex; flex-direction:column; gap:7px; }
+.track .step .n{ font-family:var(--mono); font-size:0.68rem; letter-spacing:0.12em; color:var(--accent); font-weight:600; }
+.track .step .h{ font-weight:660; font-size:0.97rem; letter-spacing:-0.012em; color:var(--ink); }
+.track .step .d{ font-size:0.87rem; color:var(--slate); line-height:1.5; }
+.track .step .who{ font-family:var(--mono); font-size:0.64rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--slate); }
+
+/* ────────────────────────────────────────────────
+   LEGEND
+   ──────────────────────────────────────────────── */
+.legend{
+  display:grid; gap:1px; background:var(--line); border:1px solid var(--line);
+  border-radius:11px; overflow:hidden;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+}
+.legend > div{ background:var(--raise); padding:15px 17px 18px; display:flex; flex-direction:column; gap:8px; }
+.legend p{ margin:0; font-size:0.875rem; color:var(--slate); line-height:1.5; }
+.legend .big{ font-size:1.9rem; font-weight:740; letter-spacing:-0.03em; color:var(--ink); line-height:1; }
+
+/* ────────────────────────────────────────────────
+   FINDINGS
+   ──────────────────────────────────────────────── */
+.findings{ display:flex; flex-direction:column; gap:clamp(18px,2.6vw,26px); }
+.finding{
+  border:1px solid var(--line);
+  border-left:4px solid var(--line-2);
+  border-radius:12px;
+  background:var(--raise);
+  overflow:hidden;
+  scroll-margin-top:12px;
+}
+.finding.sev-high{ border-left-color:var(--alert); }
+.finding.sev-medium{ border-left-color:var(--flag); }
+.finding.sev-low{ border-left-color:var(--watch); }
+.finding.sev-info{ border-left-color:var(--accent); }
+
+.f-top{
+  padding:18px clamp(16px,2.4vw,26px) 17px;
+  border-bottom:1px solid var(--line);
+  display:flex; flex-direction:column; gap:11px;
+}
+.f-id{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.f-id .num{
+  font-family:var(--mono); font-size:0.72rem; font-weight:600;
+  letter-spacing:0.1em; color:var(--slate); font-variant-numeric:tabular-nums;
+}
+.f-top h3{ max-width:62ch; }
+.f-top .summary{ margin:0; font-size:0.97rem; max-width:var(--prose); }
+
+.f-body{ display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:1px; background:var(--line); }
+.f-cell{ background:var(--raise); padding:16px clamp(16px,2.4vw,26px) 20px; display:flex; flex-direction:column; gap:8px; }
+.f-cell p{ margin:0; font-size:0.925rem; }
+.f-cell .eyebrow{ font-size:0.63rem; }
+.f-cell.fix .eyebrow{ color:var(--accent); }
+
+.f-where{
+  background:var(--surface);
+  border-top:1px solid var(--line);
+  padding:12px clamp(16px,2.4vw,26px) 14px;
+  display:flex; flex-wrap:wrap; gap:6px 14px; align-items:baseline;
+}
+.f-where .eyebrow{ font-size:0.62rem; }
+.f-where .loc{ font-family:var(--mono); font-size:0.74rem; color:var(--ink-2); overflow-wrap:anywhere; }
+
+/* ────────────────────────────────────────────────
+   TABLES
+   ──────────────────────────────────────────────── */
+.tw{ overflow-x:auto; border:1px solid var(--line); border-radius:11px; background:var(--raise); }
+table{ border-collapse:collapse; width:100%; min-width:640px; font-size:0.91rem; }
+th,td{ text-align:left; padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:top; }
+thead th{
+  font-family:var(--mono); font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase;
+  color:var(--slate); font-weight:600; background:var(--surface); white-space:nowrap;
+}
+tbody tr:last-child td{ border-bottom:0; }
+td{ color:var(--ink-2); }
+td strong{ font-weight:640; }
+td code{ font-size:0.8em; }
+td.f{ font-family:var(--mono); font-size:0.78rem; color:var(--ink); white-space:nowrap; }
+.num{ font-variant-numeric:tabular-nums; white-space:nowrap; }
+.ok{ color:var(--accent); font-weight:640; }
+.bad{ color:var(--alert); font-weight:640; }
+.warn{ color:var(--flag); font-weight:640; }
+
+/* ────────────────────────────────────────────────
+   FOOT
+   ──────────────────────────────────────────────── */
+.foot{ padding-block:44px 70px; color:var(--slate); font-size:0.88rem; }
+.foot .r{ display:flex; flex-wrap:wrap; gap:10px 22px; align-items:center; }
+
+/* ────────────────────────────────────────────────
+   THEME TOGGLE
+   ──────────────────────────────────────────────── */
+.theme-toggle{
+  position:fixed; right:16px; bottom:16px; z-index:50;
+  padding:9px 13px; border-radius:9px; cursor:pointer;
+  background:var(--raise); color:var(--ink); border:1px solid var(--line-2);
+  font-family:var(--mono); font-size:0.68rem; font-weight:600;
+  letter-spacing:0.11em; text-transform:uppercase;
+  box-shadow:0 2px 14px rgba(0,0,0,0.10);
+}
+.theme-toggle:hover{ border-color:var(--accent); color:var(--accent); }
+@media print{ .theme-toggle{ display:none; } }
+
+@media (prefers-reduced-motion:reduce){
+  *{ animation:none !important; transition:none !important; }
+  html{ scroll-behavior:auto; }
+}
+</style>
+</head>
+<body>
+
+<div style="border-bottom:1px solid var(--line);background:var(--surface);">
+  <div style="max-width:1120px;margin-inline:auto;padding:11px clamp(16px,4vw,48px);">
+    <a href="../" style="font-family:var(--mono);font-size:0.68rem;font-weight:600;letter-spacing:0.13em;text-transform:uppercase;color:var(--slate);text-decoration:none;">&#8592;&nbsp;&nbsp;Shivam Singh &middot; Documents</a>
+  </div>
+</div>
+
+
+<!-- ══════════ COVER ══════════ -->
+<header class="cover">
+  <div class="shell">
+    <div class="kicker">
+      <span class="chip is-accent">Smooth</span>
+      <span class="chip">Smooth Checkout &middot; merchant website</span>
+      <span class="chip">Code review</span>
+      <span class="chip">Hinglish &middot; internal</span>
+    </div>
+    <h1>Smooth Checkout &mdash; Fazal ke code ka poora review</h1>
+    <p class="sub">Merchant ki <strong>apni website</strong> par Smooth (AFS) se payment lene wala naya system. Kya bana hai, ek-ek hissa kaise kaam karta hai, kahan problem karega aur kahan nahi &mdash; simple bhasha mein, file-by-file. Har baat code padh kar likhi hai; jo cheez code se pakki nahi ho sakti, use saaf &ldquo;confirm karna baaki&rdquo; likha hai.</p>
+
+    <dl class="meta-grid">
+      <div><dt>Kisne likha</dt><dd>Fazal<span>1 Oct &ndash; 8 Oct 2026, branch <code>feat/outsource-checkout</code></span></dd></div>
+      <div><dt>API (smooth-pay-api)</dt><dd>98 files &middot; ~9,150 lines<span>PR #191, #192 &rarr; development</span></dd></div>
+      <div><dt>Web (smooth-pay-web)</dt><dd>15 files &middot; ~1,540 lines<span>PR #171, #172, #173 &rarr; development</span></dd></div>
+      <div><dt>Customer app</dt><dd>Kuch nahi chhua<span>Yeh feature customer app use nahi karta</span></dd></div>
+      <div><dt>Kahan pahuncha</dt><dd>Sirf <code>development</code> (dev)<span>Staging / production mein abhi nahi</span></dd></div>
+      <div><dt>Tests &middot; type-check</dt><dd>81 / 83 pass &middot; tsc &#10003;<span>2 fail sirf Windows line-ending (CRLF) ki wajah se</span></dd></div>
+    </dl>
+  </div>
+</header>
+
+
+<!-- ══════════ CONTENTS ══════════ -->
+<section style="padding-block:clamp(32px,5vw,52px);">
+  <div class="shell">
+    <div class="sec-head" style="margin-bottom:20px;">
+      <span class="eyebrow">Andar kya hai</span>
+    </div>
+    <nav class="toc" aria-label="Contents">
+      <a href="#saar"><span>01</span>Ek nazar mein (verdict)</a>
+      <a href="#kya-hai"><span>02</span>Yeh system hai kya</a>
+      <a href="#flow"><span>03</span>Ek payment ka poora safar</a>
+      <a href="#status"><span>04</span>Session ki zindagi (statuses)</a>
+      <a href="#paisa"><span>05</span>Paisa kaise record hota hai</a>
+      <a href="#hold"><span>06</span>Hold &mdash; jab system ruk jata hai</a>
+      <a href="#sweep"><span>07</span>Reconcile sweep (backup checker)</a>
+      <a href="#halat"><span>08</span>Har halat mein kya hoga</a>
+      <a href="#security"><span>09</span>Security ki parten</a>
+      <a href="#panels"><span>10</span>Admin &amp; merchant panel</a>
+      <a href="#db"><span>11</span>Database mein kya badla</a>
+      <a href="#chhua"><span>12</span>Purane code mein kya chhua</a>
+      <a href="#issues"><span>13</span>Kya gadbad hai (findings)</a>
+      <a href="#achha"><span>14</span>Kya achha bana hai</a>
+      <a href="#plan"><span>15</span>Plan vs jo bana</a>
+      <a href="#live"><span>16</span>Live karne se pehle</a>
+      <a href="#files"><span>17</span>File-by-file guide</a>
+      <a href="#tests"><span>18</span>Tests, build, Geidea</a>
+      <a href="#maine"><span>19</span>Maine kya kiya</a>
+    </nav>
+  </div>
+</section>
+
+
+<!-- ══════════ 01 SUMMARY ══════════ -->
+<section id="saar">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">01 &middot; Ek nazar mein</span>
+      <h2>Core mazboot hai, gadbad kinaron par hai &mdash; aur ek purana bug production mein hai</h2>
+      <p class="lede">Payment ka sabse nazuk hissa &mdash; &ldquo;paisa sach mein aaya ya nahi, aur ek payment ek hi baar record ho&rdquo; &mdash; Fazal ne dhyan se banaya hai. Server browser par bharosa nahi karta, har baar AFS se khud puchta hai, aur double-record rokne ke kai taale lagaye hain. Jo problems mili hain woh zyada-tar aas-paas ki hain: secrets ka response mein chale jana, galat permissions, Stripe ka platform account, chupchap na jane wala webhook, aur release ki safety.</p>
+    </div>
+
+    <div class="legend" style="margin-bottom:28px;">
+      <div><span class="chip is-alert">High</span><span class="big">1</span><p>Admin report se subscription payments gayab. <strong>Yeh checkout nahi</strong>, Fazal ka 2 Oct wala report change hai &mdash; aur production mein live hai.</p></div>
+      <div><span class="chip is-flag">Medium</span><span class="big">5</span><p>Secrets response mein, hidden permissions, Stripe platform account, silent webhook, smooth.js release safety.</p></div>
+      <div><span class="chip is-watch">Low</span><span class="big">8</span><p>Merchant panel mein dikhna, index, AFS par zyada calls, hold UX, copy-paste code, UI ki chhoti galtiyan.</p></div>
+      <div><span class="chip is-accent">Achha</span><span class="big">13+</span><p>Server-side verify, double-record se bachav, AFS ke tricky codes, sweep, SSRF protection, SRI, 83 tests.</p></div>
+    </div>
+
+    <div class="cols">
+      <div class="card">
+        <span class="eyebrow">Sabse pehle kya dekhna hai</span>
+        <ul class="plain is-alert">
+          <li><a href="#i104"><strong>ISSUE-104</strong></a> &mdash; admin Transaction Report ka filter NULL wali rows hata deta hai; subscriptions report mein kabhi nahi dikhenge. Production mein live.</li>
+          <li><a href="#i105"><strong>ISSUE-105</strong></a> &mdash; checkout server-key ka hash aur encrypted webhook secret <code>GET /merchants/me</code> mein ja rahe hain.</li>
+          <li><a href="#i106"><strong>ISSUE-106</strong></a> &mdash; &ldquo;Smooth Checkout&rdquo; product type ko branch delete / user delete / RBAC edit jaisi chhupi permissions mil rahi hain.</li>
+          <li><a href="#i107"><strong>ISSUE-107</strong></a> &mdash; Stripe ke saath paisa Smooth ke apne Stripe account mein ja sakta hai.</li>
+          <li><a href="#i108"><strong>ISSUE-108</strong></a> &mdash; webhook secret na ho to merchant ko &ldquo;paid&rdquo; message kabhi nahi jata, koi log bhi nahi.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Sabse badi baat jo bug nahi, faisla hai</span>
+        <p>Docs mein plan tha ki yeh <strong>alag service, alag database</strong> hoga aur payment ka box merchant ke page se alag rahega. Fazal ne isse <strong>hamare API ke andar ek module</strong> bana diya, aur AFS ka card form seedha merchant ke page par chalta hai. Iska matlab: merchant ko PCI ka bhaari wala form (<strong>SAQ A-EP</strong>) bharna padega, aur har merchant website ko Apple Pay ke liye alag se verify karwana hoga. Yeh client ke saath confirm karne wali baat hai &mdash; <a href="#plan">section 15</a>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ 02 WHAT IT IS ══════════ -->
+<section id="kya-hai">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">02 &middot; Yeh system hai kya</span>
+      <h2>Stripe Checkout jaisa, par hamare AFS ke saath</h2>
+      <p>Abhi tak Smooth sirf apni jagah par payment leta tha: restaurant ka QR, payment link, customer app. Yeh naya system <strong>kisi bhi merchant ki apni website</strong> par payment lene deta hai &mdash; jaise ek perfume shop <code>shop.example.com</code>. Customer shop ki site par hi card / Apple Pay / Google Pay se pay karta hai, paisa merchant ke AFS account mein jata hai, aur shop ke server ko Smooth batata hai ki &ldquo;order paid ho gaya&rdquo;.</p>
+    </div>
+
+    <div class="stack">
+      <div class="note is-accent">
+        <span class="eyebrow">Ek misaal</span>
+        <p>Ayesha <code>shop.example.com</code> par 250 AED ka perfume cart mein daalti hai aur &ldquo;Pay&rdquo; dabati hai. Shop ka server chupke se Smooth ko bolta hai: &ldquo;250.00 AED ka session banao, order-123 ke liye&rdquo;. Smooth ek session id aur ek chhota password (client secret) deta hai. Shop ka page <code>smooth.js</code> load karta hai, jo Apple Pay / Google Pay / Card ka option dikhata hai. Ayesha card daalti hai &mdash; card ka data seedha AFS ke paas jata hai, Smooth ya shop tak nahi. Payment ke baad Ayesha shop ke &ldquo;thank you&rdquo; page par aati hai, jo Smooth se puchta rehta hai &ldquo;paid hua?&rdquo;. Smooth AFS se confirm karke ek Transaction likhta hai aur shop ke server ko signed message bhejta hai. Shop order bhej deti hai.</p>
+      </div>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th>Kirdaar</th><th>Kahan chalta hai</th><th>Kya karta hai</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Merchant ka server</strong></td><td>Shop ka backend</td><td>Secret key (<code>sk_</code>) se session banata hai, amount wahi tay karta hai. Webhook receive karta hai, <code>confirm</code> se pakka karta hai.</td></tr>
+            <tr><td><strong>Merchant ka page</strong></td><td>Ayesha ka browser</td><td>Public key (<code>pk_</code>) + session ka client secret ke saath <code>smooth.js</code> chalata hai. Amount badal nahi sakta.</td></tr>
+            <tr><td><strong>smooth.js</strong></td><td>Hamari script, merchant ke page mein</td><td>Method list dikhata hai, AFS ka widget (COPYandPAY) load karta hai, Stripe ho to Stripe ka form.</td></tr>
+            <tr><td><strong>Smooth API</strong></td><td><code>smooth-pay-api/src/modules/checkout</code></td><td>Session, AFS checkout banana, AFS se verify, Transaction likhna, merchant ko notice, backup sweep.</td></tr>
+            <tr><td><strong>AFS</strong></td><td>Gateway (ACI / OPPWA)</td><td>Card / wallet charge karta hai. Smooth uska status khud re-query karta hai.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th>Chaabi (key)</th><th>Kaisi dikhti hai</th><th>Kiske paas</th><th>Kis kaam ki</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Browser key</strong></td><td><code>pk_&lt;merchant uuid&gt;</code></td><td>Sabko dikhti hai (public)</td><td>Batati hai ki kaunsa merchant. Isme koi secret nahi &mdash; sirf merchant ka id hai.</td></tr>
+            <tr><td><strong>Server key</strong></td><td><code>sk_&lt;uuid&gt;_&lt;64 hex&gt;</code></td><td>Sirf merchant ke server par</td><td>Session banana / padhna / confirm. Owner &ldquo;Issue&rdquo; dabata hai, ek hi baar dikhti hai, DB mein sirf uska SHA-256 hash. Dobara issue = purani turant band.</td></tr>
+            <tr><td><strong>Legacy server key</strong></td><td><code>sk_&lt;uuid&gt;_&lt;HMAC&gt;</code></td><td>Purane test merchants</td><td><code>CHECKOUT_KEY_SECRET</code> env se nikalti hai. Tabhi chalti hai jab env set ho aur Owner ne nayi key issue na ki ho.</td></tr>
+            <tr><td><strong>Webhook secret</strong></td><td><code>whsec_&lt;64 hex&gt;</code></td><td>Sirf merchant ke server par</td><td>&ldquo;Paid&rdquo; message par signature lagane ke liye. DB mein encrypted (AFS_ENCRYPTION_KEY se).</td></tr>
+            <tr><td><strong>Client secret</strong></td><td>64 hex, har session ka alag</td><td>Us session ka page</td><td>Browser ke calls (init / checkout / status) ko sirf usi session tak seemit karta hai.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <span class="eyebrow">Kaun use kar sakta hai</span>
+        <p>Sirf woh merchant jise admin ne <strong>&ldquo;Smooth Checkout&rdquo; product type</strong> diya ho. Har session banate waqt yeh check hota hai (<code>assertCheckoutEnabled</code>). Keys sirf merchant ka <strong>Owner</strong> issue kar sakta hai; Manager page dekh sakta hai.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ 03 FLOW ══════════ -->
+<section id="flow">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">03 &middot; Ek payment ka poora safar</span>
+      <h2>Session banne se merchant ko message milne tak, 10 kadam</h2>
+      <p>Har kadam ke neeche likha hai ki kaun karta hai aur code mein kahan hai.</p>
+    </div>
+
+    <div class="track">
+      <div class="step"><span class="n">01 &middot; CREATE</span><span class="h">Session banana</span><span class="d">Shop server: <code>POST /api/v1/checkout/sessions</code>, <code>Bearer sk_&hellip;</code>, body <code>{"amount":"250.00","currency":"AED","reference":"order-123"}</code>. Amount string, exactly 2 decimal; sirf AED. Gateway, AFS entity, test-mode session par &ldquo;freeze&rdquo; ho jate hain. 30 min expiry.</span><span class="who">sessions.service.ts &rarr; create</span></div>
+      <div class="step"><span class="n">02 &middot; MOUNT</span><span class="h">Page par smooth.js</span><span class="d"><code>Smooth('pk_&hellip;').mount({ sessionId, clientSecret, container, returnUrl })</code>. Pehle skeleton (loading) dikhta hai.</span><span class="who">public/smooth.js &rarr; mount</span></div>
+      <div class="step"><span class="n">03 &middot; INIT</span><span class="h">Session shuru</span><span class="d"><code>POST /public/sessions/:id/init</code>. Website allowed list mein ho (agar admin ne list di hai). CREATED &rarr; PROCESSING.</span><span class="who">sessions.service.ts &rarr; init</span></div>
+      <div class="step"><span class="n">04 &middot; CHECKOUT</span><span class="h">AFS checkout banana</span><span class="d"><code>POST /public/sessions/:id/checkout</code>. AFS ko <code>/v1/checkouts</code> (amount, DB, <code>integrity=true</code>, <code>merchantTransactionId = cs_&hellip;-time</code>). Ek session = ek AFS checkout; dobara call par wahi lauta deta hai.</span><span class="who">afs-checkout.provider.ts &rarr; createCheckout</span></div>
+      <div class="step"><span class="n">05 &middot; METHOD</span><span class="h">Method choose</span><span class="d">Apple Pay / Google Pay / Card &mdash; jo merchant ne enable kiye aur browser chala sake. AFS ka <code>paymentWidgets.js</code> SRI hash ke saath load. Tabby kabhi nahi dikhta.</span><span class="who">smooth.js &rarr; _renderMethodList, _mountOpp</span></div>
+      <div class="step"><span class="n">06 &middot; PAY</span><span class="h">Ayesha pay karti hai</span><span class="d">Card data AFS ke widget mein, AFS ke server par jata hai. 3DS ho to bank ka page. Phir AFS browser ko <code>returnUrl</code> par bhejta hai.</span><span class="who">AFS (COPYandPAY)</span></div>
+      <div class="step"><span class="n">07 &middot; POLL</span><span class="h">Thank-you page puchta hai</span><span class="d"><code>smooth.status({ sessionId, clientSecret })</code> har ~2 sec, jab tak PAID / FAILED / EXPIRED. Har call par server AFS se dobara puchta hai.</span><span class="who">sessions.service.ts &rarr; status</span></div>
+      <div class="step"><span class="n">08 &middot; SETTLE</span><span class="h">Paisa pakka, record</span><span class="d">AFS status &rarr; success code + amount match + currency match &rarr; ek DB transaction mein Transaction row + session PAID.</span><span class="who">settle-checkout.service.ts &rarr; settle, recordPaid</span></div>
+      <div class="step"><span class="n">09 &middot; NOTICE</span><span class="h">Merchant ko signed message</span><span class="d">Merchant ke success webhook par POST, header mein timestamp + HMAC signature. Fail ho to 24 ghante retry.</span><span class="who">merchant-notify.ts &rarr; postPaidWebhook</span></div>
+      <div class="step"><span class="n">10 &middot; CONFIRM</span><span class="h">Merchant pakka karta hai</span><span class="d">Shop server <code>POST /sessions/:id/confirm</code> (sk_) &mdash; PAID + transactionId mile tabhi order bheje.</span><span class="who">sessions.service.ts &rarr; confirmForMerchant</span></div>
+    </div>
+
+    <div class="note is-watch" style="margin-top:22px;">
+      <span class="eyebrow">Teen backup raste</span>
+      <p>Agar Ayesha pay karke tab band kar de to step 07 kabhi nahi hoga. Tab bhi paisa record hota hai: (1) <strong>AFS ka webhook</strong> <code>POST /api/v1/checkout/webhooks/afs</code> (ya dine-in wale webhook se forward), (2) <strong>reconcile sweep</strong> har 2 minute, (3) merchant ka <strong>confirm</strong> call. Teeno ek hi <code>settle</code> function chalate hain, isliye nateeja hamesha ek jaisa.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ 04 STATUS ══════════ -->
+<section id="status">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">04 &middot; Session ki zindagi</span>
+      <h2>Paanch status, aur teen jaan-boojh kar rakhe gaye apvaad</h2>
+    </div>
+
+    <div class="tw" style="margin-bottom:22px;">
+      <table>
+        <thead><tr><th>Status</th><th>Matlab</th><th>Kaise pahunchta hai</th></tr></thead>
+        <tbody>
+          <tr><td class="f">CREATED</td><td>Session bana, page ne abhi kholna shuru nahi kiya</td><td>Server key se create</td></tr>
+          <tr><td class="f">PROCESSING</td><td>Page khula / AFS checkout ban gaya, payment ka intezaar</td><td>init ya checkout</td></tr>
+          <tr><td class="f">PAID</td><td>AFS ne success diya, amount match, Transaction likha gaya</td><td>Sirf AFS re-query se (webhook body se kabhi nahi)</td></tr>
+          <tr><td class="f">FAILED</td><td>AFS ne saaf decline diya (issuer / risk / validation), ya admin ne hold ko failed kiya</td><td>settle ya admin</td></tr>
+          <tr><td class="f">EXPIRED</td><td>30 minute beet gaye aur paid nahi hua</td><td>Jab bhi koi session ko chhuta hai (lazy). Stripe ho to pehle PaymentIntent cancel</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cols">
+      <div class="card">
+        <span class="eyebrow">Apvaad 1</span>
+        <h3>EXPIRED &rarr; PAID</h3>
+        <p>AFS ka checkout id <strong>apne banne se</strong> ~30 min jeeta hai. Agar AFS checkout session ke 29ve minute par bana, to widget ~59 minute tak pay ho sakta hai. Session 30 par EXPIRED dikhega, phir payment aate hi PAID. Merchant ko yeh case sambhalna padega (order bhejo ya refund karo).</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Apvaad 2</span>
+        <h3>FAILED &rarr; PAID (sirf AFS, 2 ghante)</h3>
+        <p>Card decline hua, page ne FAILED dikha diya, par Ayesha ne browser ka back dabaya aur usi AFS checkout par dusra card daal diya. COPYandPAY isko allow karta hai. Isliye 2 ghante tak FAILED session ko bhi dobara check kiya jata hai, aur sirf <strong>success</strong> mile tabhi PAID.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Apvaad 3</span>
+        <h3>Hold</h3>
+        <p>Jab AFS kuch aisa bole jisse paisa kat gaya ho par success code na ho (ya amount alag ho), status wahin ruk jata hai aur <code>holdReason</code> lag jata hai. Admin decide karta hai &mdash; <a href="#hold">section 06</a>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ 05 MONEY ══════════ -->
+<section id="paisa">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">05 &middot; Paisa kaise record hota hai</span>
+      <h2><code>settle()</code> &mdash; poore system ka dil</h2>
+      <p>File: <code>settle/settle-checkout.service.ts</code>. Yeh function webhook, status poll, confirm, sweep aur admin recheck &mdash; sab se chalta hai. Iska kaam: AFS se sach puchna aur zyada se zyada ek Transaction likhna.</p>
+    </div>
+
+    <div class="cols" style="margin-bottom:24px;">
+      <div class="card">
+        <span class="eyebrow">Kadam 1</span>
+        <h3>AFS se dobara puchna</h3>
+        <p><code>GET /v1/checkouts/{id}/payment</code>. Agar AFS bole id expire ho gaya (<code>200.300.404</code>), to <code>GET /v1/query?merchantTransactionId=&hellip;</code> se dhoondhta hai &mdash; isiliye session par <code>afsMerchantTransactionId</code> save hota hai.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Kadam 2</span>
+        <h3>AFS code ko 4 dibbon mein</h3>
+        <p><strong>paid</strong>: <code>000.000.*</code>, <code>000.100.1*</code> &middot; <strong>pending</strong>: <code>000.200</code>, <code>000.400</code>, <code>800.400.5</code>, <code>100.400.500</code> &middot; <strong>unknown</strong> (kabhi decline nahi): <code>800.5/800.6/800.800.4/8</code>, <code>600.1</code>, <code>900.*</code>, <code>999.*</code> &middot; <strong>declined</strong>: baaki <code>100.*</code>/<code>800.*</code>. Cut-off (<code>800.800.*</code> + acquirer ne authorize kiya) &rarr; hold.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Kadam 3</span>
+        <h3>Teen cheezein match</h3>
+        <p>AFS ka reference = session par save reference; amount 2 decimal mein exact same (fils mein, float nahi); currency same. Kuch bhi alag &rarr; hold (paid nahi).</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Kadam 4</span>
+        <h3>Ek DB transaction mein dono kaam</h3>
+        <p>Transaction row banao <strong>aur</strong> session ko PAID karo (sirf agar abhi bhi open ho). Ek fail to dono rollback. Do request ek saath aayi to unique key ki wajah se dusri pehli wali row &ldquo;adopt&rdquo; kar leti hai &mdash; double row nahi banti.</p>
+      </div>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>Transaction column</th><th>Checkout payment mein kya jata hai</th></tr></thead>
+        <tbody>
+          <tr><td class="f">type</td><td><code>CHECKOUT</code> (naya enum value)</td></tr>
+          <tr><td class="f">total, grandTotal</td><td>Session ka amount (wahi jo shop server ne bheja)</td></tr>
+          <tr><td class="f">tax, serviceCharge, tip, cashback</td><td>Sab 0 &mdash; website sale par na VAT split, na tip, na loyalty</td></tr>
+          <tr><td class="f">paymentMethod</td><td><code>AFS</code> (ya STRIPE / TELR) &mdash; Apple/Google Pay bhi AFS hi likha jata hai</td></tr>
+          <tr><td class="f">afsCheckoutId</td><td>AFS checkout id (unique)</td></tr>
+          <tr><td class="f">idempotencyKey</td><td><code>checkout:AFS:&lt;checkoutId&gt;</code></td></tr>
+          <tr><td class="f">merchantId</td><td>Merchant</td></tr>
+          <tr><td class="f">orderId, userId, branch</td><td>Kuch nahi &mdash; koi Order, customer ya branch nahi</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ 06 HOLD ══════════ -->
+<section id="hold">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">06 &middot; Hold</span>
+      <h2>Jab system khud faisla nahi karta, insaan karta hai</h2>
+      <p>Admin panel: <strong>Reports &rarr; Checkout Holds</strong>. Dekhne ke liye <code>admin.reports.view</code>, kuch karne ke liye <code>admin.reconciliation.manage</code>. Har faisle ke saath note zaroori (kya check kiya, refund id), aur kisne / kab save hota hai.</p>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Hold</th><th>Simple matlab</th><th>Admin kya kare</th></tr></thead>
+        <tbody>
+          <tr><td class="f">acquirer_cutoff</td><td>Bank ke &ldquo;cut-off&rdquo; time mein AFS ne <code>800.800.*</code> diya par acquirer ne authorize kar diya &mdash; card se paisa kat gaya, success code nahi aaya. (Dine-in mein bhi yahi rule hai.)</td><td>AFS portal dekho &rarr; <strong>Mark paid</strong> (Transaction + merchant ko notice)</td></tr>
+          <tr><td class="f">multiple_payments</td><td>Ek session par do successful debit</td><td><strong>Mark paid</strong>, phir extra wala AFS par refund</td></tr>
+          <tr><td class="f">amount_mismatch</td><td>AFS ne alag amount kata</td><td>AFS par refund &rarr; <strong>Mark failed</strong></td></tr>
+          <tr><td class="f">currency_mismatch</td><td>AFS ne alag currency mein kata</td><td>Refund &rarr; <strong>Mark failed</strong></td></tr>
+          <tr><td class="f">provider_ref_conflict</td><td>Yeh AFS id pehle se kisi aur Transaction (jaise dine-in) par hai</td><td>Paid mat karo; dusri row check karo &rarr; <strong>Mark failed</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:16px;max-width:var(--prose);">Hold wala session sweep mein nahi aata. Par shopper ka page us par poll karta rehta hai aur use status PROCESSING milta rehta hai &mdash; <a href="#i114">ISSUE-114</a>.</p>
+  </div>
+</section>
+
+
+<!-- ══════════ 07 SWEEP ══════════ -->
+<section id="sweep">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">07 &middot; Reconcile sweep</span>
+      <h2>Har 2 minute ek chowkidaar ghoomta hai</h2>
+      <p>File: <code>settle/checkout-reconcile.service.ts</code>. API ke har process mein <code>setInterval</code>. Koi lock nahi &mdash; jaan-boojh kar: <code>settle</code> dobara chalne par kuch nahi bigaadta, do instance hone par bas AFS ko ek extra call. Dhyan dein: dine-in AFS ke liye aisa sweep <strong>abhi bhi nahi hai</strong> (ISSUE-089, CRITICAL) &mdash; checkout mein Fazal ne bana diya.</p>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Kaunse session</th><th>Kitni der tak</th><th>Kitni baar</th></tr></thead>
+        <tbody>
+          <tr><td>PROCESSING / EXPIRED, AFS reference ho, hold na ho, 1 min se chhua nahi</td><td>Banne ke 2 ghante tak</td><td>Har pass (2 min)</td></tr>
+          <tr><td>AFS FAILED (decline ke baad retry ho sakta hai)</td><td>2 ghante tak</td><td>Har pass</td></tr>
+          <tr><td>PROCESSING / EXPIRED, purane</td><td>2 se 72 ghante</td><td>Har session max har 30 min</td></tr>
+          <tr><td>PAID par merchant ne notice accept nahi kiya</td><td>24 ghante tak</td><td>Har pass</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:16px;max-width:var(--prose);">Har list se 25 tak, jo sabse pehle se nahi dekha gaya (<code>reconciledAt</code>) woh pehle &mdash; taaki kabhi settle na hone wale sessions baaki sab ko na rok dein. In queries ka index nahi hai (<a href="#i111">ISSUE-111</a>).</p>
+  </div>
+</section>
+
+
+<!-- ══════════ 08 SCENARIOS ══════════ -->
+<section id="halat">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">08 &middot; Har halat mein kya hoga</span>
+      <h2>Kahan problem karega, kahan nahi</h2>
+      <p>Code ke hisaab se har asli situation ka nateeja. &ldquo;Theek&rdquo; matlab paisa sahi record hota hai aur koi double nahi.</p>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Halat</th><th>Kya hoga</th><th>Nateeja</th></tr></thead>
+        <tbody>
+          <tr><td>Sab normal, Ayesha thank-you page par ruki</td><td>Status poll &rarr; settle &rarr; PAID seconds mein; merchant ko notice</td><td class="ok">Theek</td></tr>
+          <tr><td>Pay karke tab band kar diya</td><td>AFS webhook (agar AFS ko URL diya hai) ya 2 min mein sweep</td><td class="ok">Theek</td></tr>
+          <tr><td>AFS webhook bhi nahi aaya</td><td>Sweep 2 ghante har 2 min, phir 72 ghante tak har 30 min; id expire ho to <code>/v1/query</code></td><td class="ok">Theek (thoda late)</td></tr>
+          <tr><td>Card decline</td><td>FAILED. Back button se usi checkout par dobara pay kiya to 2 ghante tak PAID ho sakta hai</td><td class="ok">Theek</td></tr>
+          <tr><td>30 min baad pay hua</td><td>Pehle EXPIRED, phir PAID + merchant ko notice</td><td class="warn">Merchant ko sambhalna hoga</td></tr>
+          <tr><td>Shop ne ek order ke liye 2 session banaye, dono pay ho gaye</td><td>Dono PAID, do notice. System nahi rokta (same reference)</td><td class="warn">Merchant ki zimmedari</td></tr>
+          <tr><td>Do tab mein &ldquo;checkout&rdquo; ek saath</td><td>Ek AFS checkout jeetta hai, dusra wahi payload pata hai</td><td class="ok">Theek</td></tr>
+          <tr><td>Webhook + poll + sweep ek saath settle</td><td>Unique key: ek Transaction; notice do baar ja sakta hai (merchant <code>id</code> se dedupe kare)</td><td class="ok">Theek</td></tr>
+          <tr><td>Bank cut-off (<code>800.800.*</code>), paisa kata</td><td>Hold <code>acquirer_cutoff</code> &rarr; admin</td><td class="ok">Theek (manual)</td></tr>
+          <tr><td>Do baar debit</td><td>Hold <code>multiple_payments</code> &rarr; admin paid + refund</td><td class="ok">Theek (manual)</td></tr>
+          <tr><td>Merchant ka webhook server down</td><td>24 ghante retry; merchant confirm call se khud bhi pata kar sakta hai</td><td class="ok">Theek</td></tr>
+          <tr><td>Merchant ka webhook URL hai par <code>whsec_</code> issue nahi, legacy secret env khali</td><td>Notice kabhi nahi jata, koi log nahi</td><td class="bad">Problem &mdash; ISSUE-108</td></tr>
+          <tr><td>Session chalu hai aur admin ne merchant ka AFS token / entity badal diya</td><td>Purane sessions naye token + purane entity se verify &rarr; AFS mana &rarr; atke</td><td class="bad">Problem &mdash; ISSUE-115</td></tr>
+          <tr><td>Merchant ka gateway set hi nahi (default STRIPE) aur Stripe env set</td><td>Paisa Smooth ke Stripe account mein</td><td class="bad">Problem &mdash; ISSUE-107</td></tr>
+          <tr><td>Merchant Geidea par hai</td><td>Session create par 400 &ldquo;Checkout is not enabled for gateway GEIDEA&rdquo;</td><td class="ok">Safe (UI warning nahi &mdash; ISSUE-117)</td></tr>
+          <tr><td>Merchant AFS test mode mein, live env</td><td>Test checkout banega (integrity hash bina bhi chalega)</td><td class="warn">ISSUE-099 jaisa purana risk</td></tr>
+          <tr><td>Kisi ne nakli AFS webhook bheja</td><td>Body sirf ishara hai; settle khud AFS se puchta hai</td><td class="ok">Safe</td></tr>
+          <tr><td>Koi dusri website merchant ka checkout embed kare</td><td>Allowed websites list ho to init/checkout/status 403. List khali = koi bhi site (client secret phir bhi chahiye)</td><td class="ok">Safe (agar list bhari)</td></tr>
+          <tr><td>2 API instance chal rahe</td><td>Dono sweep karte hain; sirf duplicate AFS query</td><td class="ok">Theek</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ 09 SECURITY ══════════ -->
+<section id="security">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">09 &middot; Security ki parten</span>
+      <h2>Kya kis cheez se bachata hai</h2>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Khatra</th><th>Bachav</th><th>Code</th></tr></thead>
+        <tbody>
+          <tr><td>Browser se amount badalna</td><td>Amount sirf server key wale create mein; browser routes amount lete hi nahi</td><td><code>sessions.service.ts</code></td></tr>
+          <tr><td>Nakli &ldquo;paid&rdquo; batana</td><td>PAID sirf AFS re-query se; webhook body sirf routing</td><td><code>settle-checkout.service.ts</code></td></tr>
+          <tr><td>Server key chori</td><td>DB mein sirf hash; Owner nayi issue kare to purani turant band</td><td><code>auth/checkout-keys.ts</code></td></tr>
+          <tr><td>Doosre ka session padhna</td><td>Per-session client secret, constant-time compare; session ka merchant = pk ka merchant</td><td><code>sessions.service.ts &rarr; authorized</code></td></tr>
+          <tr><td>Doosri site par embed</td><td>Optional allowed-website list (Origin check). Note: yeh authentication nahi</td><td><code>merchant-notify.ts &rarr; originAllowed</code></td></tr>
+          <tr><td>Bahut zyada requests</td><td>Redis par limit: 1200/min per IP (server routes), 300/min per merchant+action, 300/min per IP+action (browser), 1200/min AFS webhook</td><td><code>http/rate-limit.ts</code></td></tr>
+          <tr><td>Webhook URL se hamare andar ke server par hamla (SSRF)</td><td>Sirf public https; DNS check + usi IP se connect (rebinding nahi); redirect follow nahi; private / link-local / IPv6 tricks block</td><td><code>settle/merchant-notify.ts</code></td></tr>
+          <tr><td>Merchant khud webhook URL badal de</td><td>URL aur domains sirf admin set karta hai; <code>PATCH /merchants/me</code> inhe hata deta hai</td><td><code>merchants.controller.ts</code></td></tr>
+          <tr><td>smooth.js se chhed-chhaad</td><td>Versioned file + SRI hash; integrity ke bina live AFS widget load nahi</td><td><code>smooth-js.controller.ts</code>, <code>smooth.js</code></td></tr>
+          <tr><td>Card data</td><td>Smooth tak aata hi nahi; sirf brand, BIN, last 4, holder, expiry save</td><td><code>providers/checkout-card.ts</code></td></tr>
+          <tr><td>Response cache mein secret</td><td><code>Cache-Control: no-store</code> sab session routes par</td><td><code>checkout.module.ts</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note is-flag" style="margin-top:20px;">
+      <span class="eyebrow">PCI &mdash; merchant ke liye bada fark</span>
+      <p>AFS ka card form merchant ke apne page ke andar chalta hai, isliye merchant ka page card capture ko chhoo sakta hai. Merchant ko <strong>SAQ A-EP</strong> (PCI DSS 4.0 ki 6.4.3 aur 11.6.1 bhi) karna hoga &mdash; sirf iframe / redirect wale SAQ A se kaafi bhaari. Fazal ne yeh baat Checkout page par likhi hai aur ek CSP bhi suggest kiya hai. Client ko yeh pehle se batana chahiye.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ 10 PANELS ══════════ -->
+<section id="panels">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">10 &middot; Admin &amp; merchant panel</span>
+      <h2>Web panel mein teen jagah kaam hua</h2>
+    </div>
+    <div class="cols">
+      <div class="card">
+        <span class="eyebrow">Merchant &rarr; Checkout</span>
+        <h3><code>/merchant/checkout</code></h3>
+        <p>Permission <code>merchant.checkout.view</code>. Dikhata hai: gateway aur methods, webhook set hai ya nahi, allowed websites; browser key (copy); server key aur webhook secret (Owner &ldquo;Issue / Replace&rdquo; kare, value sirf ek baar dikhti hai). Neeche poori integration guide: session banane ka cURL, smooth.js snippet (pinned version + SRI), thank-you page polling code, Apple Pay domain file download, webhook verify code, confirm call, test cards, PCI / CSP salah.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Admin &rarr; Merchant form</span>
+        <h3>Payment step mein &ldquo;Smooth Checkout&rdquo; box</h3>
+        <p>Success webhook URL, ek ya zyada website domains, aur Apple Pay domain file upload (sirf edit mein). File ka naam bilkul wahi rehta hai, kyunki Apple <code>/.well-known/&lt;wahi naam&gt;</code> hi fetch karta hai. Validation frontend + backend dono jagah.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Admin &rarr; Reports</span>
+        <h3>Checkout Holds + report channel</h3>
+        <p>Hold list (open / resolved), Re-check, Mark paid, Mark failed (note ke saath). Admin Transaction Report mein naya channel &ldquo;Website Checkout&rdquo;, jahan reference = merchant ka order number.</p>
+      </div>
+    </div>
+    <p style="margin-top:18px;max-width:var(--prose);">Design: naye pages panel ke maujooda <code>Ds*</code> components aur grey tokens use karte hain. Inka koi Figma nahi hai, to &ldquo;100% Figma&rdquo; wala check yahan lagu nahi hota.</p>
+  </div>
+</section>
+
+
+<!-- ══════════ 11 DB ══════════ -->
+<section id="db">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">11 &middot; Database mein kya badla</span>
+      <h2>2 nayi tables, merchant par 10 columns, 1 enum value</h2>
+      <p>Saari migrations dev par chal chuki hain, isliye ab inhe <strong>edit nahi kar sakte</strong> &mdash; badlav sirf nayi migration se. Har migration ka haath se likha rollback <code>prisma/rollbacks/*.down.sql</code> mein hai (sirf dev ke liye).</p>
+    </div>
+    <div class="tw" style="margin-bottom:20px;">
+      <table>
+        <thead><tr><th>Migration</th><th>Kya karti hai</th></tr></thead>
+        <tbody>
+          <tr><td class="f">20260923120000_checkout_sessions</td><td><code>checkout_sessions</code> table + <code>CheckoutSessionStatus</code> enum; PSP refs unique; (merchantId, idempotencyKey) unique</td></tr>
+          <tr><td class="f">20260924120000_checkout_merchant_notify</td><td><code>merchants.checkoutWebhookUrl</code>, <code>checkoutAllowedDomains</code>; <code>merchantNotifiedAt</code></td></tr>
+          <tr><td class="f">20260928120000_checkout_session_card</td><td>Session par <code>card</code> (JSON)</td></tr>
+          <tr><td class="f">20261008120000_apple_pay_domain_file</td><td><code>apple_pay_domain_files</code> table (bytes)</td></tr>
+          <tr><td class="f">20261008150000_checkout_session_reconciled_at</td><td><code>reconciledAt</code> (sweep ki baari)</td></tr>
+          <tr><td class="f">20261008160000_checkout_production_hardening</td><td><code>afsMerchantTransactionId</code>, hold resolution audit; merchant par key hash / hint / date, encrypted webhook secret / hint / date</td></tr>
+          <tr><td class="f">20261008160100_transaction_type_checkout</td><td><code>TransactionType</code> mein <code>CHECKOUT</code> (alag file &mdash; Postgres ka niyam)</td></tr>
+          <tr><td class="f">20261008160200_checkout_transaction_type_backfill</td><td>Purani <code>checkout:%</code> rows ko CHECKOUT type</td></tr>
+          <tr><td class="f">data: 20261008_001_add_checkout_permission</td><td><code>merchant.checkout.view</code> permission + &ldquo;Smooth Checkout&rdquo; product type (<a href="#i106">ISSUE-106</a>)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="max-width:var(--prose);">Ek chhoti baat: Geidea ki migration bhi <code>20261008120000_add_geidea</code> naam se hai, aur Fazal ki <code>20261008120000_apple_pay_domain_file</code> &mdash; same timestamp. Naam alag hain to dono chalengi (alphabet order mein Geidea pehle); dono ek dusre par depend nahi karti. Koi problem nahi, bas jaankari.</p>
+  </div>
+</section>
+
+
+<!-- ══════════ 12 TOUCHED ══════════ -->
+<section id="chhua">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">12 &middot; Purane code mein kya chhua</span>
+      <h2>Bahar ki 12 jagah &mdash; har ek ka asar</h2>
+      <p>CLAUDE.md ka niyam hai ki ek line badalne se pehle dekho ki woh aur kahan asar karti hai. Yeh list wahi hai.</p>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Jagah</th><th>Badlav</th><th>Asar</th></tr></thead>
+        <tbody>
+          <tr><td class="f">main.ts</td><td>CORS do hisson mein: <code>/api/v1/checkout/*</code> aur smooth.js par koi bhi Origin (credentials nahi); baaki sab purana <code>CORS_ORIGINS</code>. smooth.js ke 2 path <code>api</code> prefix se bahar. Checkout ka AFS webhook text body.</td><td class="ok">Baaki routes par koi asar nahi</td></tr>
+          <tr><td class="f">transform.interceptor.ts</td><td><code>@RawResponse()</code> laga ho to <code>{success,data}</code> envelope nahi</td><td class="ok">Sirf checkout routes</td></tr>
+          <tr><td class="f">cache.service.ts</td><td>Naya <code>incrWindow</code> (Redis INCR + EXPIRE)</td><td class="ok">Naya function, purane untouched</td></tr>
+          <tr><td class="f">payments.service.ts</td><td>(1) dine-in AFS confirm checkout ka AFS id mana karta hai (2) dine-in status endpoint checkout rows chhupata hai (3) dine-in webhook <code>cs_</code> notification checkout ko bhejta hai</td><td class="ok">Dine-in ka normal raasta same; sirf naye guards</td></tr>
+          <tr><td class="f">payments.module.ts</td><td><code>CheckoutModule</code> import</td><td class="ok">Circular dependency nahi</td></tr>
+          <tr><td class="f">transaction-report.mapper.ts</td><td>CHECKOUT channel (resolve + SQL dono)</td><td class="ok">Disjoint clauses bane rahe</td></tr>
+          <tr><td class="f">merchants.controller / service</td><td>3 naye endpoints; create/update mein webhook + domains; <code>PATCH /merchants/me</code> inhe hata deta hai</td><td class="bad">Sanitizer update nahi hua &mdash; ISSUE-105</td></tr>
+          <tr><td class="f">seed-permissions.ts</td><td>Permission + product type; Pay at Table / QR Ordering se &lsquo;checkout&rsquo; bahar</td><td class="ok">Theek</td></tr>
+          <tr><td class="f">merchant-owner.util.ts</td><td>Error message ka text parameter</td><td class="ok">Foodics ka message same</td></tr>
+          <tr><td class="f">config/index.ts</td><td><code>checkoutConfig.allowHttpWebhook</code></td><td class="ok">&mdash;</td></tr>
+          <tr><td class="f">Dockerfile</td><td><code>src/modules/checkout/public</code> image mein copy</td><td class="ok">Zaroori, warna smooth.js 404</td></tr>
+          <tr><td class="f">.env.example</td><td>Naye 5 variables</td><td class="warn">SSM mein set karne honge</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ 13 FINDINGS ══════════ -->
+<section id="issues">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">13 &middot; Kya gadbad hai</span>
+      <h2>14 findings, sabse gambhir pehle</h2>
+      <p>Har ek <code>docs/KNOWN-ISSUES.md</code> mein usi ID se likha hai. Maine koi code nahi badla &mdash; sirf report kiya. Har finding mein: kya hota hai, kab problem karega aur kab nahi, fix ki disha, aur exact file:line.</p>
+    </div>
+
+    <div class="findings">
+
+      <!-- 104 -->
+      <article class="finding sev-high" id="i104">
+        <div class="f-top">
+          <div class="f-id"><span class="chip is-alert">High</span><span class="num">ISSUE-104</span><span class="chip">Production mein live</span><span class="chip">Checkout se alag</span></div>
+          <h3>Admin Transaction Report se saare subscription payments gayab ho jaate hain</h3>
+          <p class="summary">2 Oct ko Fazal ne admin report ko &ldquo;sirf gateway wale payments&rdquo; dikhane ke liye filter lagaya: <em>jinki idempotencyKey <code>foodics-pos:</code> se shuru ho, unhe hatao</em>. SQL mein jis row ki key <strong>khali (NULL)</strong> hai, woh bhi isi filter se hat jaati hai.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell"><span class="eyebrow">Kya hota hai</span><p>Prisma yeh SQL banata hai: <code>NOT "idempotencyKey" LIKE 'foodics-pos:%'</code> (maine query log mein dekha). SQL ka niyam: NULL ke saath har comparison ka jawab &ldquo;pata nahi&rdquo; hota hai, aur WHERE sirf &ldquo;haan&rdquo; wali rows rakhta hai. Membership / subscription ke transactions bina idempotencyKey ke likhe jaate hain &mdash; isliye woh report ki list, totals aur Excel teeno se gayab. Report mein &ldquo;Subscription&rdquo; filter hai par usme kabhi kuch nahi aayega. Merchant list ka &ldquo;last transaction&rdquo; bhi inhe ignore karta hai.</p></div>
+          <div class="f-cell"><span class="eyebrow">Kab problem, kab nahi</span><p>Production mein filter 2 Oct se live hai, par subscription ka code abhi production mein nahi hai &mdash; to wahan sirf purani NULL-key rows (agar koi hain) gayab hongi. Ek query se pata chalega: <code>SELECT count(*) FROM transactions WHERE "idempotencyKey" IS NULL</code>. Jis din subscriptions production jaayenge, report pakka kam dikhayegi. Paisa kahin nahi atakta &mdash; sirf report galat. TPV (MTD) par subscriptions ka asar nahi, kyunki woh pehle se sirf ORDER ginta hai.</p></div>
+          <div class="f-cell fix"><span class="eyebrow">Fix ki disha</span><p>Teeno jagah: <code>OR: [{ idempotencyKey: null }, { NOT: { idempotencyKey: { startsWith: 'foodics-pos:' } } }]</code>. Aur <code>docs/admin-transaction-report.md</code> mein &ldquo;sirf gateway volume&rdquo; wala scope likho &mdash; doc mein yeh badlav hai hi nahi.</p></div>
+        </div>
+        <div class="f-where"><span class="eyebrow">Kahan</span><span class="loc">smooth-pay-api/src/modules/transactions/transactions.service.ts:319-326</span><span class="loc">merchants.service.ts:552, :563</span><span class="loc">commit 8b89ef8 (2026-10-02)</span></div>
+      </article>
+
+      <!-- 105 -->
+      <article class="finding sev-medium" id="i105">
+        <div class="f-top">
+          <div class="f-id"><span class="chip is-flag">Medium</span><span class="num">ISSUE-105</span><span class="chip">Security</span></div>
+          <h3>Checkout ke secret fields merchant API response mein ja rahe hain</h3>
+          <p class="summary">Purane code mein <code>sanitizeMerchantResponse</code> merchant ka data bhejne se pehle AFS token, Tabby secret, Geidea password hata deta hai. Fazal ne do naye secret columns banaye par is function ko nahi bataya.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell"><span class="eyebrow">Kya hota hai</span><p><code>checkoutSecretKeyHash</code> (server key ka hash) aur <code>checkoutWebhookSecret</code> (encrypted whsec) &mdash; <code>GET /merchants/me</code> (Owner aur Manager), admin merchant list, admin merchant detail, aur har create/update response mein ja rahe hain. Mazedaar baat: Fazal ka apna <code>getCheckoutKeys</code> endpoint inhe kabhi nahi bhejta &mdash; yaani niyat sahi thi, ek jagah choot gayi.</p></div>
+          <div class="f-cell"><span class="eyebrow">Kab problem, kab nahi</span><p>Seedha chori nahi: hash ulta nahi hota (256-bit random key ka), aur ciphertext <code>AFS_ENCRYPTION_KEY</code> ke bina bekaar. Par &ldquo;secret kabhi response mein nahi&rdquo; wala niyam tootta hai, aur agar kabhi encryption key leak hui to Manager tak ke browser mein webhook secret pahle se pahunch chuka hoga. Abhi sirf dev par.</p></div>
+          <div class="f-cell fix"><span class="eyebrow">Fix ki disha</span><p><code>common/utils/payment-gateway.util.ts</code> mein baaki sanitizers ke paas <code>sanitizeCheckoutCredentialResponse</code> jo yeh do fields hataye; use <code>sanitizeMerchantResponse</code> mein jodo.</p></div>
+        </div>
+        <div class="f-where"><span class="eyebrow">Kahan</span><span class="loc">smooth-pay-api/src/modules/merchants/merchants.service.ts:358</span></div>
+      </article>
+
+      <!-- 106 -->
+      <article class="finding sev-medium" id="i106">
+        <div class="f-top">
+          <div class="f-id"><span class="chip is-flag">Medium</span><span class="num">ISSUE-106</span><span class="chip">Permissions</span></div>
+          <h3>&ldquo;Smooth Checkout&rdquo; product type ko woh permissions mil rahi hain jo baaki sab se chhupi hain</h3>
+          <p class="summary">Platform mein ek list hai <code>HIDDEN_MERCHANT_PERMISSION_CODES</code> &mdash; jaise branch banana/hatana, user delete, roles edit &mdash; jo kisi product type ko nahi milti. Fazal ki data migration ne yeh filter nahi lagaya.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell"><span class="eyebrow">Kya hota hai</span><p>Migration &ldquo;dashboard, sales, users, branches, settings, rbac&rdquo; modules ki <strong>saari</strong> permissions product type se jod deti hai, chhupi wali bhi (<code>branches.create/edit/delete</code>, <code>users.delete</code>, <code>rbac.edit</code>, <code>dashboard.view</code>). Pichli migration (testing product type, line 38) aur seed script dono yeh filter lagati hain. Admin jab yeh product type kisi merchant ko dega, uska Owner branch bana/hata sakega, users delete aur roles edit kar sakega &mdash; jo Payment Link / QR Ordering merchant nahi kar sakte.</p></div>
+          <div class="f-cell"><span class="eyebrow">Kab problem, kab nahi</span><p>Sirf us merchant par jise &ldquo;Smooth Checkout&rdquo; product type milega. Migration dev par chal chuki hai (ab edit nahi kar sakte). Staging / production par abhi nahi gayi &mdash; isliye promote karne se pehle theek karna aasaan hai.</p></div>
+          <div class="f-cell fix"><span class="eyebrow">Fix ki disha</span><p>Ek nayi data migration jo yeh extra links hataye aur assigned merchants ke roles re-sync kare. Purani migration ko mat chhedo.</p></div>
+        </div>
+        <div class="f-where"><span class="eyebrow">Kahan</span><span class="loc">smooth-pay-api/src/data-migrations/20261008_001_add_checkout_permission.ts:60-70</span><span class="loc">sahi misaal: 20260731_001_add_testing_product_type.ts:38</span></div>
+      </article>
+
+      <!-- 107 -->
+      <article class="finding sev-medium" id="i107">
+        <div class="f-top">
+          <div class="f-id"><span class="chip is-flag">Medium</span><span class="num">ISSUE-107</span><span class="chip">Paisa</span><span class="chip">Confirm karna baaki</span></div>
+          <h3>Stripe ke saath website ka paisa Smooth ke apne Stripe account mein ja sakta hai</h3>
+          <p class="summary">Fazal ne AFS ke saath Stripe provider bhi banaya. Stripe merchant ke account se nahi, Smooth ke platform key (<code>STRIPE_SECRET_KEY</code>) se chalta hai. Aur jis merchant ka gateway kabhi set nahi hua, database mein uska default <strong>STRIPE</strong> hai.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell"><span class="eyebrow">Kya hota hai</span><p>Aise merchant ko checkout product type mila to website ke payments Smooth ke Stripe account mein girenge, merchant ke paas nahi &mdash; aur ledger mein kahin &ldquo;merchant ko dena hai&rdquo; nahi likha. CLAUDE.md ke hisaab se Stripe production mein live hi nahi aur adhoora hai, isliye uspar naya feature banana khud ek sawal hai.</p></div>
+          <div class="f-cell"><span class="eyebrow">Kab problem, kab nahi</span><p>Tabhi jab naya env variable <code>STRIPE_PUBLISHABLE_KEY</code> bhi set ho. Set nahi hai to session banate hi 400 (&ldquo;Stripe keys are not configured&rdquo;) &mdash; safe fail. SSM <code>/dev</code>, <code>/staging</code>, <code>/prod</code> mein check karna padega; main yahan se nahi dekh sakta.</p></div>
+          <div class="f-cell fix"><span class="eyebrow">Fix ki disha</span><p>Checkout mein sirf AFS allow karo (<code>resolveMerchantCheckoutGateway</code>), jab tak har merchant ka apna Stripe account wala model nahi banta. Stripe provider register hi mat karo.</p></div>
+        </div>
+        <div class="f-where"><span class="eyebrow">Kahan</span><span class="loc">checkout/providers/stripe-checkout.provider.ts:6-26</span><span class="loc">checkout/providers/gateway.ts:57</span><span class="loc">schema: Merchant.paymentGateway @default(STRIPE)</span></div>
+      </article>
+
+      <!-- 108 -->
+      <article class="finding sev-medium" id="i108">
+        <div class="f-top">
+          <div class="f-id"><span class="chip is-flag">Medium</span><span class="num">ISSUE-108</span><span class="chip">Merchant ko khabar</span></div>
+          <h3>Webhook secret issue nahi kiya to merchant ko &ldquo;paid&rdquo; message kabhi nahi jata &mdash; aur koi batata bhi nahi</h3>
+          <p class="summary">Paid notice par signature lagane ke liye ya to merchant ka <code>whsec_</code> chahiye ya purana &ldquo;legacy&rdquo; secret (<code>CHECKOUT_KEY_SECRET</code>). <code>.env.example</code> mein yeh khali hai.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell"><span class="eyebrow">Kya hota hai</span><p>Dono na hon to code chupchap <code>return</code> kar jata hai &mdash; na log, na error. Sweep 24 ghante tak har 2 min yahi karta hai, phir chhod deta hai. Upar se merchant ke Checkout page par likha aata hai &ldquo;Not issued yet. An older setup key still works&rdquo; &mdash; jabki naye merchant ke paas koi purani key hai hi nahi; session create 401 dega jab tak Owner key issue na kare.</p></div>
+          <div class="f-cell"><span class="eyebrow">Kab problem, kab nahi</span><p>Kisi bhi environment par jahan legacy secret khali hai aur merchant ne webhook secret issue nahi kiya. Paisa aa gaya, order paid hai, par shop ka system nahi jaanta (jab tak woh khud confirm call na kare). Agar merchant ne whsec issue kar diya to sab theek.</p></div>
+          <div class="f-cell fix"><span class="eyebrow">Fix ki disha</span><p>Warning log; admin form aur Checkout tab par saaf message &ldquo;webhook secret issue karo, warna notice nahi jayega&rdquo;; <code>getCheckoutKeys</code> se batao ki legacy on hai ya nahi, aur legacy wala text tabhi dikhao.</p></div>
+        </div>
+        <div class="f-where"><span class="eyebrow">Kahan</span><span class="loc">checkout/auth/checkout-keys.ts:89-97</span><span class="loc">checkout/settle/settle-checkout.service.ts:327</span><span class="loc">smooth-pay-web/src/pages/merchant/CheckoutPage.tsx:370, :651</span></div>
+      </article>
+
+      <!-- 109 -->
+      <article class="finding sev-medium" id="i109">
+        <div class="f-top">
+          <div class="f-id"><span class="chip is-flag">Medium</span><span class="num">ISSUE-109</span><span class="chip">Release safety</span></div>
+          <h3>smooth.js ka SRI hash &mdash; ek galti aur sab merchants ka checkout band</h3>
+          <p class="summary">Merchant apne page par smooth.js ka fixed version ek hash ke saath lagata hai. Browser script tabhi chalata hai jab file ka har byte us hash se match kare. Yeh achhi suraksha hai, par isko bachane wali do cheezein missing hain.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell"><span class="eyebrow">Kya hota hai</span><p>(1) Repo mein <code>.gitattributes</code> nahi. Windows par git files ko CRLF line-ending mein badal deta hai, to local hash alag aata hai. Maine verify kiya: git wali file ka hash <code>integrity.json</code> se match karta hai, local copy ka nahi &mdash; isi wajah se 2 test fail hue. Agar kabhi kisi ne Windows par naya version banakar hash nikala, production (LF) ki file match nahi karegi &rarr; us version par pinned har merchant ka checkout load hi nahi hoga. (2) Fazal ne &ldquo;released file mat chhedo&rdquo; wala test likha hai, par CI sirf build chalata hai, tests nahi.</p></div>
+          <div class="f-cell"><span class="eyebrow">Kab problem, kab nahi</span><p>Abhi production safe hai (CI Linux par LF se build karta hai, hashes sahi hain). Khatra agle smooth.js release ke waqt hai.</p></div>
+          <div class="f-cell fix"><span class="eyebrow">Fix ki disha</span><p><code>.gitattributes</code>: <code>src/modules/checkout/public/** -text</code>; hash hamesha <code>git show HEAD:&lt;file&gt;</code> se; <code>smooth-js.controller.spec.ts</code> ko PR workflow ya build mein chalao.</p></div>
+        </div>
+        <div class="f-where"><span class="eyebrow">Kahan</span><span class="loc">checkout/public/versions/*, integrity.json</span><span class="loc">checkout/smooth-js.controller.spec.ts</span></div>
+      </article>
+
+      <!-- 110 -->
+      <article class="finding sev-low" id="i110">
+        <div class="f-top">
+          <div class="f-id"><span class="chip is-watch">Low</span><span class="num">ISSUE-110</span><span class="chip">Product sawal</span></div>
+          <h3>Merchant ko apne panel mein website wale payments dhoondhna mushkil</h3>
+          <p class="summary">Product type mein dashboard aur sales diye gaye, par dashboard aur Sales sirf ORDER type ginte hain. Transactions list mein CHECKOUT rows dikhti hain, par Branch &ldquo;&mdash;&rdquo;, Table &ldquo;&mdash;&rdquo;, aur merchant ka order reference nahi.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell"><span class="eyebrow">Asar</span><p>Checkout-only merchant ka dashboard khaali dikhega; Transactions mein payment ko apne order se milana mushkil. Admin report mein reference dikhta hai.</p></div>
+          <div class="f-cell fix"><span class="eyebrow">Fix ki disha</span><p>Merchant list include mein <code>checkoutSession.reference</code> aur row par &ldquo;Website &middot; order-123&rdquo;. Dashboard/Sales mein website sale gine ya nahi &mdash; client se puchna.</p></div>
+        </div>
+        <div class="f-where"><span class="eyebrow">Kahan</span><span class="loc">merchants.service.ts:1681, :1782</span><span class="loc">transactions.service.ts:711, :1099</span><span class="loc">web TransactionsPage.tsx:297</span></div>
+      </article>
+
+      <!-- 111 -->
+      <article class="finding sev-low" id="i111">
+        <div class="f-top">
+          <div class="f-id"><span class="chip is-watch">Low</span><span class="num">ISSUE-111</span><span class="chip">Performance</span></div>
+          <h3>Sweep ki queries ka index nahi, aur table kabhi saaf nahi hota</h3>
+          <p class="summary">Har 2 min, har API instance par 3 queries status/createdAt par filter karti hain; index sirf (merchantId, status) aur (expiresAt) par hai. Chhode gaye sessions hamesha CREATED rehte hain, table sirf badhta hai.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell"><span class="eyebrow">Asar</span><p>Abhi kuch nahi (kam data). Jaise-jaise sessions badhenge, full table scan.</p></div>
+          <div class="f-cell fix"><span class="eyebrow">Fix ki disha</span><p><code>(status, createdAt)</code> par index (partial: <code>holdReason IS NULL</code>), aur purane CREATED rows ke liye cleanup.</p></div>
+        </div>
+        <div class="f-where"><span class="eyebrow">Kahan</span><span class="loc">checkout/settle/checkout-reconcile.service.ts:102-150</span><span class="loc">prisma/schema.prisma:1388-1389</span></div>
+      </article>
+
+      <!-- 112 -->
+      <article class="finding sev-low" id="i112">
+        <div class="f-top">
+          <div class="f-id"><span class="chip is-watch">Low</span><span class="num">ISSUE-112</span><span class="chip">AFS load</span></div>
+          <h3>Thank-you page ka har poll AFS ko call karta hai</h3>
+          <p class="summary">Hamara hi snippet merchant ko har 2 sec poll karna sikhata hai, aur har poll par server AFS se puchta hai. Ek intezaar karte shopper ke liye ~30 AFS calls / minute.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell"><span class="eyebrow">Asar</span><p>Pilot par kuch nahi. AFS ki rate limit humein pata hi nahi (plan doc ka khula sawal); scale par AFS throttle kare to poll &ldquo;unknown&rdquo; ke saath chalta rahega.</p></div>
+          <div class="f-cell fix"><span class="eyebrow">Fix ki disha</span><p>Ek session ko N second mein ek hi baar AFS se poocho; beech mein DB wala status do.</p></div>
+        </div>
+        <div class="f-where"><span class="eyebrow">Kahan</span><span class="loc">checkout/sessions/sessions.service.ts:335-345</span></div>
+      </article>
+
+      <!-- 113 -->
+      <article class="finding sev-low" id="i113">
+        <div class="f-top">
+          <div class="f-id"><span class="chip is-watch">Low</span><span class="num">ISSUE-113</span></div>
+          <h3>Merchant ko notice bhejna request ke beech mein hota hai (5 sec tak)</h3>
+          <p class="summary">AFS webhook, shopper ka poll aur merchant ka confirm &mdash; teeno merchant ke webhook server ka jawab aane tak rukte hain.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell"><span class="eyebrow">Asar</span><p>Merchant ka server dheema ho to Ayesha ka thank-you page aur AFS ka webhook dono dheeme.</p></div>
+          <div class="f-cell fix"><span class="eyebrow">Fix ki disha</span><p>Notice settle ke baad alag se bhejo (sweep pehle se retry karta hai).</p></div>
+        </div>
+        <div class="f-where"><span class="eyebrow">Kahan</span><span class="loc">checkout/settle/settle-checkout.service.ts:90, :257, :283</span></div>
+      </article>
+
+      <!-- 114 -->
+      <article class="finding sev-low" id="i114">
+        <div class="f-top">
+          <div class="f-id"><span class="chip is-watch">Low</span><span class="num">ISSUE-114</span><span class="chip">Hold</span></div>
+          <h3>Hold wala session shopper ke liye kabhi &ldquo;khatam&rdquo; nahi hota; &ldquo;Mark paid&rdquo; kabhi galat error deta hai</h3>
+          <p class="summary">(a) Hold par status PROCESSING hi rehta hai jab tak admin kuch na kare; page hamesha poll karta hai aur browser ko <code>amount_mismatch</code> jaise andar ke code milte hain. (b) Agar usi waqt kisi aur settle ne row likh di, session PAID ho jata hai par admin ko 409 &ldquo;already on another transaction&rdquo; dikhta hai.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell fix"><span class="eyebrow">Fix ki disha</span><p>Public &ldquo;under review&rdquo; state jise snippet final maane; <code>resolveHold</code> mein <code>already_processed</code> ko success maano.</p></div>
+        </div>
+        <div class="f-where"><span class="eyebrow">Kahan</span><span class="loc">settle-checkout.service.ts:120-121, :199-202</span><span class="loc">sessions.service.ts:406</span></div>
+      </article>
+
+      <!-- 115 -->
+      <article class="finding sev-low" id="i115">
+        <div class="f-top">
+          <div class="f-id"><span class="chip is-watch">Low</span><span class="num">ISSUE-115</span><span class="chip">AFS</span></div>
+          <h3>AFS credentials badle to chal rahe sessions atak jaate hain</h3>
+          <p class="summary">Session par AFS entity id freeze hota hai, par token har baar merchant se taaza padha jata hai. Admin ne beech mein entity/token (ya test&harr;live) badla to purane sessions naye token + purane entity se verify hote hain &mdash; AFS mana karta hai.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell"><span class="eyebrow">Asar</span><p>Kam hota hai, par us waqt kata paisa 72 ghante tak &ldquo;pending&rdquo; aur phir sirf haath se milega.</p></div>
+          <div class="f-cell fix"><span class="eyebrow">Fix ki disha</span><p>72 ghante ke andar khule sessions hon to AFS credential change mana karo, ya purana token in sessions ke liye rakho.</p></div>
+        </div>
+        <div class="f-where"><span class="eyebrow">Kahan</span><span class="loc">checkout/providers/afs-checkout.provider.ts:89-90, :160-174</span><span class="loc">sessions.service.ts:156-157</span></div>
+      </article>
+
+      <!-- 116 -->
+      <article class="finding sev-low" id="i116">
+        <div class="f-top">
+          <div class="f-id"><span class="chip is-watch">Low</span><span class="num">ISSUE-116</span><span class="chip">Code quality</span></div>
+          <h3>Pehle se maujood code ki copies; README kisi aur repo ka</h3>
+          <p class="summary">CLAUDE.md kehta hai &ldquo;jo pehle se hai use reuse karo, parallel version mat banao&rdquo;. Checkout module ne kai cheezein copy ki hain. Lagta hai yeh pehle alag project tha jo yahan port hua.</p>
+        </div>
+        <div class="f-body">
+          <div class="f-cell"><span class="eyebrow">Kya copy hai</span><p>Gateway ke allowed/default methods (<code>gateway.ts:16-26</code> vs <code>payment-gateway.util.ts</code>); AES-GCM helper (<code>afs-crypto.ts</code>); AFS success regex (<code>afs-result.ts</code>); AFS webhook decrypt (&ldquo;Ported from billing&rdquo;); ek doosra Stripe client. README mein <code>backend/.env</code>, <code>merchant-website</code>, port 4500, <code>VITE_CHECKOUT_API_URL</code> &mdash; in mein se kuch is repo mein nahi. smooth.js ke header mein abhi bhi &ldquo;spike build&rdquo;.</p></div>
+          <div class="f-cell"><span class="eyebrow">Asar</span><p>Ek copy mein fix (naya AFS success code, naya method) doosri tak nahi pahunchega. Naya developer README se bhatak jayega.</p></div>
+          <div class="f-cell fix"><span class="eyebrow">Fix ki disha</span><p>Shared helpers import karo; README ka setup hissa is repo ke hisaab se dobara likho.</p></div>
+        </div>
+        <div class="f-where"><span class="eyebrow">Kahan</span><span class="loc">smooth-pay-api/src/modules/checkout/providers/*, webhooks/afs-webhook.util.ts, README.md, public/smooth.js</span></div>
+      </article>
+
+      <!-- 117 -->
+      <article class="finding sev-low" id="i117">
+        <div class="f-top">
+          <div class="f-id"><span class="chip is-watch">Low</span><span class="num">ISSUE-117</span><span class="chip">UI</span></div>
+          <h3>Checkout tab aur admin screens ki chhoti galtiyan</h3>
+          <p class="summary">Checkout tab TABBY ko method pill mein dikhata hai par smooth.js Tabby kabhi nahi deta; Geidea merchant ko koi warning nahi jabki session 400 dega; likha hai &ldquo;Smooth POSTs once&rdquo; jabki 24 ghante retry hota hai. Holds page admin ka naam nahi, UUID dikhata hai. <code>MerchantPaymentStep.tsx</code> mein <code>methodIcon</code> ka comment ab <code>FieldHint</code> ke upar aa gaya.</p>
+        </div>
+        <div class="f-where"><span class="eyebrow">Kahan</span><span class="loc">web CheckoutPage.tsx:278, :284, :646</span><span class="loc">CheckoutHoldsPage.tsx:211</span><span class="loc">MerchantPaymentStep.tsx:181-187</span></div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ 14 GOOD ══════════ -->
+<section id="achha">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">14 &middot; Kya achha bana hai</span>
+      <h2>Imaandari se: yeh hisse kaafi mazboot hain</h2>
+      <p>Review sirf galti dhoondhna nahi hai. Neeche wali cheezein sahi hain aur inhe badalna nahi chahiye.</p>
+    </div>
+    <div class="cols">
+      <div class="card"><span class="eyebrow">Paisa</span><ul class="plain is-accent">
+        <li>Browser amount nahi badal sakta; PAID sirf AFS ke re-query se.</li>
+        <li>Ek AFS checkout = zyada se zyada ek Transaction: unique keys + DB transaction + guarded update; race par &ldquo;adopt&rdquo;.</li>
+        <li>Amount ka match canonical 2-decimal string mein &mdash; float nahi.</li>
+        <li>Dine-in ke saath takraav band: checkout ka AFS id dine-in confirm mein use nahi ho sakta, dine-in status mein dikhta nahi.</li>
+      </ul></div>
+      <div class="card"><span class="eyebrow">AFS ki samajh</span><ul class="plain is-accent">
+        <li>Cut-off (<code>800.800.*</code> + acquirer authorized) ko decline nahi maana &mdash; dine-in ka hi rule, par yahan admin hold.</li>
+        <li><code>900.*</code> / <code>999.*</code> / system errors kabhi decline nahi.</li>
+        <li>AFS id expire hone par <code>/v1/query</code> se dhoondhna (merchantTransactionId save karke).</li>
+        <li>Decline ke baad usi checkout par retry ko 2 ghante tak pakadna.</li>
+        <li><code>paymentBrand</code> pre-set nahi; brands / wallet options live customer app jaise.</li>
+      </ul></div>
+      <div class="card"><span class="eyebrow">Bharosa aur suraksha</span><ul class="plain is-accent">
+        <li>Reconcile sweep &mdash; jo dine-in mein abhi nahi hai.</li>
+        <li>Server key sirf hash, rotate par turant band; webhook secret encrypted.</li>
+        <li>Webhook SSRF protection (DNS pinning, private IP, redirect band).</li>
+        <li>smooth.js versioning + SRI; integrity bina live widget load nahi.</li>
+        <li>Rate limits Redis par (sab instance share karte hain).</li>
+      </ul></div>
+      <div class="card"><span class="eyebrow">Kaam ka dhang</span><ul class="plain is-accent">
+        <li>83 tests (26 spec files), har migration ka rollback SQL, module README.</li>
+        <li>Admin hold resolve par audit: kisne, kab, kyon (note zaroori).</li>
+        <li>Merchant ko PCI (SAQ A-EP) aur CSP ki saaf salah.</li>
+        <li>Geidea merge saaf &mdash; checkout Geidea merchant ko seedha mana karta hai.</li>
+      </ul></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ 15 PLAN ══════════ -->
+<section id="plan">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">15 &middot; Plan vs jo bana</span>
+      <h2>Docs mein kuch aur plan tha &mdash; yeh bug nahi, faisle hain</h2>
+      <p><code>docs/payment-gateway-platform.md</code> (aur do bade artifacts) mein yeh product ek alag service ke roop mein socha gaya tha. <code>docs/pay-with-smooth.md</code> ne ek chhota raasta suggest kiya tha: customer ko hamare payment-link page par bhejna. Fazal ne teesra raasta banaya. Client / tech lead ke saath confirm karna chahiye ki yahi chahiye.</p>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Baat</th><th>Plan mein</th><th>Jo bana</th><th>Matlab</th></tr></thead>
+        <tbody>
+          <tr><td>Kahan rehta hai</td><td>Alag service, alag database, alag repo</td><td>Hamare API ka ek module, wahi Postgres</td><td>Jaldi bana, par &ldquo;independent gateway&rdquo; wale bade plan se alag</td></tr>
+          <tr><td>Ek business, kai websites</td><td>Ek merchant, kai &ldquo;applications&rdquo; (har website ki apni keys / gateway)</td><td>Keys, gateway aur allowed sites merchant par</td><td>Do website = ek hi key; plan ise &ldquo;asli gate&rdquo; kehta tha</td></tr>
+          <tr><td>Card form kahan</td><td>Box merchant page se alag (iframe)</td><td>AFS widget seedha merchant ke page mein</td><td>Merchant ko SAQ A-EP; har domain ki Apple Pay verification</td></tr>
+          <tr><td>Gateway</td><td>Practically sirf AFS</td><td>AFS + Stripe (platform account)</td><td>ISSUE-107</td></tr>
+          <tr><td>Pay with Smooth (redirect)</td><td>Customer hamare page par, AFS se kuch naya nahi chahiye</td><td>Nahi bana</td><td>Embedded raste mein Apple Pay domain, AFS webhook URL, PCI jaise naye sawal aate hain</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note is-flag" style="margin-top:20px;">
+      <span class="eyebrow">Apple Pay aur Google Pay &mdash; operational kaam</span>
+      <p>Apple Pay ke liye har merchant website ko Apple merchant identifier ke saath verify karna hota hai: admin file upload karta hai, merchant use <code>/.well-known/</code> par rakhta hai, phir Smooth / AFS verification poora karte hain (Checkout page par yeh likha hai). Google Pay ke live (PRODUCTION) mode mein har website domain ko Google Pay console mein register karna padta hai ya nahi &mdash; <strong>yeh maine confirm nahi kiya</strong>, AFS / Google se puchna chahiye.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ 16 GO LIVE ══════════ -->
+<section id="live">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">16 &middot; Live karne se pehle</span>
+      <h2>Staging / production se pehle ki checklist</h2>
+    </div>
+    <div class="cols">
+      <div class="card"><span class="eyebrow">Code</span><ul class="plain is-flag">
+        <li>ISSUE-104 theek karo (yeh abhi production mein hai, checkout se alag).</li>
+        <li>ISSUE-105, -106, -107, -108, -109 &mdash; theek karo ya jaan-boojh kar accept karo.</li>
+        <li>Checkout ko sirf AFS tak seemit karna (ISSUE-107) sabse saste mein sabse bada risk hata deta hai.</li>
+      </ul></div>
+      <div class="card"><span class="eyebrow">SSM env (har environment)</span><ul class="plain is-flag">
+        <li><code>CHECKOUT_KEY_SECRET</code>: khali (legacy keys band) ya 32+ characters. Production mein chhota ho to API boot hi nahi hogi.</li>
+        <li><code>CHECKOUT_AFS_WEBHOOK_KEY</code>: agar AFS encrypted notification bhejta hai.</li>
+        <li><code>STRIPE_PUBLISHABLE_KEY</code>: <strong>set mat karo</strong> (ISSUE-107).</li>
+        <li><code>CHECKOUT_ALLOW_HTTP_WEBHOOK</code>: false / khali.</li>
+        <li>Env sirf agle deploy par lagta hai.</li>
+      </ul></div>
+      <div class="card"><span class="eyebrow">AFS / merchant setup</span><ul class="plain is-flag">
+        <li>AFS ko notification URL <code>/api/v1/checkout/webhooks/afs</code> do, ya dine-in URL ke forward par bharosa (sirf plaintext; ISSUE-090).</li>
+        <li>Pilot merchant ko &ldquo;Smooth Checkout&rdquo; product type do.</li>
+        <li>Owner server key aur webhook secret issue kare; admin webhook URL aur allowed domains set kare.</li>
+        <li>Apple Pay: file upload &rarr; merchant host kare &rarr; verification.</li>
+        <li>Merchant ko SAQ A-EP ke baare mein batao.</li>
+      </ul></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ 17 FILES ══════════ -->
+<section id="files">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">17 &middot; File-by-file guide</span>
+      <h2>Har file kya karti hai</h2>
+      <p>Test files (<code>*.spec.ts</code>) chhod kar har file. Base path: <code>smooth-pay-api/src/modules/checkout/</code> jab tak alag na likha ho.</p>
+    </div>
+
+    <div class="stack">
+      <div>
+        <h3 style="margin-bottom:12px;">API &middot; checkout module</h3>
+        <div class="tw">
+          <table>
+            <thead><tr><th>File</th><th>Kya karti hai</th></tr></thead>
+            <tbody>
+              <tr><td class="f">checkout.module.ts</td><td>Sab jodta hai: controllers, AFS/Stripe providers (factory se), registry, sweep. Session aur webhook routes par <code>Cache-Control: no-store</code>.</td></tr>
+              <tr><td class="f">README.md</td><td>Module ki guide: keys, webhook, sweep, holds, PCI, rollback. Setup wala hissa purane project ka (ISSUE-116).</td></tr>
+              <tr><td class="f">auth/checkout-config.ts</td><td>Env padhta hai (AFS URLs, webhook key, Stripe keys, 30 min TTL, sweep interval). Production mein <code>CHECKOUT_KEY_SECRET</code> 32 se chhota ho to boot fail.</td></tr>
+              <tr><td class="f">auth/checkout-keys.ts</td><td>pk/sk ka format; legacy HMAC key; issued key ka hash check; whsec banana; notice ke liye kaunsi signing key (whsec, warna legacy, warna kuch nahi).</td></tr>
+              <tr><td class="f">auth/secrets.ts</td><td>Constant-time compare, Bearer token nikalna, client secret banana.</td></tr>
+              <tr><td class="f">http/quiet-exception.filter.ts</td><td>Error ko <code>{ message }</code> shape mein; anjaan error par sirf &ldquo;Internal error&rdquo; (andar ki baat bahar nahi).</td></tr>
+              <tr><td class="f">http/rate-limit.ts</td><td>Fixed-window limiter (Redis, warna process memory). Limit paar = 429.</td></tr>
+              <tr><td class="f">providers/checkout-provider.ts</td><td>Provider ka interface (create / verify / cancel), VerifyResult ke 4 states, registry.</td></tr>
+              <tr><td class="f">providers/gateway.ts</td><td>Merchant ka gateway + methods tay karna; GEIDEA par 400 (yeh line Geidea merge mein aayi); khali gateway = STRIPE.</td></tr>
+              <tr><td class="f">providers/afs-client.ts</td><td>AFS ke 3 HTTP calls: checkout banana, payment status, <code>/v1/query</code>.</td></tr>
+              <tr><td class="f">providers/afs-checkout.provider.ts</td><td>AFS provider: create (live par integrity zaroori), verify (status &rarr; expire ho to query &rarr; cut-off &rarr; classify), do debit par hold.</td></tr>
+              <tr><td class="f">providers/afs-result.ts</td><td>AFS result code ke dibbe; cut-off pehchan; <code>200.300.404</code>; checkout id format check.</td></tr>
+              <tr><td class="f">providers/afs-crypto.ts</td><td>AES-256-GCM encrypt/decrypt (AFS token aur whsec ke liye).</td></tr>
+              <tr><td class="f">providers/checkout-card.ts</td><td>AFS response se card ki dikhane wali details (brand, BIN, last 4, holder, expiry) &mdash; saaf karke, koi extra key nahi.</td></tr>
+              <tr><td class="f">providers/stripe-client.ts</td><td>Stripe REST: PaymentIntent banana / padhna / cancel (fils mein).</td></tr>
+              <tr><td class="f">providers/stripe-checkout.provider.ts</td><td>Stripe provider, platform account par (ISSUE-107).</td></tr>
+              <tr><td class="f">sessions/sessions.controller.ts</td><td>6 routes (create, get, confirm, init, checkout, status) + rate limits.</td></tr>
+              <tr><td class="f">sessions/sessions.service.ts</td><td>Saara session logic: key verify, product type check, idempotency, origin check, AFS checkout ek hi baar, status par settle.</td></tr>
+              <tr><td class="f">sessions/money.ts</td><td>Amount (exact 2 decimal string), currency (sirf AED), reference, Idempotency-Key ki jaanch; AFS amount ko canonical banana.</td></tr>
+              <tr><td class="f">sessions/session-id.ts</td><td><code>cs_&lt;uuid&gt;</code> id; AFS merchantTransactionId <code>cs_&hellip;-&lt;ms&gt;</code> banana / padhna.</td></tr>
+              <tr><td class="f">settle/settle-checkout.service.ts</td><td>Dil: settle, recordPaid, hold, resolveHold, notifyMerchant, expireIfDue, ensureCard.</td></tr>
+              <tr><td class="f">settle/merchant-notify.ts</td><td>Notice ka signature + surakshit POST (SSRF); internal IP pehchan; allowed websites check.</td></tr>
+              <tr><td class="f">settle/checkout-reconcile.service.ts</td><td>Har 2 min wala sweep.</td></tr>
+              <tr><td class="f">webhooks/afs-webhook.controller.ts</td><td>AFS notification endpoint; hamesha 200; settle ko bhejta hai.</td></tr>
+              <tr><td class="f">webhooks/afs-webhook.util.ts</td><td>Encrypted notification decrypt; body se session id aur checkout id nikalna.</td></tr>
+              <tr><td class="f">smooth-js.controller.ts</td><td><code>/smooth.js</code> aur <code>/smooth/&lt;v&gt;/smooth.js</code> serve; portal ke liye current version + SRI hash.</td></tr>
+              <tr><td class="f">admin/checkout-holds.controller.ts, .dto.ts</td><td>Admin holds: list, re-check, resolve.</td></tr>
+              <tr><td class="f">public/smooth.js</td><td>Merchant page wali script (v0.7.1): method list, AFS widget, Stripe form, skeleton, card form layout, labels, button color.</td></tr>
+              <tr><td class="f">public/versions/*</td><td>Jame hue releases 0.7.0, 0.7.1 aur unke SHA-384 hashes.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <h3 style="margin-bottom:12px;">API &middot; module ke bahar</h3>
+        <div class="tw">
+          <table>
+            <thead><tr><th>File</th><th>Kya badla</th></tr></thead>
+            <tbody>
+              <tr><td class="f">merchants/apple-pay-domain-file.controller.ts, .service.ts</td><td>Apple Pay domain file: admin upload / hatao / download, merchant download. 64 KB tak, bytes jaise ke taise.</td></tr>
+              <tr><td class="f">merchants/checkout-merchant-fields.ts</td><td>Webhook URL (https, public) aur domains (max 20) ki jaanch.</td></tr>
+              <tr><td class="f">merchants/merchants.controller.ts</td><td>3 endpoints (keys dekhna, server key issue, webhook secret issue); <code>PATCH me</code> checkout fields hata deta hai.</td></tr>
+              <tr><td class="f">merchants/merchants.service.ts</td><td><code>getCheckoutKeys</code>, dono rotate, create/update mein checkout fields.</td></tr>
+              <tr><td class="f">merchants/merchants.module.ts</td><td>Apple Pay controller / service register.</td></tr>
+              <tr><td class="f">payments/checkout-afs-notify.ts</td><td>Dine-in webhook body mein <code>cs_</code> pehchanna.</td></tr>
+              <tr><td class="f">payments/payments.service.ts, .module.ts</td><td>3 guards (section 12); CheckoutModule import.</td></tr>
+              <tr><td class="f">transactions/transaction-report.mapper.ts</td><td>CHECKOUT channel + reference.</td></tr>
+              <tr><td class="f">common/decorators/raw-response.decorator.ts, interceptors/transform.interceptor.ts</td><td>Raw response ka rasta.</td></tr>
+              <tr><td class="f">common/utils/cache.service.ts</td><td><code>incrWindow</code>.</td></tr>
+              <tr><td class="f">common/config/index.ts, common/auth/merchant-owner.util.ts</td><td>Config; Owner-only error message.</td></tr>
+              <tr><td class="f">main.ts, app.module.ts</td><td>CORS, prefix exclude, text body parser; module register.</td></tr>
+              <tr><td class="f">scripts/seed-permissions.ts</td><td>Permission + product type config.</td></tr>
+              <tr><td class="f">data-migrations/20261008_001_&hellip;, index.ts</td><td>Permission + product type data migration (ISSUE-106).</td></tr>
+              <tr><td class="f">prisma/schema.prisma, migrations (8), rollbacks (8)</td><td>Section 11.</td></tr>
+              <tr><td class="f">Dockerfile, .env.example</td><td>smooth.js image mein; naye env.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <h3 style="margin-bottom:12px;">Web (smooth-pay-web)</h3>
+        <div class="tw">
+          <table>
+            <thead><tr><th>File</th><th>Kya badla</th></tr></thead>
+            <tbody>
+              <tr><td class="f">pages/merchant/CheckoutPage.tsx</td><td>Merchant ka Checkout tab (730 lines): config, keys, integration guide, Apple Pay file.</td></tr>
+              <tr><td class="f">pages/admin/CheckoutHoldsPage.tsx</td><td>Admin holds page.</td></tr>
+              <tr><td class="f">pages/admin/merchants/MerchantPaymentStep.tsx</td><td>&ldquo;Smooth Checkout&rdquo; box: webhook, domains, Apple Pay file.</td></tr>
+              <tr><td class="f">pages/admin/merchants/merchantFormTypes.ts</td><td>Naye form fields + validation (backend ka aaina).</td></tr>
+              <tr><td class="f">pages/admin/MerchantsPage.tsx, MerchantFormDrawer.tsx</td><td>Form state, submit mein do naye fields, <code>merchantId</code> prop.</td></tr>
+              <tr><td class="f">lib/services.ts, types/index.ts</td><td>API calls aur types (CheckoutKeys, CheckoutHold, ApplePayDomainFileInfo, CHECKOUT type/channel).</td></tr>
+              <tr><td class="f">App.tsx, navItems.tsx, route-access.ts</td><td>2 routes, 2 menu items, permission mapping.</td></tr>
+              <tr><td class="f">TransactionTypeTag.tsx, AdminPrimitives.tsx, transaction-report/*</td><td>&ldquo;Checkout&rdquo; label, <code>inputMode="url"</code>, channel pill + filter.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ 18 TESTS / GEIDEA ══════════ -->
+<section id="tests">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">18 &middot; Tests, build, Geidea</span>
+      <h2>Maine khud chala kar dekha</h2>
+    </div>
+    <div class="cols">
+      <div class="card">
+        <span class="eyebrow">Tests</span>
+        <h3>83 mein se 81 pass</h3>
+        <p>Fazal ki apni 26 spec files (checkout + merchants + payments + report). 2 fail: dono <code>smooth-js.controller.spec.ts</code> ke hash wale &mdash; sirf is Windows machine par CRLF ki wajah se. Git wali files ka hash maine alag se nikala: <code>integrity.json</code> se bilkul match. Yani production ke liye sahi, local ke liye nahi (ISSUE-109).</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Type-check</span>
+        <h3>API &#10003; &middot; Web &#10003;</h3>
+        <p><code>tsc --noEmit</code> (API) aur <code>tsc -b</code> (web) dono exit 0, current <code>development</code> par (Geidea merge ke baad). Yaad rahe: CI sirf build chalata hai, tests nahi.</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Geidea ke saath</span>
+        <h3>Merge saaf hai</h3>
+        <p>Geidea merge ne <code>providers/gateway.ts</code> aur <code>sessions.service.ts</code> mein sirf types badle aur GEIDEA ko checkout se mana karne wali line jodi. Geidea merchant session banaye to 400. Settle hamesha session ke freeze kiye gateway se chalta hai, to gateway badalne par purane AFS sessions phir bhi AFS se hi settle hote hain (token wali baat alag &mdash; ISSUE-115).</p>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:22px;">
+      <span class="eyebrow">Fazal ke doosre commits (checkout ke alawa, isi samay)</span>
+      <p><strong>2 Oct, API <code>8b89ef8</code></strong>: admin report aur merchant list TPV ko sirf gateway volume (cash, cashback, Foodics register hata kar) &mdash; isi mein ISSUE-104 hai. <strong>2 Oct, Web <code>530db99</code></strong>: merchant list infinite scroll (20 rows), report ke breakdown collapsible, payment-method filter se Cash / Cashback / Other hataye &mdash; sirf UI. Report aur constants wale hisse padhe, unme gadbad nahi mili; <code>MerchantsPage.tsx</code> ka infinite-scroll badlav (142 lines) maine line-by-line review nahi kiya. Dono staging aur production mein hain. 2 Oct ke &ldquo;conflict resolved&rdquo; merges staging ko development mein laane wale the; unme dusron ka code tha, unka alag review nahi kiya.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ 19 WHAT I DID ══════════ -->
+<section id="maine">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="eyebrow">19 &middot; Maine kya kiya</span>
+      <h2>Code nahi badla &mdash; sirf padha, chalaya aur likha</h2>
+    </div>
+    <ul class="plain is-accent" style="max-width:var(--prose);">
+      <li>Fazal ke saare commits padhe: API <code>5e6c45d</code>, <code>eda2926</code>, <code>e75c57a</code>; web <code>dc4a5e0</code>, <code>c44e204</code>, <code>b8a3e6c</code>, <code>f9ace87</code>; saath mein <code>8b89ef8</code>, <code>530db99</code>. Har non-test file poori padhi.</li>
+      <li>Tests aur type-check chalaye; ek read-only Prisma query se NULL wala bug pakka kiya (sirf local dev database, kuch likha nahi).</li>
+      <li><code>docs/KNOWN-ISSUES.md</code> mein ISSUE-104 se ISSUE-117 tak likhe (summary table + detail).</li>
+      <li>Is feature ka technical doc banaya: <code>docs/smooth-checkout.md</code>.</li>
+      <li><code>CLAUDE.md</code> (root + API) mein checkout ki jagah aur NULL wala sabak joda.</li>
+      <li>Yeh page <code>artifacts/</code> ki list (index) mein <strong>nahi</strong> joda: isme unfixed security details aur ek colleague ka naam hai, aur artifacts repo public GitHub Pages par jata hai.</li>
+    </ul>
+  </div>
+</section>
+
+
+<footer class="foot">
+  <div class="shell">
+    <div class="r">
+      <span>Smooth Checkout &mdash; Code Review</span>
+      <span>8 October 2026</span>
+      <span>Internal &middot; local only</span>
+    </div>
+  </div>
+</footer>
+
+<button class="theme-toggle" type="button" id="themeToggle" aria-label="Switch colour theme">
+  <span id="themeLabel">Dark</span>
+</button>
+
+<script>
+(function () {
+  var KEY = 'ss-docs-theme';
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  var label = document.getElementById('themeLabel');
+
+  function current() {
+    return root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+  function apply(theme) {
+    root.setAttribute('data-theme', theme);
+    label.textContent = theme === 'dark' ? 'Light' : 'Dark';
+  }
+  function stored() {
+    try { return localStorage.getItem(KEY) === 'dark' ? 'dark' : 'light'; }
+    catch (e) { return current(); }
+  }
+
+  apply(current());
+
+  btn.addEventListener('click', function () {
+    var next = current() === 'dark' ? 'light' : 'dark';
+    apply(next);
+    try { localStorage.setItem(KEY, next); } catch (e) {}
+  });
+
+  /* Toggled on another document of this site, in another tab. */
+  window.addEventListener('storage', function (e) {
+    if (e.key === KEY) apply(stored());
+  });
+  /* Restored from the back/forward cache, where the head script never reruns. */
+  window.addEventListener('pageshow', function (e) {
+    if (e.persisted) apply(stored());
+  });
+})();
+</script>
+</body>
+</html>
